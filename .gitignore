@@ -6,3 +6,8 @@ dist/
 .env.*.local
 *.log
 .DS_Store
+
+graphify-out/cache/
+graphify-out/cost.json
+graphify-out/.graphify_python
+graphify-out/.graphify_root
