@@ -1,0 +1,13 @@
+/* 기본 테마 및 전체 설정 */
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    --bg-color: #FFF9E6;
+    --card-bg: #FFFFFF;
+    --text-color: #5D4037;
+    --btn-color: #6D4C41;
+    --accent-color: #FFB74D;
+    --shadow: 0 4px 10px rgba(141, 110, 99, 0.15);
+}

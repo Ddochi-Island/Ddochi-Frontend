@@ -1,0 +1,59 @@
+# Cloudflare Pages project config.
+#
+# Vars (non-secret) live here; secrets live in `wrangler pages secret put`
+# or the dashboard Environment Variables → encrypted column.
+#
+# Build/deploy:
+#   npm run deploy   # → wrangler pages deploy dist
+#
+# The `[vars]` table values are exposed as `env.<KEY>` inside Pages
+# Functions. They are NOT secrets — anything sensitive (the Service Token
+# Secret, the OCI HMAC secret, the JWT signing secret) goes through
+# `wrangler pages secret put` so it never lands in git.
+
+name = "ddochiseom-frontend"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "dist"
+
+# Topology
+# ────────
+# Browser hits   page.ddochi.cloud   (this CF Pages project, custom domain)
+# SPA calls      /api/*              (relative; same origin)
+# Pages Function /api/[[path]] fetches  https://app.ddochi.cloud/api/*
+#                                    (a separate hostname routed via CF Tunnel
+#                                     to main:8080 inside the VM)
+#
+# So app.ddochi.cloud stays dedicated to the tunnel (existing setup),
+# and page.ddochi.cloud serves the SPA + Functions.
+
+# Default vars — non-secret. Override per environment under [env.*].
+[vars]
+ORIGIN_API_URL = "https://app.ddochi.cloud"
+
+# OCI S3-compatible endpoint base — fill once an OCI bucket exists.
+# Format: https://<namespace>.compat.objectstorage.<region>.oraclecloud.com
+OCI_S3_ENDPOINT = ""
+OCI_S3_REGION   = ""
+OCI_BUCKET_NAME = ""
+
+[env.production]
+[env.production.vars]
+ORIGIN_API_URL = "https://app.ddochi.cloud"
+# wrangler 가 top-level [vars] 를 환경별 vars 로 상속하지 않음 (env.production.vars 미명시 시 경고).
+# 현재 OCI bucket 미구성 — 빈 값 유지. Pages Functions 가 OCI 호출 안 함 (services/main 만 호출).
+OCI_S3_ENDPOINT = ""
+OCI_S3_REGION   = ""
+OCI_BUCKET_NAME = ""
+
+[env.preview]
+[env.preview.vars]
+ORIGIN_API_URL = "https://app.ddochi.cloud"
+OCI_S3_ENDPOINT = ""
+OCI_S3_REGION   = ""
+OCI_BUCKET_NAME = ""
+
+
+# Secrets to set via `wrangler pages secret put <NAME>`:
+#   JWT_SECRET                       HS256 key, MUST match services/main JWT_SECRET
+#   OCI_S3_ACCESS_KEY_ID             OCI Customer Secret Key (Access Key ID)
+#   OCI_S3_SECRET_ACCESS_KEY         OCI Customer Secret Key (Secret)

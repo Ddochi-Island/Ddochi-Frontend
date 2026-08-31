@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "description": "Functions handle /api/*, /storage/*, /dashboard/*. Everything else served as static SPA assets directly from CF Pages.",
+  "include": ["/api/*", "/storage/*", "/dashboard/*"],
+  "exclude": []
+}

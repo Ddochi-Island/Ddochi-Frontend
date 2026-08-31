@@ -1,0 +1,8 @@
+# 또치섬 통합 관리 시스템 — security contact (RFC 9116)
+# 이 파일은 CF Pages 가 정적으로 서빙하므로
+# https://page.ddochi.cloud/.well-known/security.txt 에서 접근 가능.
+
+Contact: mailto:jinhomo03@gmail.com
+Expires: 2027-05-01T00:00:00.000Z
+Preferred-Languages: ko, en
+Canonical: https://page.ddochi.cloud/.well-known/security.txt

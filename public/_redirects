@@ -1,0 +1,3 @@
+# SPA fallback: any path not matched by Functions or static files goes to
+# index.html so vue-router (hash mode handles the rest).
+/*    /index.html   200

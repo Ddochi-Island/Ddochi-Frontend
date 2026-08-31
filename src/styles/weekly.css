@@ -1,0 +1,175 @@
+/* [2026-04-22] index2.html 주간 템플릿 + 팔레트 CSS 이관 (L854, L3060-3370) */
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* 주간 그리드 */
+.weekly-grid {
+    display: grid;
+    grid-template-columns: 32px repeat(7, 1fr);
+    gap: 1px;
+    background: #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    user-select: none;
+}
+.weekly-grid-header {
+    background: #f5f5f5;
+    text-align: center;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 6px 0;
+    color: #555;
+}
+.weekly-grid-header.sun { color: #E53935; }
+.weekly-grid-header.sat { color: #1976D2; }
+.weekly-grid-time {
+    background: #fafafa;
+    font-size: 9px;
+    color: #888;
+    text-align: center;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    min-height: 18px;
+}
+.weekly-grid-cell {
+    background: #fff;
+    min-height: 18px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.1s;
+}
+.weekly-grid-cell.filled {
+    color: white;
+    font-size: 9px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1;
+    overflow: hidden;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+}
+.weekly-grid-cell:not(.filled):hover { background: #f0f0f0; }
+
+/* 팔레트 */
+.palette-container {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 10px 10px 8px 10px;
+}
+.palette-container::-webkit-scrollbar { height: 4px; }
+.palette-container::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+}
+.palette-item {
+    flex: 0 0 auto;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.palette-item.selected {
+    transform: scale(1.15);
+    border-color: #333;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}
+.eraser-item {
+    background: #f5f5f5;
+    color: #555;
+    border: 2px solid #ddd;
+}
+
+.palette-tab-container {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+}
+.palette-tab-container::-webkit-scrollbar { height: 4px; }
+.palette-tab-container::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+}
+.palette-tab-btn {
+    flex: 0 0 auto;
+    padding: 8px 14px;
+    background: #f0f0f0;
+    color: #777;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    border: 1px solid #e0e0e0;
+    transition: 0.2s;
+}
+.palette-tab-btn.active {
+    background: var(--btn-color);
+    color: white;
+    border-color: var(--btn-color);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+.palette-tab-btn.eraser-tab {
+    background: #FFEBEE;
+    color: #C62828;
+    border-color: #FFCDD2;
+}
+.palette-tab-btn.eraser-tab.active {
+    background: #E53935;
+    color: white;
+    border-color: #E53935;
+}
+
+/* 팔레트 하단 고정 — admin-modal-card 의 flex column 마지막 자식으로 배치 */
+.sticky-palette-wrapper {
+    background: #fff;
+    padding: 14px 15px;
+    border-top: 1px solid #ddd;
+    box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.08);
+    flex-shrink: 0;
+    /* admin-modal-card 의 border-radius 를 물려받도록 */
+    border-radius: 0 0 15px 15px;
+}
+
+/* 새 사역 블록 추가 (직접입력) 버튼 — 팔레트 상단 상시 노출 */
+.palette-add-btn {
+    flex: 0 0 auto;
+    padding: 8px 15px;
+    background: #EFEBE9;
+    color: #5D4037;
+    border: 2px dashed #8D6E63;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.palette-add-btn:hover {
+    background: #D7CCC8;
+    transform: scale(1.03);
+}
+.palette-add-btn.selected {
+    background: #5D4037;
+    color: white;
+    border-color: #5D4037;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* 팔레트 아이템 호버 효과 */
+.palette-item:not(.selected):hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
