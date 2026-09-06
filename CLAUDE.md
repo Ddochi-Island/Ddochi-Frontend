@@ -21,8 +21,9 @@ npm run deploy             # build + `wrangler pages deploy dist`
 npm run deploy -- --branch preview
 ```
 
-No test suite. `VITE_API_TARGET` overrides the dev proxy target if you're pointing at a non-default
-backend port.
+No test suite, no lint config. `VITE_API_TARGET` overrides the dev proxy target if you're pointing
+at a non-default backend port. Verify changes by running `npm run build` (catches Vue/import
+errors) and exercising the screen in `npm run dev`.
 
 ### First-time Cloudflare Pages setup
 
@@ -62,7 +63,9 @@ it uses `localStorage`, since cookies are unreliable in that embedded container;
 it uses a `SameSite=Lax` cookie, to survive Safari ITP / private-mode localStorage resets. Both are
 read on lookup for safe migration between the two contexts. `useApi()`'s `callApi` also handles the
 401 → refresh-once → retry → logout-on-failure flow transparently, so screen components never see
-raw 401s.
+raw 401s. Both the new main response shape (`{ accessToken, refreshToken, user }`) and the legacy
+one (`{ success, name, team, area, role }`) are absorbed by `useAuthStore.setUser()` — don't assume
+one shape when reading login/refresh responses.
 
 **Routing** (`src/router/index.js`) uses hash history with a `meta.requiresAuth` guard, plus a
 bounce-through-`LoadingScreen` pattern: on the very first navigation, if there's a saved sabun but
@@ -71,14 +74,31 @@ the auth store hasn't hydrated yet, the guard redirects to `loading` and stashes
 restores that target. Don't "simplify" this by redirecting straight to the target route; a direct
 redirect skips the silent-login step and dumps the user on `/login` on every hard refresh.
 
+**Role checks mirror the backend, not a local enum.** `src/composables/useRoles.js` does substring
+matching against Korean job-title strings (`지역장`, `팀장`, etc.) and is an explicit mirror of
+`services/main/src/auth/roles.js` — a region role auto-includes team role. If backend role strings
+change, this file needs a matching update.
+
 **`src/constants/index.js` is the single source for cross-component constants** (magic numbers,
 label maps, enums shared with the backend). Before adding a new data array or magic number in a
 screen component, check whether it belongs in an existing domain section there first — several
 past duplicates (`KR_TIME_DIFF_MS`, `FAITH_LABEL_MAP`, etc.) got consolidated into it specifically
 because the same constant existed in two components. Anything keyed to a backend enum (e.g.
-`TM_RESULT_BIHAP`) needs a matching change on the main side if it changes.
+`TM_RESULT_BIHAP`) needs a matching change on the main side if it changes. The file's own header
+comment carries a domain index — check it before adding a 6th section rather than a new file
+(the file was deliberately kept as one ~130-line module instead of splitting into
+`enums.js`/`timings.js`; only split once it clears ~150 lines).
 
-**`README.md` describes an earlier version of this app** (`src/screens/`, `src/api/client.ts`,
-a 17-route table) that no longer matches the current tree (`src/components/screens/`,
-`src/composables/useApi.js`, ~28 routes in `src/router/index.js`). Trust the source over the README
-for anything structural; the README's deploy/Cloudflare instructions are still accurate.
+**Screen components repeat a `load()`/`getList()` + `useApi().callApi` pattern.** Most files under
+`src/components/screens/` fetch their own data on mount via a local `load()` (or `getList()`)
+function that calls `callApi`/`callApiPromise` directly rather than going through a store — Pinia
+stores (`src/stores/*.js`) exist only for state that's genuinely shared across screens (auth, board,
+admin config, etc.), not as a blanket data layer. Don't route a screen-local fetch through a new
+store unless another screen actually needs that state too.
+
+**`README.md` describes an earlier version of this app** (`src/screens/`, `src/api/client.ts` as an
+axios singleton, TypeScript, a 17-route table) that no longer matches the current tree
+(`src/components/screens/`, `src/composables/useApi.js` as a plain-fetch adapter, JavaScript, ~28
+routes in `src/router/index.js`). Trust the source over the README for anything structural; the
+README's deploy/Cloudflare instructions and the `constants/index.js` consolidation work-log at its
+end are still accurate.

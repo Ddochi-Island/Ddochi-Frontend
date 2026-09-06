@@ -12,10 +12,14 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      // Ddochi-Backend (Django) runserver default — :8080 in this repo is
+      // data_router (the Oracle DB gateway), not the API server.
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:8000',
         changeOrigin: true,
       },
+      // tel_router's dashboard isn't part of the Django rewrite yet — this
+      // proxy target has no backend to hit locally.
       '/dashboard': {
         target: 'http://localhost:8081',
         changeOrigin: true,
@@ -28,7 +32,7 @@ export default defineConfig({
     port: 4173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:8000',
         changeOrigin: true,
       },
       '/dashboard': {
