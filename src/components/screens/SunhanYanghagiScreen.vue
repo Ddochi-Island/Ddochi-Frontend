@@ -20,8 +20,8 @@ const { showAppAlert, showAppConfirm, showToast } = usePopup()
 
 // ── 탭 ──────────────────────────────────────────────────────────────
 // 항상 유입자 팀 기준 — 링크 번호 fallback 없음
-const prospectEffTeam = (p) => p.shedMeta?.introducerTeam
-const rowEffTeam = (r) => introducerTeamByName.value[r.introducer]
+const prospectEffTeam = (p) => p.team ? `${p.team}팀` : undefined
+const rowEffTeam = (r) => r.event ? `${r.event}팀` : undefined
 
 const loading = ref(true)
 const asLoading = ref(false)
@@ -42,23 +42,20 @@ const shedDupExistingId = ref(null)
 
 // ── 데이터 ───────────────────────────────────────────────────────────
 const allShedProspects = ref([])
+const qualityTeams = ['2', '4', '6']
+const sunhanTeams  = ['1', '3', '5']
 const shedProspects = computed(() => {
-  const qualityTeams = ['2팀', '4팀', '6팀']
-  const sunhanTeams  = ['1팀', '3팀', '5팀']
   return allShedProspects.value.filter(p =>
-    isQualityFind.value ? qualityTeams.includes(p.shedMeta?.introducerTeam) : sunhanTeams.includes(p.shedMeta?.introducerTeam)
+    isQualityFind.value ? qualityTeams.includes(p.team) : sunhanTeams.includes(p.team)
   )
 })
 const asRows = ref([])
 const introducerTeamByName = ref({})
 
 const filteredAsRows = computed(() => {
-  const qualityTeams = ['2팀', '4팀', '6팀']
-  const sunhanTeams  = ['1팀', '3팀', '5팀']
-  return asRows.value.filter(r => {
-    const team = introducerTeamByName.value[r.introducer]
-    return isQualityFind.value ? qualityTeams.includes(team) : sunhanTeams.includes(team)
-  })
+  return asRows.value.filter(r =>
+    isQualityFind.value ? qualityTeams.includes(r.event) : sunhanTeams.includes(r.event)
+  )
 })
 
 // ── 통화 상태 ─────────────────────────────────────────────────────────
@@ -976,7 +973,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span class="sy-name">{{ p.name }}</span>
                 <span v-if="p.age" class="sy-age">({{ p.age }}세)</span>
                 <span v-if="p.createdTs" class="sy-inflow-ts">{{ fmtInflowTs(p.createdTs) }}</span>
-                <span class="sy-link-badge sy-intr-badge">{{ p.shedMeta?.introducerTeam || (p.source + '팀') }}</span>
+                <span class="sy-link-badge sy-intr-badge">{{ p.team + '팀' }}</span>
                 <span class="sy-final-badge">반려</span>
               </div>
               <div v-if="p.region || p.shedMeta?.env || p.shedMeta?.reaction || p.shedMeta?.mbti" class="sy-meta sy-meta-pipe">
@@ -1025,7 +1022,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
               <span class="sy-name">{{ p.name }}</span>
               <span v-if="p.age" class="sy-age">({{ p.age }}세)</span>
               <span v-if="p.createdTs" class="sy-inflow-ts">{{ fmtInflowTs(p.createdTs) }}</span>
-              <span class="sy-link-badge sy-intr-badge">{{ p.shedMeta?.introducerTeam || (p.source + '팀') }}</span>
+              <span class="sy-link-badge sy-intr-badge">{{ p.team + '팀' }}</span>
               <span class="sy-tm-badge" style="background:#1565C0">만남픽스✓</span>
             </div>
             <div class="sy-actions" style="margin-top:6px">
@@ -1074,7 +1071,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                   </template>
                 </template>
                 <span v-if="p.createdTs" class="sy-inflow-ts">{{ fmtInflowTs(p.createdTs) }}</span>
-                <span class="sy-link-badge sy-intr-badge">{{ p.shedMeta?.introducerTeam || (p.source + '팀') }}</span>
+                <span class="sy-link-badge sy-intr-badge">{{ p.team + '팀' }}</span>
                 <span v-if="displayTmStatus(p) !== 'active'" class="sy-tm-badge" :style="{ background: TM_STATUS_COLOR[displayTmStatus(p)] || '#757575' }">
                   {{ TM_STATUS_LABEL[displayTmStatus(p)] || displayTmStatus(p) }}
                 </span>
@@ -1188,7 +1185,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
               <span class="sy-name">{{ p.name }}</span>
               <span v-if="p.age" class="sy-age">({{ p.age }}세)</span>
               <span v-if="p.createdTs" class="sy-inflow-ts">{{ fmtInflowTs(p.createdTs) }}</span>
-              <span class="sy-link-badge sy-intr-badge">{{ p.shedMeta?.introducerTeam || (p.source + '팀') }}</span>
+              <span class="sy-link-badge sy-intr-badge">{{ p.team + '팀' }}</span>
               <span class="sy-done-guide" v-if="p.hasGuide">인도자: {{ p.guideName }}</span>
               <span class="sy-done-noguide" v-else>인도자 미정 🎰</span>
               <span v-if="p.hjCreatedTs" class="sy-done-date">{{ p.hjCreatedTs }}</span>
@@ -1218,7 +1215,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span class="sy-phone-num" style="cursor:pointer;" @click="copyPhone(callingProspect.phone)">📞 {{ callingProspect.phone }}</span>
                 <button class="ab cancel hangup" @click="endCall">끊기</button>
                 <button class="sy-script-toggle" :class="{ on: scriptOpen[callingProspect.docId] }" @click="toggleScript(callingProspect.docId)">📝 스크립트</button>
-                <span class="sy-link-badge sy-intr-badge">{{ callingProspect.shedMeta?.introducerTeam || (callingProspect.source + '팀') }}</span>
+                <span class="sy-link-badge sy-intr-badge">{{ callingProspect.team + '팀' }}</span>
               </div>
               <div class="sy-meta sy-meta-pipe">
                 <span v-if="callingProspect.tmLogs?.[0]?.category === 'tmReserved'" class="meta-reserved">{{ callingProspect.reservedAt ? formatReservedAt(callingProspect.reservedAt) : '예약됨' }}</span>
@@ -1337,7 +1334,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
             <div v-for="p in searchTmActiveList" :key="p.docId" class="sy-search-row">
               <span class="sy-search-name">{{ p.name }}</span>
               <span v-if="p.age" class="sy-search-age">({{ p.age }}세)</span>
-              <span class="sy-search-badge active">{{ p.shedMeta?.introducerTeam || (p.source + '팀') }}</span>
+              <span class="sy-search-badge active">{{ p.team + '팀' }}</span>
               <span v-if="p.noAnswerCount" class="sy-search-sub warn">안받음 {{ p.noAnswerCount }}회</span>
               <span v-else-if="p.reservedAt" class="sy-search-sub">예약: {{ formatReservedAt(p.reservedAt) }}</span>
               <span v-if="p.shedMeta?.introducer" class="sy-search-sub">유입: {{ p.shedMeta.introducer }}</span>
@@ -1351,7 +1348,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
             <div v-for="p in searchTmDoneList" :key="p.docId" class="sy-search-row">
               <span class="sy-search-name">{{ p.name }}</span>
               <span v-if="p.age" class="sy-search-age">({{ p.age }}세)</span>
-              <span class="sy-search-badge done">{{ p.shedMeta?.introducerTeam || (p.source + '팀') }}</span>
+              <span class="sy-search-badge done">{{ p.team + '팀' }}</span>
               <span class="sy-search-final">{{ finalLabel(p) }}</span>
               <span v-if="p.shedMeta?.introducer" class="sy-search-sub">유입: {{ p.shedMeta.introducer }}</span>
             </div>
