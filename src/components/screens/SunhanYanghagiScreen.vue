@@ -436,24 +436,40 @@ async function load() {
   error.value = ''
   try {
     const ddochiRes = await callApiPromise('/api/get-shed-prospects', { data: {} })
-    allShedProspects.value = ddochiRes?.success ? (ddochiRes.list || []) : []
+    // sarang 스키마 응답(sarangId/habJaeYang/timeline)을 기존 컴포넌트가 쓰는 필드명으로 매핑.
+    allShedProspects.value = ddochiRes?.success ? (ddochiRes.list || []).map(p => ({
+      ...p,
+      docId: p.sarangId,
+      status: p.stage,
+      region: p.inflowDetails?.regionName,
+      managerName: p.inflowMemberName,
+      guideName: p.habJaeYang?.guideName || '',
+      hasGuide: !!p.habJaeYang?.guideName,
+      hjTmName: p.habJaeYang?.callerName || '',
+      hasHabjaeyang: !!p.habJaeYang,
+      createdTs: p.createdAt,
+      reservedAt: p.inflowDetails?.tmReservedAt,
+      tmLogs: p.timeline || [],
+      lastTmLine: p.timeline?.[0]?.label || null,
+      lastTmTs: p.timeline?.[0]?.createdAt || null,
+    })) : []
     for (const p of allShedProspects.value) initNoteState(p)
   } catch (e) {
     error.value = e.message
   }
   loading.value = false
 
-  // DB pending 건 로드 (자동이관된 미확인 건)
+  // DB pending 건 로드 (자동이관된 미확인 건) — SARANG_INTAKE_QUEUE
   asLoading.value = true
   try {
     const asRes = await callApiPromise('/api/shed/pending-list').catch(() => null)
-    asRows.value = asRes?.ok ? (asRes.rows || []) : []
-    // 유입자 이름 → 팀 배치 조회
-    const names = [...new Set(asRows.value.map(r => r.introducer).filter(Boolean))]
-    if (names.length) {
-      const tr = await callApiPromise('/api/shed/lookup-teams', { names }).catch(() => null)
-      if (tr?.ok) introducerTeamByName.value = tr.teams || {}
-    }
+    asRows.value = asRes?.success ? (asRes.list || []).map(r => ({
+      ...r,
+      prospectId: r.intakeId,
+      event: r.sourceLink,
+      region: r.regionName,
+      tmLocation: r.location,
+    })) : []
   } catch {}
   asLoading.value = false
 }
@@ -805,12 +821,7 @@ async function doRegister(asRow) {
   showAppConfirm(msg, async (ok) => {
     if (!ok) return
     saving.value = true
-    const r = await callApiPromise('/api/shed-register', {
-      data: { name: asRow.name, phone: asRow.phone, age: asRow.age, source: asRow.event,
-              region: asRow.region, env: asRow.env || '', reaction: asRow.reaction || '',
-              address: asRow.address || '', introducer: asRow.introducer || '',
-              tmLocation: asRow.tmLocation || '', rest: asRow.rest || '' },
-    })
+    const r = await callApiPromise('/api/shed-register', { intakeId: asRow.prospectId })
     saving.value = false
     if (r?.success) { showToast('등록 완료!'); load() }
     else if (r?.duplicates?.length > 0) {
@@ -846,9 +857,7 @@ async function doReject(asRow) {
   showAppConfirm(msg, async (ok) => {
     if (!ok) return
     saving.value = true
-    const r = await callApiPromise('/api/shed-pending-reject', {
-      data: { prospectId: asRow.prospectId },
-    })
+    const r = await callApiPromise('/api/shed-pending-reject', { intakeId: asRow.prospectId })
     saving.value = false
     if (r?.success) { showToast('반려 처리 완료'); load() }
     else showAppAlert(r?.message || '반려 실패')
