@@ -559,6 +559,9 @@ function isMyCalling(p) { return callingDocId.value === p.docId.toUpperCase() }
 function isOtherCalling(p) { return !!callStatus[p.docId.toUpperCase()] && !isMyCalling(p) }
 function callerOf(p) { return callStatus[p.docId.toUpperCase()]?.callerName || '' }
 function hasWelcomeMsg(p) { return p.tmLogs?.some(l => l.category === 'welcomeMsg') }
+// 유입 항목은 타임라인에 항상 들어있어서 "티엠 로그가 아직 없다"의 기준으로 못 씀 —
+// 그걸 뺀 나머지가 없어야 "아직 실제 통화기록 없음"으로 침(예약 시간 표시용).
+function hasRealLog(p) { return p.tmLogs?.some(l => l.label !== '유입') }
 
 // 펼친 로그 목록에서는 "누가 유입했는지"가 통화기록보다 먼저 보이도록 맨 위로 고정
 // (p.tmLogs 자체의 정렬(최신순)은 배지/요약 로직이 [0]=최신에 의존하니 그대로 둠).
@@ -808,7 +811,7 @@ function copyProspect(p) {
   if (p.shedMeta?.env) lines.push(`환경: ${p.shedMeta.env}`)
   if (p.shedMeta?.reaction) lines.push(`반응: ${p.shedMeta.reaction}`)
   if (p.shedMeta?.introducer) lines.push(`유입: ${p.shedMeta.introducer}`)
-  if (p.tmLogs?.[0]?.category === 'tmReserved' && p.reservedAt) {
+  if ((p.tmLogs?.[0]?.category === 'tmReserved' || !hasRealLog(p)) && p.reservedAt) {
     lines.push(`예약: ${p.reservedAt}`)
   } else if (p.noAnswerCount) {
     lines.push(`안받음: ${p.noAnswerCount}회`)
@@ -1142,7 +1145,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
 
               <!-- Shed 메타 -->
               <div class="sy-meta">
-                <span v-if="p.tmLogs?.[0]?.category === 'tmReserved' || (!p.tmLogs?.length && p.reservedAt)" class="meta-reserved" :class="{ longterm: isLongTermReserved(p) }">{{ p.reservedAt ? formatReservedAt(p.reservedAt) : '예약됨' }}</span>
+                <span v-if="p.tmLogs?.[0]?.category === 'tmReserved' || (!hasRealLog(p) && p.reservedAt)" class="meta-reserved" :class="{ longterm: isLongTermReserved(p) }">{{ p.reservedAt ? formatReservedAt(p.reservedAt) : '예약됨' }}</span>
                 <span v-else-if="p.noAnswerCount" class="meta-warn">안받음 {{ p.noAnswerCount }}회</span>
                 <span v-if="p.shedMeta?.env" class="sy-field"><b>환경</b>{{ p.shedMeta.env }}</span>
                 <span v-if="p.shedMeta?.reaction" class="sy-field"><b>반응</b>{{ p.shedMeta.reaction }}</span>
@@ -1281,7 +1284,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span class="sy-link-badge sy-intr-badge">{{ callingProspect.team + '팀' }}</span>
               </div>
               <div class="sy-meta sy-meta-pipe">
-                <span v-if="callingProspect.tmLogs?.[0]?.category === 'tmReserved'" class="meta-reserved">{{ callingProspect.reservedAt ? formatReservedAt(callingProspect.reservedAt) : '예약됨' }}</span>
+                <span v-if="callingProspect.tmLogs?.[0]?.category === 'tmReserved' || (!hasRealLog(callingProspect) && callingProspect.reservedAt)" class="meta-reserved">{{ callingProspect.reservedAt ? formatReservedAt(callingProspect.reservedAt) : '예약됨' }}</span>
                 <span v-else-if="callingProspect.noAnswerCount" class="meta-warn">안받음 {{ callingProspect.noAnswerCount }}회</span>
                 {{ [ (callingProspect.region || callingProspect.shedMeta?.address) && `지역: ${[callingProspect.region, callingProspect.shedMeta?.address].filter(Boolean).join(' · ')}`, callingProspect.shedMeta?.mbti && `MBTI: ${callingProspect.shedMeta.mbti}`, callingProspect.shedMeta?.env && `환경: ${callingProspect.shedMeta.env}`, callingProspect.shedMeta?.reaction && `반응: ${callingProspect.shedMeta.reaction}`, callingProspect.shedMeta?.introducer && `유입: ${callingProspect.shedMeta.introducer}`, callingProspect.shedMeta?.tmLocation && `유입장소: ${callingProspect.shedMeta.tmLocation}` ].filter(Boolean).join('  |  ') }}
               </div>
