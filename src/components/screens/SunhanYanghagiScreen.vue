@@ -893,7 +893,9 @@ function isLongTermReserved(p) {
 // 끝난거는 각각 필터링되거나 다른 섹션으로 빠져서 여기 안 보임).
 function displayTmStatus(p) { return p.reservedAt ? (isLongTermReserved(p) ? 'longTerm' : 'reserved') : null }
 function formatReservedAt(s) {
-  const m = String(s || '').match(/^\d{4}-(\d{2})-(\d{2}) (\d{2}:\d{2})/)
+  // Django(:8000)는 "YYYY-MM-DDTHH:MM:SSZ" ISO 형식으로 내려줌 — 옛 백엔드의
+  // "YYYY-MM-DD HH:MM"(공백 구분) 형식도 같이 지원
+  const m = String(s || '').match(/^\d{4}-(\d{2})-(\d{2})[ T](\d{2}:\d{2})/)
   return m ? `${m[1]}/${m[2]} ${m[3]}` : s
 }
 function finalLabel(p) {
