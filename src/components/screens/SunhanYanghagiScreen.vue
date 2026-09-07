@@ -446,6 +446,11 @@ async function load() {
       hasHabjaeyang: !!p.habJaeYang,
       createdTs: p.createdAt,
       reservedAt: p.inflowDetails?.tmReservedAt,
+      shedMeta: {
+        env: p.inflowDetails?.env,
+        reaction: p.inflowDetails?.reaction,
+        introducer: p.inflowDetails?.introducerName,
+      },
       tmLogs: p.timeline || [],
       lastTmLine: p.timeline?.[0]?.label || null,
       lastTmTs: p.timeline?.[0]?.createdAt || null,
