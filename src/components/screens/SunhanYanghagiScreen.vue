@@ -450,6 +450,7 @@ async function load() {
         env: p.inflowDetails?.env,
         reaction: p.inflowDetails?.reaction,
         introducer: p.inflowDetails?.introducerName,
+        tmLocation: p.inflowDetails?.location,
       },
       tmLogs: p.timeline || [],
       lastTmLine: p.timeline?.[0]?.label || null,
@@ -1106,9 +1107,10 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
               <div class="sy-meta">
                 <span v-if="p.tmLogs?.[0]?.category === 'tmReserved' || (!p.tmLogs?.length && p.reservedAt)" class="meta-reserved" :class="{ longterm: isLongTermReserved(p) }">{{ p.reservedAt ? formatReservedAt(p.reservedAt) : '예약됨' }}</span>
                 <span v-else-if="p.noAnswerCount" class="meta-warn">안받음 {{ p.noAnswerCount }}회</span>
-                <span v-if="p.shedMeta?.env">환경: {{ p.shedMeta.env }}</span>
-                <span v-if="p.shedMeta?.reaction">반응: {{ p.shedMeta.reaction }}</span>
-                <span v-if="p.shedMeta?.introducer">유입: {{ p.shedMeta.introducer }}</span>
+                <span v-if="p.shedMeta?.env" class="sy-field"><b>환경</b>{{ p.shedMeta.env }}</span>
+                <span v-if="p.shedMeta?.reaction" class="sy-field"><b>반응</b>{{ p.shedMeta.reaction }}</span>
+                <span v-if="p.shedMeta?.introducer" class="sy-field"><b>유입</b>{{ p.shedMeta.introducer }}</span>
+                <span v-if="p.shedMeta?.tmLocation" class="sy-field"><b>유입장소</b>{{ p.shedMeta.tmLocation }}</span>
               </div>
 
               <!-- TM 로그 (통화중 아니면 최근 1줄만, 통화중이면 스크롤) -->
