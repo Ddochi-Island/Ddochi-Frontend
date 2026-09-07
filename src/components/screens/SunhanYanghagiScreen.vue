@@ -560,9 +560,10 @@ function isMyCalling(p) { return callingDocId.value === p.docId.toUpperCase() }
 function isOtherCalling(p) { return !!callStatus[p.docId.toUpperCase()] && !isMyCalling(p) }
 function callerOf(p) { return callStatus[p.docId.toUpperCase()]?.callerName || '' }
 function hasWelcomeMsg(p) { return p.tmLogs?.some(l => l.category === 'welcomeMsg') }
-// 유입 항목은 타임라인에 항상 들어있어서 "티엠 로그가 아직 없다"의 기준으로 못 씀 —
-// 그걸 뺀 나머지가 없어야 "아직 실제 통화기록 없음"으로 침(예약 시간 표시용).
-function hasRealLog(p) { return p.tmLogs?.some(l => l.label !== '유입') }
+// "실제 통화 시도가 있었는지" 판단(예약 시간 표시용) — 선문자/부재중문자 발송은
+// 통화를 시도한 게 아니라서 이걸로 기존 예약을 무효화하면 안 됨. source==='call'인
+// TM_LOGS 기반 로그만 셈(유입, 문자발송 같은 activity/inflow는 제외).
+function hasRealLog(p) { return p.tmLogs?.some(l => l.source === 'call') }
 
 // 펼친 로그 목록은 오래된순(유입 → ... → 최신)으로 보여줘야 위에서 아래로 읽었을 때
 // 시간순이 맞음 — label로 유입만 앞으로 빼면 나머지가 최신순으로 남아 뒤죽박죽이 됨.
