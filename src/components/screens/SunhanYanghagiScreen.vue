@@ -563,11 +563,12 @@ function hasWelcomeMsg(p) { return p.tmLogs?.some(l => l.category === 'welcomeMs
 // 그걸 뺀 나머지가 없어야 "아직 실제 통화기록 없음"으로 침(예약 시간 표시용).
 function hasRealLog(p) { return p.tmLogs?.some(l => l.label !== '유입') }
 
-// 펼친 로그 목록에서는 "누가 유입했는지"가 통화기록보다 먼저 보이도록 맨 위로 고정
-// (p.tmLogs 자체의 정렬(최신순)은 배지/요약 로직이 [0]=최신에 의존하니 그대로 둠).
+// 펼친 로그 목록은 오래된순(유입 → ... → 최신)으로 보여줘야 위에서 아래로 읽었을 때
+// 시간순이 맞음 — label로 유입만 앞으로 빼면 나머지가 최신순으로 남아 뒤죽박죽이 됨.
+// p.tmLogs 자체의 정렬(최신순)은 배지/요약 로직이 [0]=최신에 의존하니 그대로 두고,
+// 펼친 목록에서만 뒤집어서 보여줌.
 function orderedLogs(logs) {
-  if (!logs?.length) return []
-  return [...logs.filter(l => l.label === '유입'), ...logs.filter(l => l.label !== '유입')]
+  return [...(logs || [])].reverse()
 }
 
 // ── 선문자 ────────────────────────────────────────────────────────────
