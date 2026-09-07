@@ -352,10 +352,10 @@ const doneList = computed(() => {
   return base.filter(p => prospectEffTeam(p) === activeTab.value)
 })
 
+const rejRows = ref([])
 const rejectedList = computed(() => {
-  const base = shedProspects.value.filter(p => p.isDropped && p.droppedReason === '반려')
-  if (activeTab.value === '전체') return base
-  return base.filter(p => prospectEffTeam(p) === activeTab.value)
+  if (activeTab.value === '전체') return rejRows.value
+  return rejRows.value.filter(r => rowEffTeam(r) === activeTab.value)
 })
 
 const tabUnregCount = computed(() => {
@@ -477,6 +477,19 @@ async function load() {
     })) : []
   } catch {}
   asLoading.value = false
+
+  // 반려된 큐 항목 (회생 가능)
+  try {
+    const rejRes = await callApiPromise('/api/shed/rejected-list').catch(() => null)
+    rejRows.value = rejRes?.success ? (rejRes.list || []).map(r => ({
+      ...r,
+      event: r.sourceLink,
+      region: r.regionName,
+      rest: r.mbti,
+      tmLocation: r.location,
+      introducer: r.introducerName,
+    })) : []
+  } catch {}
 }
 
 // ── 통화 폴링 ─────────────────────────────────────────────────────────
@@ -876,12 +889,12 @@ async function doReject(asRow) {
   })
 }
 
-async function doRevive(p) {
+async function doRevive(row) {
   if (saving.value) return
-  showAppConfirm(`${p.name} 을(를) 회생시킬까요?\n미등록 목록으로 복귀됩니다.`, async (ok) => {
+  showAppConfirm(`${row.name} 을(를) 회생시킬까요?\n이관받기 목록으로 복귀됩니다.`, async (ok) => {
     if (!ok) return
     saving.value = true
-    const r = await callApiPromise('/api/shed-revive', { docId: p.docId })
+    const r = await callApiPromise('/api/shed-pending-revive', { intakeId: row.intakeId })
     saving.value = false
     if (r?.success) { showToast('회생 완료!'); load() }
     else showAppAlert(r?.message || '회생 실패')
@@ -984,23 +997,28 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
           </div>
         </div>
 
-        <!-- 반려 목록 -->
+        <!-- 반려 목록 (이관받기에서 반려한 큐 항목 — 되살리면 이관받기 목록으로 복귀) -->
         <template v-if="showRejected">
           <div v-if="!rejectedList.length" class="sy-empty-sub">반려된 건이 없어요</div>
           <div v-else class="sy-cards">
-            <div v-for="p in rejectedList" :key="p.docId" class="sy-card unreg" style="opacity:0.7">
+            <div v-for="r in rejectedList" :key="r.intakeId" class="sy-card unreg" style="opacity:0.7">
               <div class="sy-card-header">
-                <span class="sy-name">{{ p.name }}</span>
-                <span v-if="p.age" class="sy-age">({{ p.age }}세)</span>
-                <span v-if="p.createdTs" class="sy-inflow-ts">{{ fmtInflowTs(p.createdTs) }}</span>
-                <span class="sy-link-badge sy-intr-badge">{{ p.team + '팀' }}</span>
+                <span class="sy-name">{{ r.name }}</span>
+                <span v-if="r.age" class="sy-age">({{ r.age }}세)</span>
+                <span v-if="r.createdAt" class="sy-inflow-ts">{{ fmtInflowTs(r.createdAt) }}</span>
+                <span class="sy-link-badge sy-intr-badge">{{ rowEffTeam(r) }}</span>
                 <span class="sy-final-badge">반려</span>
               </div>
-              <div v-if="p.region || p.shedMeta?.env || p.shedMeta?.reaction || p.shedMeta?.mbti" class="sy-meta sy-meta-pipe">
-                {{ [p.region && `지역 : ${p.region}`, p.shedMeta?.mbti && `MBTI : ${p.shedMeta.mbti}`, p.shedMeta?.env && `환경 : ${p.shedMeta.env}`, p.shedMeta?.reaction && `반응 : ${p.shedMeta.reaction}`].filter(Boolean).join(' | ') }}
+              <div v-if="r.region || r.env || r.reaction || r.introducer || r.tmLocation || r.rest" class="sy-fields">
+                <span v-if="r.region" class="sy-field"><b>지역</b>{{ r.region }}</span>
+                <span v-if="r.rest" class="sy-field"><b>MBTI</b>{{ r.rest }}</span>
+                <span v-if="r.env" class="sy-field"><b>환경</b>{{ r.env }}</span>
+                <span v-if="r.reaction" class="sy-field"><b>반응</b>{{ r.reaction }}</span>
+                <span v-if="r.introducer" class="sy-field"><b>유입</b>{{ r.introducer }}</span>
+                <span v-if="r.tmLocation" class="sy-field"><b>유입장소</b>{{ r.tmLocation }}</span>
               </div>
               <div class="sy-actions" style="margin-top:6px;">
-                <button class="ab reg" @click="doRevive(p)" :disabled="saving">회생하기</button>
+                <button class="ab reg" @click="doRevive(r)" :disabled="saving">회생하기</button>
               </div>
             </div>
           </div>
