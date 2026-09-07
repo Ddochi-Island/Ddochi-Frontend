@@ -806,7 +806,7 @@ function copyProspect(p) {
   } else if (p.noAnswerCount) {
     lines.push(`안받음: ${p.noAnswerCount}회`)
   }
-  if (p.tmLogs?.[0]?.line) lines.push(`최근기록: ${p.tmLogs[0].line}`)
+  if (p.tmLogs?.[0]?.label) lines.push(`최근기록: ${p.tmLogs[0].label} (${fmtInflowTs(p.tmLogs[0].createdAt)})`)
   navigator.clipboard.writeText(lines.join('\n')).catch(() => {})
   showToast('📋 복사됨')
 }
@@ -1146,7 +1146,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
               <!-- TM 로그 (통화중 아니면 최근 1줄만, 통화중이면 스크롤) -->
               <div v-if="p.tmLogs?.length" class="sy-logs" :class="{ expanded: isMyCalling(p) }">
                 <div v-for="log in (isMyCalling(p) ? p.tmLogs : p.tmLogs.slice(0, 1))" :key="log.id" class="sy-log-row">
-                  <span class="sy-log-line">{{ log.line }}</span>
+                  <span class="sy-log-line">{{ log.label }} · {{ fmtInflowTs(log.createdAt) }}</span>
                   <button class="sy-log-del" @click="deleteLog(p, log)" title="삭제">×</button>
                 </div>
               </div>
@@ -1280,7 +1280,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
               </div>
               <div v-if="callingProspect.tmLogs?.length" class="sy-logs expanded">
                 <div v-for="log in callingProspect.tmLogs" :key="log.id" class="sy-log-row">
-                  <span class="sy-log-line">{{ log.line }}</span>
+                  <span class="sy-log-line">{{ log.label }} · {{ fmtInflowTs(log.createdAt) }}</span>
                   <button class="sy-log-del" @click="deleteLog(callingProspect, log)">×</button>
                 </div>
               </div>
