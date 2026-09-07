@@ -446,6 +446,7 @@ async function load() {
       createdTs: p.createdAt,
       reservedAt: p.inflowDetails?.tmReservedAt,
       shedMeta: {
+        mbti: p.mbti,
         env: p.inflowDetails?.env,
         reaction: p.inflowDetails?.reaction,
         introducer: p.inflowDetails?.introducerName,
@@ -1291,10 +1292,15 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <button class="sy-script-toggle" :class="{ on: scriptOpen[callingProspect.docId] }" @click="toggleScript(callingProspect.docId)">📝 스크립트</button>
                 <span class="sy-link-badge sy-intr-badge">{{ callingProspect.team + '팀' }}</span>
               </div>
-              <div class="sy-meta sy-meta-pipe">
+              <div class="sy-meta">
                 <span v-if="callingProspect.tmLogs?.[0]?.category === 'tmReserved' || (!hasRealLog(callingProspect) && callingProspect.reservedAt)" class="meta-reserved">{{ callingProspect.reservedAt ? formatReservedAt(callingProspect.reservedAt) : '예약됨' }}</span>
                 <span v-else-if="callingProspect.noAnswerCount" class="meta-warn">안받음 {{ callingProspect.noAnswerCount }}회</span>
-                {{ [ (callingProspect.region || callingProspect.shedMeta?.address) && `지역: ${[callingProspect.region, callingProspect.shedMeta?.address].filter(Boolean).join(' · ')}`, callingProspect.shedMeta?.mbti && `MBTI: ${callingProspect.shedMeta.mbti}`, callingProspect.shedMeta?.env && `환경: ${callingProspect.shedMeta.env}`, callingProspect.shedMeta?.reaction && `반응: ${callingProspect.shedMeta.reaction}`, callingProspect.shedMeta?.introducer && `유입: ${callingProspect.shedMeta.introducer}`, callingProspect.shedMeta?.tmLocation && `유입장소: ${callingProspect.shedMeta.tmLocation}` ].filter(Boolean).join('  |  ') }}
+                <span v-if="callingProspect.region" class="sy-field"><b>지역</b>{{ callingProspect.region }}</span>
+                <span v-if="callingProspect.shedMeta?.mbti" class="sy-field"><b>MBTI</b>{{ callingProspect.shedMeta.mbti }}</span>
+                <span v-if="callingProspect.shedMeta?.env" class="sy-field"><b>환경</b>{{ callingProspect.shedMeta.env }}</span>
+                <span v-if="callingProspect.shedMeta?.reaction" class="sy-field"><b>반응</b>{{ callingProspect.shedMeta.reaction }}</span>
+                <span v-if="callingProspect.shedMeta?.introducer" class="sy-field"><b>유입</b>{{ callingProspect.shedMeta.introducer }}</span>
+                <span v-if="callingProspect.shedMeta?.tmLocation" class="sy-field"><b>유입장소</b>{{ callingProspect.shedMeta.tmLocation }}</span>
               </div>
               <div v-if="callingProspect.tmLogs?.length" class="sy-logs expanded">
                 <div v-for="log in orderedLogs(callingProspect.tmLogs)" :key="log.id" class="sy-log-row">
