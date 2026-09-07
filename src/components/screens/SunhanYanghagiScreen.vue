@@ -940,7 +940,14 @@ function isLongTermReserved(p) {
 // TM_STATUS가 없어져서(스펙 원안 복귀) reservedAt 유무·잔여시간만으로 판단 —
 // 실제로도 이 배지는 예약됨/장기 둘만 의미 있게 쓰이고 있었음(하기전/진행가능/
 // 끝난거는 각각 필터링되거나 다른 섹션으로 빠져서 여기 안 보임).
-function displayTmStatus(p) { return p.reservedAt ? (isLongTermReserved(p) ? 'longTerm' : 'reserved') : null }
+// 예약시간 메타줄과 같은 기준: 실제 통화기록이 생기면(그 결과가 재예약이 아닌 한)
+// 옛 예약은 더 이상 유효하지 않은 걸로 봄 — 안 그러면 안받음/거절 처리해도
+// "예약됨" 배지만 계속 남는 모순이 생김.
+function displayTmStatus(p) {
+  if (!p.reservedAt) return null
+  if (hasRealLog(p) && p.tmLogs?.[0]?.category !== 'tmReserved') return null
+  return isLongTermReserved(p) ? 'longTerm' : 'reserved'
+}
 function formatReservedAt(s) {
   // Django(:8000)는 "YYYY-MM-DDTHH:MM:SSZ" ISO 형식으로 내려줌 — 옛 백엔드의
   // "YYYY-MM-DD HH:MM"(공백 구분) 형식도 같이 지원
