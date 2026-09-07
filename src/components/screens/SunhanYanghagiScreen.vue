@@ -560,6 +560,13 @@ function isOtherCalling(p) { return !!callStatus[p.docId.toUpperCase()] && !isMy
 function callerOf(p) { return callStatus[p.docId.toUpperCase()]?.callerName || '' }
 function hasWelcomeMsg(p) { return p.tmLogs?.some(l => l.category === 'welcomeMsg') }
 
+// 펼친 로그 목록에서는 "누가 유입했는지"가 통화기록보다 먼저 보이도록 맨 위로 고정
+// (p.tmLogs 자체의 정렬(최신순)은 배지/요약 로직이 [0]=최신에 의존하니 그대로 둠).
+function orderedLogs(logs) {
+  if (!logs?.length) return []
+  return [...logs.filter(l => l.label === '유입'), ...logs.filter(l => l.label !== '유입')]
+}
+
 // ── 선문자 ────────────────────────────────────────────────────────────
 function openWelcomeMsg(p) {
   welcomeMsgTarget.value = { docId: p.docId, phone: p.phone, name: p.name, age: p.age }
@@ -806,7 +813,7 @@ function copyProspect(p) {
   } else if (p.noAnswerCount) {
     lines.push(`안받음: ${p.noAnswerCount}회`)
   }
-  if (p.tmLogs?.[0]?.label) lines.push(`최근기록: ${p.tmLogs[0].label} (${fmtInflowTs(p.tmLogs[0].createdAt)})`)
+  if (p.tmLogs?.[0]?.label) lines.push(`최근기록: ${fmtInflowTs(p.tmLogs[0].createdAt)} · ${p.tmLogs[0].label} · ${p.tmLogs[0].actorName || '-'}`)
   navigator.clipboard.writeText(lines.join('\n')).catch(() => {})
   showToast('📋 복사됨')
 }
@@ -1145,8 +1152,8 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
 
               <!-- TM 로그 (통화중 아니면 최근 1줄만, 통화중이면 스크롤) -->
               <div v-if="p.tmLogs?.length" class="sy-logs" :class="{ expanded: isMyCalling(p) }">
-                <div v-for="log in (isMyCalling(p) ? p.tmLogs : p.tmLogs.slice(0, 1))" :key="log.id" class="sy-log-row">
-                  <span class="sy-log-line">{{ log.label }} · {{ fmtInflowTs(log.createdAt) }}</span>
+                <div v-for="log in (isMyCalling(p) ? orderedLogs(p.tmLogs) : p.tmLogs.slice(0, 1))" :key="log.id" class="sy-log-row">
+                  <span class="sy-log-line">{{ fmtInflowTs(log.createdAt) }} · {{ log.label }} · {{ log.actorName || '-' }}</span>
                   <button class="sy-log-del" @click="deleteLog(p, log)" title="삭제">×</button>
                 </div>
               </div>
@@ -1279,8 +1286,8 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 {{ [ (callingProspect.region || callingProspect.shedMeta?.address) && `지역: ${[callingProspect.region, callingProspect.shedMeta?.address].filter(Boolean).join(' · ')}`, callingProspect.shedMeta?.mbti && `MBTI: ${callingProspect.shedMeta.mbti}`, callingProspect.shedMeta?.env && `환경: ${callingProspect.shedMeta.env}`, callingProspect.shedMeta?.reaction && `반응: ${callingProspect.shedMeta.reaction}`, callingProspect.shedMeta?.introducer && `유입: ${callingProspect.shedMeta.introducer}`, callingProspect.shedMeta?.tmLocation && `유입장소: ${callingProspect.shedMeta.tmLocation}` ].filter(Boolean).join('  |  ') }}
               </div>
               <div v-if="callingProspect.tmLogs?.length" class="sy-logs expanded">
-                <div v-for="log in callingProspect.tmLogs" :key="log.id" class="sy-log-row">
-                  <span class="sy-log-line">{{ log.label }} · {{ fmtInflowTs(log.createdAt) }}</span>
+                <div v-for="log in orderedLogs(callingProspect.tmLogs)" :key="log.id" class="sy-log-row">
+                  <span class="sy-log-line">{{ fmtInflowTs(log.createdAt) }} · {{ log.label }} · {{ log.actorName || '-' }}</span>
                   <button class="sy-log-del" @click="deleteLog(callingProspect, log)">×</button>
                 </div>
               </div>
