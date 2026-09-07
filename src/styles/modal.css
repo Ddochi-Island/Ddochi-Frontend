@@ -83,6 +83,27 @@
     white-space: pre-wrap;
 }
 
+/* appConfirm/appAlert 메시지 내 상세 정보 그리드 (v-html로 렌더되므로 scoped CSS가 안 먹어서 전역에 둠) */
+.confirm-head {
+    font-size: 16px; font-weight: bold; color: #333;
+    margin-bottom: 10px;
+}
+.confirm-age { font-size: 13px; font-weight: normal; color: #999; }
+.confirm-warn {
+    font-size: 13px; font-weight: bold; color: #e53935;
+    margin-bottom: 10px;
+}
+.confirm-grid {
+    display: grid; grid-template-columns: auto 1fr;
+    gap: 6px 10px; margin-bottom: 14px;
+}
+.confirm-grid .k {
+    font-size: 12px; font-weight: bold; color: #689f38;
+    white-space: nowrap;
+}
+.confirm-grid .v { font-size: 13px; color: #333; word-break: break-word; }
+.confirm-q { font-size: 14px; font-weight: bold; color: #333; }
+
 /* 팝업 내 팝업 시 배경 유지 효과 */
 .modal-hidden-visual {
     opacity: 0;

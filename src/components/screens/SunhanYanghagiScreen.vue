@@ -470,6 +470,7 @@ async function load() {
       prospectId: r.intakeId,
       event: r.sourceLink,
       region: r.regionName,
+      rest: r.mbti,
       tmLocation: r.location,
       introducer: r.introducerName,
     })) : []
@@ -803,23 +804,30 @@ function fmtInflowTs(val) {
   return ''
 }
 
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+}
+
 async function doRegister(asRow) {
   if (saving.value) return
 
   const isDup = asRow.numberStatus === 'pending_dup'
+  const fields = [
+    ['연락처', asRow.phone],
+    ['지역', asRow.region],
+    ['MBTI', asRow.rest],
+    ['환경', asRow.env],
+    ['반응', asRow.reaction],
+    ['유입자', asRow.introducer],
+    ['유입장소', asRow.tmLocation],
+  ].filter(([, v]) => v)
+
   const msg = [
-    isDup ? '⚠️ 이미 ddochi에 등록된 번호예요.' : '',
-    `[${asRow.event}팀] ${asRow.name}${asRow.age ? ` (${asRow.age}세)` : ''}`,
-    `연락처 : ${asRow.phone || '-'}`,
-    `지역   : ${asRow.region || '-'}`,
-    asRow.rest ? `MBTI   : ${asRow.rest}` : '',
-    `환경   : ${asRow.env || '-'}`,
-    `반응   : ${asRow.reaction || '-'}`,
-    `유입자 : ${asRow.introducer || '-'}`,
-    asRow.tmLocation ? `유입장소 : ${asRow.tmLocation}` : '',
-    '',
-    isDup ? '그래도 이관받을까요?' : '이관받을까요?',
-  ].filter(l => l !== '').join('\n')
+    isDup ? '<div class="confirm-warn">⚠️ 이미 ddochi에 등록된 번호예요.</div>' : '',
+    `<div class="confirm-head">[${escapeHtml(asRow.event)}팀] ${escapeHtml(asRow.name)}${asRow.age ? ` <span class="confirm-age">(${escapeHtml(asRow.age)}세)</span>` : ''}</div>`,
+    '<div class="confirm-grid">' + fields.map(([k, v]) => `<span class="k">${k}</span><span class="v">${escapeHtml(v)}</span>`).join('') + '</div>',
+    `<div class="confirm-q">${isDup ? '그래도 이관받을까요?' : '이관받을까요?'}</div>`,
+  ].filter(Boolean).join('')
 
   showAppConfirm(msg, async (ok) => {
     if (!ok) return
@@ -1009,8 +1017,13 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span v-if="r.numberStatus === 'pending_dup'" class="sy-link-badge" style="background:#ff5252;color:#fff;">중복</span>
                 <span class="sy-link-badge sy-intr-badge">{{ introducerTeamByName[r.introducer] || (r.event + '팀') }}</span>
               </div>
-              <div v-if="r.region || r.env || r.reaction || r.introducer || r.tmLocation || r.rest" class="sy-meta sy-meta-pipe">
-                {{ [r.region && `지역 : ${r.region}`, r.rest && `MBTI : ${r.rest}`, r.env && `환경 : ${r.env}`, r.reaction && `반응 : ${r.reaction}`, r.introducer && `유입 : ${r.introducer}`, r.tmLocation && `유입장소 : ${r.tmLocation}`].filter(Boolean).join(' | ') }}
+              <div v-if="r.region || r.env || r.reaction || r.introducer || r.tmLocation || r.rest" class="sy-fields">
+                <span v-if="r.region" class="sy-field"><b>지역</b>{{ r.region }}</span>
+                <span v-if="r.rest" class="sy-field"><b>MBTI</b>{{ r.rest }}</span>
+                <span v-if="r.env" class="sy-field"><b>환경</b>{{ r.env }}</span>
+                <span v-if="r.reaction" class="sy-field"><b>반응</b>{{ r.reaction }}</span>
+                <span v-if="r.introducer" class="sy-field"><b>유입</b>{{ r.introducer }}</span>
+                <span v-if="r.tmLocation" class="sy-field"><b>유입장소</b>{{ r.tmLocation }}</span>
               </div>
               <div class="sy-actions" style="margin-top:6px;">
                 <button class="ab reg" @click="doRegister(r)" :disabled="saving">이관받기</button>
@@ -1611,6 +1624,21 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
   display: flex; flex-wrap: wrap; gap: 8px;
   font-size: 11px; color: #666; margin-bottom: 6px;
   font-family: "Noto Sans KR", Arial, sans-serif;
+}
+
+/* 신청자 상세 필드 — 라벨을 칩으로 분리해서 긴 값도 줄 구분이 명확하게 보이도록 */
+.sy-fields {
+  display: flex; flex-wrap: wrap; gap: 5px 10px;
+  margin-bottom: 6px;
+}
+.sy-field {
+  display: inline-flex; align-items: baseline; gap: 5px;
+  font-size: 12px; color: #444; max-width: 100%;
+  font-family: "Noto Sans KR", Arial, sans-serif;
+}
+.sy-field b {
+  flex-shrink: 0; font-size: 10.5px; font-weight: bold; color: #558b2f;
+  background: #f1f8e9; padding: 1px 6px; border-radius: 5px;
 }
 .meta-warn { color: #e53935; font-weight: bold; }
 .meta-reserved { color: #7B1FA2; font-weight: bold; }
