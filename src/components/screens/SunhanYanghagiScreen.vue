@@ -466,6 +466,7 @@ async function load() {
       event: r.sourceLink,
       region: r.regionName,
       tmLocation: r.location,
+      introducer: r.introducerName,
     })) : []
   } catch {}
   asLoading.value = false
@@ -882,12 +883,15 @@ function isFinal(p) { return p.isDropped || p.status === 'meetingFix' || p.tmSta
 // 예약일이 지금부터 72시간 넘게 남았으면 '장기' — reservedAt 기준으로 매 로드 시점마다 재계산
 // (별도 DB 상태/크론 없음 — 화면 새로고침할 때마다 항상 최신으로 맞음)
 function isLongTermReserved(p) {
-  if (p.tmStatus !== 'reserved' || !p.reservedAt) return false
+  if (!p.reservedAt) return false
   const d = new Date(String(p.reservedAt).replace(' ', 'T'))
   if (Number.isNaN(d.getTime())) return false
   return d.getTime() - Date.now() > LONG_TERM_HOURS * 60 * 60 * 1000
 }
-function displayTmStatus(p) { return isLongTermReserved(p) ? 'longTerm' : p.tmStatus }
+// TM_STATUS가 없어져서(스펙 원안 복귀) reservedAt 유무·잔여시간만으로 판단 —
+// 실제로도 이 배지는 예약됨/장기 둘만 의미 있게 쓰이고 있었음(하기전/진행가능/
+// 끝난거는 각각 필터링되거나 다른 섹션으로 빠져서 여기 안 보임).
+function displayTmStatus(p) { return p.reservedAt ? (isLongTermReserved(p) ? 'longTerm' : 'reserved') : null }
 function formatReservedAt(s) {
   const m = String(s || '').match(/^\d{4}-(\d{2})-(\d{2}) (\d{2}:\d{2})/)
   return m ? `${m[1]}/${m[2]} ${m[3]}` : s
@@ -1072,7 +1076,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 </template>
                 <span v-if="p.createdTs" class="sy-inflow-ts">{{ fmtInflowTs(p.createdTs) }}</span>
                 <span class="sy-link-badge sy-intr-badge">{{ p.team + '팀' }}</span>
-                <span v-if="displayTmStatus(p) !== 'active'" class="sy-tm-badge" :style="{ background: TM_STATUS_COLOR[displayTmStatus(p)] || '#757575' }">
+                <span v-if="displayTmStatus(p)" class="sy-tm-badge" :style="{ background: TM_STATUS_COLOR[displayTmStatus(p)] || '#757575' }">
                   {{ TM_STATUS_LABEL[displayTmStatus(p)] || displayTmStatus(p) }}
                 </span>
                 <span v-if="isFinal(p)" class="sy-final-badge">{{ finalLabel(p) }}</span>
