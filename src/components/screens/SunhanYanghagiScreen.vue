@@ -50,7 +50,6 @@ const shedProspects = computed(() => {
   )
 })
 const asRows = ref([])
-const introducerTeamByName = ref({})
 
 const filteredAsRows = computed(() => {
   return asRows.value.filter(r =>
@@ -490,6 +489,19 @@ async function load() {
       introducer: r.introducerName,
     })) : []
   } catch {}
+
+  // 유입자 실제 소속팀으로 이관 — shed 링크 번호(SOURCE_LINK)는 신청 당시 고정값이라,
+  // 유입자가 다른 팀 소속이면 그 팀 화면/탭에 뜨도록 event를 실제 팀으로 덮어씀.
+  const names = [...new Set([...asRows.value, ...rejRows.value].map(r => r.introducer).filter(Boolean))]
+  if (names.length) {
+    try {
+      const teamsRes = await callApiPromise('/api/shed/lookup-teams', { names }).catch(() => null)
+      const teams = teamsRes?.ok ? teamsRes.teams || {} : {}
+      for (const r of [...asRows.value, ...rejRows.value]) {
+        if (teams[r.introducer]) r.event = teams[r.introducer]
+      }
+    } catch {}
+  }
 }
 
 // ── 통화 폴링 ─────────────────────────────────────────────────────────
@@ -1034,7 +1046,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span v-if="r.age" class="sy-age">({{ r.age }}세)</span>
                 <span v-if="r.timestamp" class="sy-inflow-ts">{{ fmtInflowTs(r.timestamp) }}</span>
                 <span v-if="r.numberStatus === 'pending_dup'" class="sy-link-badge" style="background:#ff5252;color:#fff;">중복</span>
-                <span class="sy-link-badge sy-intr-badge">{{ introducerTeamByName[r.introducer] || (r.event + '팀') }}</span>
+                <span class="sy-link-badge sy-intr-badge">{{ rowEffTeam(r) }}</span>
               </div>
               <div v-if="r.region || r.env || r.reaction || r.introducer || r.tmLocation || r.rest" class="sy-fields">
                 <span v-if="r.region" class="sy-field"><b>지역</b>{{ r.region }}</span>
