@@ -462,6 +462,7 @@ async function load() {
         env: p.inflowDetails?.env,
         reaction: p.inflowDetails?.reaction,
         introducer: p.inflowDetails?.introducerName,
+        helperNames: p.inflowDetails?.helperNames,
         tmLocation: p.inflowDetails?.location,
       },
       tmLogs: p.timeline || [],
@@ -836,6 +837,7 @@ function copyProspect(p) {
   if (p.shedMeta?.env) lines.push(`환경: ${p.shedMeta.env}`)
   if (p.shedMeta?.reaction) lines.push(`반응: ${p.shedMeta.reaction}`)
   if (p.shedMeta?.introducer) lines.push(`유입: ${p.shedMeta.introducer}`)
+  if (p.shedMeta?.helperNames) lines.push(`조력자: ${p.shedMeta.helperNames}`)
   if ((p.tmLogs?.[0]?.category === 'tmReserved' || !hasRealLog(p)) && p.reservedAt) {
     lines.push(`예약: ${p.reservedAt}`)
   } else if (p.noAnswerCount) {
@@ -880,6 +882,7 @@ async function doRegister(asRow) {
     ['환경', asRow.env],
     ['반응', asRow.reaction],
     ['유입자', asRow.introducer],
+    ['조력자', asRow.helperNames],
     ['유입장소', asRow.tmLocation],
   ].filter(([, v]) => v)
 
@@ -1069,6 +1072,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span v-if="r.env" class="sy-field"><b>환경</b>{{ r.env }}</span>
                 <span v-if="r.reaction" class="sy-field"><b>반응</b>{{ r.reaction }}</span>
                 <span v-if="r.introducer" class="sy-field"><b>유입</b>{{ r.introducer }}</span>
+                <span v-if="r.helperNames" class="sy-field"><b>조력자</b>{{ r.helperNames }}</span>
                 <span v-if="r.tmLocation" class="sy-field"><b>유입장소</b>{{ r.tmLocation }}</span>
               </div>
               <div class="sy-actions" style="margin-top:6px;">
@@ -1096,6 +1100,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span v-if="r.env" class="sy-field"><b>환경</b>{{ r.env }}</span>
                 <span v-if="r.reaction" class="sy-field"><b>반응</b>{{ r.reaction }}</span>
                 <span v-if="r.introducer" class="sy-field"><b>유입</b>{{ r.introducer }}</span>
+                <span v-if="r.helperNames" class="sy-field"><b>조력자</b>{{ r.helperNames }}</span>
                 <span v-if="r.tmLocation" class="sy-field"><b>유입장소</b>{{ r.tmLocation }}</span>
               </div>
               <div class="sy-actions" style="margin-top:6px;">
@@ -1182,6 +1187,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span v-if="p.shedMeta?.env" class="sy-field"><b>환경</b>{{ p.shedMeta.env }}</span>
                 <span v-if="p.shedMeta?.reaction" class="sy-field"><b>반응</b>{{ p.shedMeta.reaction }}</span>
                 <span v-if="p.shedMeta?.introducer" class="sy-field"><b>유입</b>{{ p.shedMeta.introducer }}</span>
+                <span v-if="p.shedMeta?.helperNames" class="sy-field"><b>조력자</b>{{ p.shedMeta.helperNames }}</span>
                 <span v-if="p.shedMeta?.tmLocation" class="sy-field"><b>유입장소</b>{{ p.shedMeta.tmLocation }}</span>
               </div>
 
@@ -1324,6 +1330,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span v-if="callingProspect.shedMeta?.env" class="sy-field"><b>환경</b>{{ callingProspect.shedMeta.env }}</span>
                 <span v-if="callingProspect.shedMeta?.reaction" class="sy-field"><b>반응</b>{{ callingProspect.shedMeta.reaction }}</span>
                 <span v-if="callingProspect.shedMeta?.introducer" class="sy-field"><b>유입</b>{{ callingProspect.shedMeta.introducer }}</span>
+                <span v-if="callingProspect.shedMeta?.helperNames" class="sy-field"><b>조력자</b>{{ callingProspect.shedMeta.helperNames }}</span>
                 <span v-if="callingProspect.shedMeta?.tmLocation" class="sy-field"><b>유입장소</b>{{ callingProspect.shedMeta.tmLocation }}</span>
               </div>
               <div v-if="callingProspect.tmLogs?.length" class="sy-logs expanded">
