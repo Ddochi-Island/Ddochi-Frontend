@@ -1185,9 +1185,10 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span v-if="p.shedMeta?.tmLocation" class="sy-field"><b>유입장소</b>{{ p.shedMeta.tmLocation }}</span>
               </div>
 
-              <!-- TM 로그 (통화중 아니면 최근 1줄만, 통화중이면 스크롤) -->
-              <div v-if="p.tmLogs?.length" class="sy-logs" :class="{ expanded: isMyCalling(p) }">
-                <div v-for="log in (isMyCalling(p) ? orderedLogs(p.tmLogs) : p.tmLogs.slice(0, 1))" :key="log.id" class="sy-log-row">
+              <!-- TM 로그 — 데스크탑은 우측 패널에 전체가 이미 보이니 왼쪽 카드는 항상 최근
+                   1줄만. 모바일은 우측 패널이 없어서 통화중일 때만 전체 스크롤로 펼침. -->
+              <div v-if="p.tmLogs?.length" class="sy-logs" :class="{ expanded: isMyCalling(p) && !isDesktop }">
+                <div v-for="log in (isMyCalling(p) && !isDesktop ? orderedLogs(p.tmLogs) : p.tmLogs.slice(0, 1))" :key="log.id" class="sy-log-row">
                   <span class="sy-log-line">{{ fmtInflowTs(log.createdAt) }} · {{ log.label }} · {{ log.actorName || '-' }}</span>
                   <button class="sy-log-del" @click="deleteLog(p, log)" title="삭제">×</button>
                 </div>
