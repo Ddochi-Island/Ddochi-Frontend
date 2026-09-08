@@ -96,9 +96,21 @@ const NOTE_TAGS = [
   '되고싶은모습', '인성', '경계', '약복용',
 ]
 
-const BIHAP_OPTS  = ['환경비합', '거리비합', '나이비합', '인성비합', '정신질환', '중복섭외']
-const GEOJEOL_OPTS = ['N번 안받음', '수신거절', '의심/경계', '거리부담', '대면부담', '메리트부족']
-const MUYOU_OPTS  = ['중복신청', '장난/비방', '본인아님']
+// TM_SUB_REASON_CODES(sql/10_tm_result_codes.sql)와 1:1로 맞춘 코드/라벨 — 백엔드가
+// SUB_REASON을 (RESULT_CODE, SUB_CODE) FK로 검증하므로 여기서도 code를 그대로 보냄.
+const BIHAP_OPTS   = [
+  { code: 'ENV_UNFIT', label: '환경비합' }, { code: 'DISTANCE_UNFIT', label: '거리비합' },
+  { code: 'AGE_UNFIT', label: '나이비합' }, { code: 'PERSONALITY_UNFIT', label: '인성비합' },
+  { code: 'MENTAL_HEALTH', label: '정신질환' }, { code: 'DUPLICATE', label: '중복섭외' },
+]
+const GEOJEOL_OPTS = [
+  { code: 'N_REJECT', label: 'N번 안받음' }, { code: 'OPT_OUT', label: '수신거절' },
+  { code: 'SUSPICIOUS', label: '의심/경계' }, { code: 'DISTANCE_BURDEN', label: '거리부담' },
+  { code: 'FACE_TO_FACE_BURDEN', label: '대면부담' }, { code: 'NO_BENEFIT', label: '메리트부족' },
+]
+const MUYOU_OPTS   = [
+  { code: 'DUPLICATE_APPLY', label: '중복신청' }, { code: 'PRANK', label: '장난/비방' }, { code: 'NOT_SELF', label: '본인아님' },
+]
 
 // ── 안받음 팝업 ───────────────────────────────────────────────────────
 const noAnswerMsgTarget = ref(null)   // { docId, phone, name, age }
@@ -753,6 +765,16 @@ async function submitGeojeol(p, reason) {
   else showAppAlert(r?.message || '오류')
 }
 
+async function submitMuyou(p, reason) {
+  if (saving.value) return
+  saving.value = true
+  const r = await callApiPromise('/api/submit-result', { data: { rowIndex: p.docId, logType: '무효처리', logContent: reason } })
+  saving.value = false
+  closeAction()
+  if (r?.success) { showToast('무효처리!'); if (isMyCalling(p)) await endCall(); load() }
+  else showAppAlert(r?.message || '오류')
+}
+
 async function deleteLog(p, log) {
   showAppConfirm('이 로그를 삭제할까요?', async (ok) => {
     if (!ok) return
@@ -1194,8 +1216,8 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <!-- 비합 서브사유 -->
                 <template v-else-if="actionTarget.type === 'bihap'">
                   <div class="sy-subreasons">
-                    <button v-for="opt in BIHAP_OPTS" :key="opt"
-                      class="ab sub" @click="submitBihap(p, opt)" :disabled="saving">{{ opt }}</button>
+                    <button v-for="opt in BIHAP_OPTS" :key="opt.code"
+                      class="ab sub" @click="submitBihap(p, opt.code)" :disabled="saving">{{ opt.label }}</button>
                     <button class="ab cancel" @click="closeAction">취소</button>
                   </div>
                 </template>
@@ -1203,8 +1225,8 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <!-- 거절 서브사유 -->
                 <template v-else-if="actionTarget.type === 'geojeol'">
                   <div class="sy-subreasons">
-                    <button v-for="opt in GEOJEOL_OPTS" :key="opt"
-                      class="ab sub" @click="submitGeojeol(p, opt)" :disabled="saving">{{ opt }}</button>
+                    <button v-for="opt in GEOJEOL_OPTS" :key="opt.code"
+                      class="ab sub" @click="submitGeojeol(p, opt.code)" :disabled="saving">{{ opt.label }}</button>
                     <button class="ab cancel" @click="closeAction">취소</button>
                   </div>
                 </template>
@@ -1212,8 +1234,8 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <!-- 무효 서브사유 -->
                 <template v-else-if="actionTarget.type === 'muyou'">
                   <div class="sy-subreasons">
-                    <button v-for="opt in MUYOU_OPTS" :key="opt"
-                      class="ab sub" @click="submitBihap(p, opt)" :disabled="saving">{{ opt }}</button>
+                    <button v-for="opt in MUYOU_OPTS" :key="opt.code"
+                      class="ab sub" @click="submitMuyou(p, opt.code)" :disabled="saving">{{ opt.label }}</button>
                     <button class="ab cancel" @click="closeAction">취소</button>
                   </div>
                 </template>
@@ -1325,19 +1347,19 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 </template>
                 <template v-else-if="actionTarget.type === 'bihap'">
                   <div class="sy-subreasons">
-                    <button v-for="opt in BIHAP_OPTS" :key="opt" class="ab sub" @click="submitBihap(callingProspect, opt)" :disabled="saving">{{ opt }}</button>
+                    <button v-for="opt in BIHAP_OPTS" :key="opt.code" class="ab sub" @click="submitBihap(callingProspect, opt.code)" :disabled="saving">{{ opt.label }}</button>
                     <button class="ab cancel" @click="closeAction">취소</button>
                   </div>
                 </template>
                 <template v-else-if="actionTarget.type === 'geojeol'">
                   <div class="sy-subreasons">
-                    <button v-for="opt in GEOJEOL_OPTS" :key="opt" class="ab sub" @click="submitGeojeol(callingProspect, opt)" :disabled="saving">{{ opt }}</button>
+                    <button v-for="opt in GEOJEOL_OPTS" :key="opt.code" class="ab sub" @click="submitGeojeol(callingProspect, opt.code)" :disabled="saving">{{ opt.label }}</button>
                     <button class="ab cancel" @click="closeAction">취소</button>
                   </div>
                 </template>
                 <template v-else-if="actionTarget.type === 'muyou'">
                   <div class="sy-subreasons">
-                    <button v-for="opt in MUYOU_OPTS" :key="opt" class="ab sub" @click="submitBihap(callingProspect, opt)" :disabled="saving">{{ opt }}</button>
+                    <button v-for="opt in MUYOU_OPTS" :key="opt.code" class="ab sub" @click="submitMuyou(callingProspect, opt.code)" :disabled="saving">{{ opt.label }}</button>
                     <button class="ab cancel" @click="closeAction">취소</button>
                   </div>
                 </template>
