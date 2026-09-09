@@ -73,7 +73,9 @@ function onAcInput(field, e) {
 }
 function closeAc(field) {
     setTimeout(() => {
-        acOpen.value = ''
+        // 다른 필드가 이 150ms 사이에 이미 열려있으면(예: A blur 직후 B focus) 그걸
+        // 건드리면 안 됨 — 무조건 초기화하면 방금 연 B의 드롭다운이 닫혀버림.
+        if (acOpen.value === field) acOpen.value = ''
         if (!acQuery[field]) return
         if (!acConfirmed[field]) {
             acStatus[field] = 'invalid'
