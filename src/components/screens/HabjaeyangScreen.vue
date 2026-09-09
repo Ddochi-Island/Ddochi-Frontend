@@ -118,7 +118,7 @@ onMounted(() => {
     if (tm.shedContext) {
         const ctx = tm.shedContext
         currentDocId.value = ctx.docId
-        applyFormData({ subName: ctx.name, contact: ctx.phone, age: ctx.age, nearSt: ctx.residence })
+        applyFormData({ subName: ctx.name, contact: ctx.phone, age: ctx.age, mbti: ctx.mbti })
     } else {
         initForm()
     }

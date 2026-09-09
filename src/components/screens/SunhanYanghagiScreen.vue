@@ -737,12 +737,15 @@ async function doMeetingFix(p) {
 }
 
 function goHabjaeyang(p) {
+  // 번호찾 때 이미 파악된 정보 중 합재양 폼과 겹치는 것만 넘김 — 환경/일정/반응처럼
+  // 개념이 애매하게 겹치는 건 자동 이관하면 오히려 혼동돼서 제외. 거주지 근처 역은
+  // 현재 수집 경로가 없어 항상 비어있으므로 이관 대상에서 제외.
   tm.shedContext = {
     docId: p.docId,
     name: p.name,
     phone: p.phone,
     age: p.age,
-    residence: p.region,
+    mbti: p.mbti,
     memo: noteText[p.docId] || p.tmNote?.text || '',
   }
   router.push({ name: 'habjaeyang' })
