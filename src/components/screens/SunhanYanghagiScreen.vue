@@ -352,7 +352,9 @@ const unregList = computed(() => {
 })
 
 const hjNeededList = computed(() => {
-  const base = shedProspects.value.filter(p => p.status === 'meetingFix' && !p.hasHabjaeyang)
+  // STAGE='만픽'은 만남픽스는 됐는데 합재양은 아직 안 쓴 상태 — 합재양을 쓰는 순간
+  // STAGE가 '합재양'으로 넘어가니(submit_result 쪽), 이 조건 하나로 충분함.
+  const base = shedProspects.value.filter(p => p.status === '만픽')
   if (activeTab.value === '전체') return base
   return base.filter(p => prospectEffTeam(p) === activeTab.value)
 })
@@ -956,7 +958,11 @@ const TM_STATUS_LABEL = { before:'하기전', active:'진행가능', reserved:'�
 const TM_STATUS_COLOR = { before:'#757575', active:'#7CB342', reserved:'#7B1FA2', longTerm:'#795548', done:'#388E3C' }
 const LONG_TERM_HOURS = 72
 
-function isFinal(p) { return p.isDropped || p.status === 'meetingFix' || p.tmStatus === 'done' }
+// 만남픽스(STAGE='만픽')는 티엠 관점에선 끝난 건이라 종료 처리 — 진행중 목록에서
+// 빠지고 "종료" 토글 안에서만 보임. 합재양 작성 전까지는 hjNeededList(Section C)에
+// 별도로도 노출돼서(합재양 작성하기 버튼과 함께) 놓치지 않게 함. 합재양을 쓰면
+// hasHabjaeyang=true가 되어 ddochiList에서 아예 빠지고 Section D(doneList)로 감.
+function isFinal(p) { return p.isDropped || p.status === '만픽' }
 // 예약일이 지금부터 72시간 넘게 남았으면 '장기' — reservedAt 기준으로 매 로드 시점마다 재계산
 // (별도 DB 상태/크론 없음 — 화면 새로고침할 때마다 항상 최신으로 맞음)
 function isLongTermReserved(p) {
@@ -983,9 +989,9 @@ function formatReservedAt(s) {
   return m ? `${m[1]}/${m[2]} ${m[3]}` : s
 }
 function finalLabel(p) {
-  if (p.status === 'meetingFix') return '만남픽스 ✓'
   if (p.isDropped) return p.droppedReason || '종료'
-  return '끝'
+  if (p.status === '만픽') return '만남픽스, 합재양 작성 필요'
+  return p.status || '끝'
 }
 
 // ── 라이프사이클 ──────────────────────────────────────────────────────
