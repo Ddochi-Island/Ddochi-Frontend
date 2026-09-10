@@ -119,6 +119,7 @@ onMounted(() => {
         const ctx = tm.shedContext
         currentDocId.value = ctx.docId
         applyFormData({ subName: ctx.name, contact: ctx.phone, age: ctx.age, mbti: ctx.mbti })
+        if (ctx.introducer) selectAc('inflow', ctx.introducer)
     } else {
         initForm()
     }

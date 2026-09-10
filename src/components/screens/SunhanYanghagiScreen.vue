@@ -746,6 +746,7 @@ function goHabjaeyang(p) {
     phone: p.phone,
     age: p.age,
     mbti: p.mbti,
+    introducer: p.shedMeta?.introducer,
     memo: noteText[p.docId] || p.tmNote?.text || '',
   }
   router.push({ name: 'habjaeyang' })
