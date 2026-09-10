@@ -699,18 +699,22 @@ onUnmounted(() => {
             @reject="rejectDuplicatePopup"
             @proceed="proceedDuplicatePopup"
         />
-    </div>
 
-    <GachaSlotOverlay
-        v-if="gachaResult"
-        :visible="gachaVisible"
-        :inflow-name="gachaResult.inflowName"
-        :tm-name="gachaResult.tmName"
-        :winner="gachaResult.winner"
-        :current-round="gachaResult.currentRound"
-        :next-prob="gachaResult.nextProb"
-        @done="onGachaDone"
-    />
+        <!-- teleport to="body"로 실제 표시 위치는 body 바로 아래라 여기 위치는 무관 —
+             단, .screen 밖(템플릿 루트 형제)에 두면 컴포넌트가 멀티 루트가 되어
+             App.vue의 <Transition mode="out-in">이 leave 완료를 못 잡고 멈춰버림
+             (다른 화면으로 못 넘어가고 빈 화면만 남는 버그) -> .screen 안으로 이동. -->
+        <GachaSlotOverlay
+            v-if="gachaResult"
+            :visible="gachaVisible"
+            :inflow-name="gachaResult.inflowName"
+            :tm-name="gachaResult.tmName"
+            :winner="gachaResult.winner"
+            :current-round="gachaResult.currentRound"
+            :next-prob="gachaResult.nextProb"
+            @done="onGachaDone"
+        />
+    </div>
 </template>
 
 <style scoped>
