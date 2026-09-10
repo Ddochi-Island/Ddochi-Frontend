@@ -119,6 +119,10 @@ onMounted(() => {
         const ctx = tm.shedContext
         currentDocId.value = ctx.docId
         applyFormData({ subName: ctx.name, contact: ctx.phone, age: ctx.age, mbti: ctx.mbti })
+        // applyFormData 안의 loadDraft()가 이 문서의 예전 임시저장(mbti 이관 기능
+        // 추가 전에 저장된 draft라 mbti가 비어있음)으로 방금 넣은 값을 덮어쓸 수 있어서,
+        // 번호찾 정보가 임시저장보다 우선하도록 다시 한번 덮어씀.
+        if (ctx.mbti) formData.mbti = ctx.mbti
         if (ctx.introducer) selectAc('inflow', ctx.introducer)
     } else {
         initForm()
