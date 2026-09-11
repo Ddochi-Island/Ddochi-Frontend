@@ -580,12 +580,10 @@ function hasWelcomeMsg(p) { return p.tmLogs?.some(l => l.category === 'welcomeMs
 // TM_LOGS 기반 로그만 셈(유입, 문자발송 같은 activity/inflow는 제외).
 function hasRealLog(p) { return p.tmLogs?.some(l => l.source === 'call') }
 
-// 펼친 로그 목록은 오래된순(유입 → ... → 최신)으로 보여줘야 위에서 아래로 읽었을 때
-// 시간순이 맞음 — label로 유입만 앞으로 빼면 나머지가 최신순으로 남아 뒤죽박죽이 됨.
-// p.tmLogs 자체의 정렬(최신순)은 배지/요약 로직이 [0]=최신에 의존하니 그대로 두고,
-// 펼친 목록에서만 뒤집어서 보여줌.
+// 펼친 로그 목록도 최신순 — p.tmLogs 자체가 이미 최신순 정렬이라(배지/요약 로직이
+// [0]=최신에 의존) 그대로 씀.
 function orderedLogs(logs) {
-  return [...(logs || [])].reverse()
+  return logs || []
 }
 
 // ── 선문자 ────────────────────────────────────────────────────────────
