@@ -91,7 +91,6 @@ const safeData = computed(() => {
         plan: hj.plan || note.plan,
         purpose: hj.purpose || note.purpose,
         trouble: hj.trouble || note.trouble,
-        qna: hj.qna || note.qna,
         att: hj.att || note.att,
         wary: hj.wary || note.wary,
         dist: hj.dist || note.dist,
@@ -119,7 +118,7 @@ function handleCopy() {
     const teamName = auth.currentUserTeam || ''
     const pathInfo = (item.path || '') + (item.tool && !String(item.path || '').includes(item.tool) ? `(${item.tool})` : '')
     const dayStr = safe.mtDate && safe.mtDate !== '미정' ? getDay(safe.mtDate) : ''
-    const txt = `🐑 대학 ${teamName}의 합재양 🐑\n\n🚿인도자 : ${safe.guide || '-'}\n🚿티엠자 : ${safe.tmName || '-'}\n🚿섭외경로(도구) : ${pathInfo}\n🚿매칭 일시/장소 : ${safe.mtDate || '-'}(${dayStr}) ${safe.mtTime || ''} ${safe.mtPlace || ''}\n\n🫧인적\n• 이름(성별/나이) : ${safe.subName || '-'}(${safe.gender || '-'}/${safe.age || '-'})\n• 연락처 : ${safe.contact || '-'}\n• 거주지 : ${safe.nearSt || '-'}\n• MBTI : ${safe.mbti || '-'}\n\n🫧환경\n• 학교(전공)/직장 : ${safe.job || '-'}\n• 일정(학원,동아리,학생회,알바 등) : ${safe.sch || '-'}\n• 향후 계획 : ${safe.plan || '-'}\n\n🫧내면\n• 신청 목적 (메리트) : ${safe.purpose || '-'}\n• 내적 고민(00%, 되고싶은 모습) : ${safe.trouble || '-'}\n\n• 내면질문(최대한 상세하게)\n${safe.qna || '-'}\n\n• 태도 : ${safe.att || '-'}\n• 경계 : ${safe.wary || '-'}\n• 거리부담 : ${safe.dist || '-'}\n• 특이사항 : ${safe.etc || '-'}`
+    const txt = `🐑 대학 ${teamName}의 합재양 🐑\n\n🚿인도자 : ${safe.guide || '-'}\n🚿티엠자 : ${safe.tmName || '-'}\n🚿섭외경로(도구) : ${pathInfo}\n🚿매칭 일시/장소 : ${safe.mtDate || '-'}(${dayStr}) ${safe.mtTime || ''} ${safe.mtPlace || ''}\n\n🫧인적\n• 이름(성별/나이) : ${safe.subName || '-'}(${safe.gender || '-'}/${safe.age || '-'})\n• 연락처 : ${safe.contact || '-'}\n• 거주지 : ${safe.nearSt || '-'}\n• MBTI : ${safe.mbti || '-'}\n\n🫧환경\n• 학교(전공)/직장 : ${safe.job || '-'}\n• 일정(학원,동아리,학생회,알바 등) : ${safe.sch || '-'}\n• 향후 계획 : ${safe.plan || '-'}\n\n🫧내면\n• 신청 목적 (메리트) : ${safe.purpose || '-'}\n• 내적 고민(00%, 되고싶은 모습) : ${safe.trouble || '-'}\n\n• 태도 : ${safe.att || '-'}\n• 경계 : ${safe.wary || '-'}\n• 거리부담 : ${safe.dist || '-'}\n• 특이사항 : ${safe.etc || '-'}`
     navigator.clipboard.writeText(txt).then(() => showToast('복사 완료!'))
 }
 </script>
@@ -162,7 +161,6 @@ function handleCopy() {
                         <div class="hj-section">
                             <div class="hj-row"><span class="hj-label">신청목적</span><div class="hj-val hj-editable" @click="editHjField('purpose', '신청목적', safeData.purpose)">{{ safeData.purpose || '-' }}</div></div>
                             <div class="hj-row"><span class="hj-label">내적고민</span><div class="hj-val hj-editable" @click="editHjField('trouble', '내적고민', safeData.trouble)">{{ safeData.trouble || '-' }}</div></div>
-                            <div class="hj-row"><span class="hj-label">질문</span><div class="hj-val hj-editable" @click="editHjField('qna', '질문', safeData.qna)">{{ safeData.qna || '-' }}</div></div>
                         </div>
                         <div class="hj-section" style="margin-bottom:20px;">
                             <div class="hj-row"><span class="hj-label">태도</span><div class="hj-val hj-editable" @click="editHjField('att', '태도', safeData.att)">{{ safeData.att || '-' }}</div></div>
