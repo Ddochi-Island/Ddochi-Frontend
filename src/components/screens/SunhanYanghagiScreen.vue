@@ -1286,8 +1286,11 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
         </div>
       </template>
 
-      <!-- ── Section D: 종료된 건 (showEnded 토글 시에만) ── -->
-      <template v-if="showEnded && doneList.length && (!callingDocId || isDesktop)">
+      <!-- ── Section D: 종료된 건(합재양 작성 완료) — 토글과 무관하게 항상 표시.
+           Section A "진행/종료" 토글은 ddochiList(TM 진행중 vs 만픽인데 합재양
+           미작성) 전용이라 여기엔 안 걸침 — 안 그러면 토글 버튼이 속한 Section A
+           자체가 비어서 안 보일 때(ddochiListAll=0) 종료된 건도 같이 못 보게 됨. -->
+      <template v-if="doneList.length && (!callingDocId || isDesktop)">
         <div class="sy-section-label sy-section-label-row" style="margin-top:16px">
           <span>✅ 종료된 건 ({{ doneList.length }}명)</span>
         </div>
