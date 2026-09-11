@@ -6,7 +6,10 @@
 //
 // 룰:
 //   - team='' / team='전체' → 공용 (TEAM_ID NULL)
-//   - team='1팀' (DISPLAY_NAME) → 해당 팀 전용
+//   - team='1' (REGION_CODE 그대로 — TEAMS 테이블이 없는 이 프로젝트엔 DISPLAY_NAME
+//     개념이 없어서 코드값을 그대로 씀. auth.currentUserTeam도 같은 코드값이라
+//     DailyReportScreen의 자기 팀 필터가 이 값으로 바로 비교됨) → 해당 팀 전용.
+//     화면 표시만 '팀' 접미사를 붙임.
 //   - '전체' 탭: 모든 도구 (공용 + 팀별)
 //   - 팀 탭: 해당 팀 전용 + 공용
 
@@ -150,7 +153,7 @@ onMounted(loadAll)
             <label class="form-label">적용 팀</label>
             <select v-model="editing.team" class="input-card" style="margin-bottom:15px;">
               <option value="">전체 (공용)</option>
-              <option v-for="t in teamList" :key="t" :value="t">{{ t }}</option>
+              <option v-for="t in teamList" :key="t" :value="t">{{ t }}팀</option>
             </select>
 
             <label class="form-label">도구 이름</label>
@@ -179,7 +182,7 @@ onMounted(loadAll)
               :class="{ active: currentTab === t }"
               @click="currentTab = t"
             >
-              {{ t }}
+              {{ t === '전체' ? t : t + '팀' }}
             </div>
           </div>
 
@@ -195,7 +198,7 @@ onMounted(loadAll)
                 <div>
                   <div class="tool-name">{{ t.toolName }}</div>
                   <span :class="['badge', isPublic(t) ? 'badge-public' : 'badge-team']">
-                    {{ isPublic(t) ? '공용' : t.team }}
+                    {{ isPublic(t) ? '공용' : t.team + '팀' }}
                   </span>
                 </div>
                 <div class="tool-actions">
