@@ -126,7 +126,10 @@ function loadTeams() {
     callApi('/api/get-teams', {}, (r) => {
         loading.value = false
         if (!r || !r.success) { showAppAlert('지역 정보를 불러오지 못했어.'); return }
-        teams.value = r.list || []
+        // 135/246 연합(사쉐 통합 대시보드) — 이 화면에만 있는 가상 팀 탭. 다른
+        // 화면들도 /api/get-teams를 공유해서 list/teams엔 안 실려있음(백엔드
+        // 참고: api/views/teams.py get_teams 주석) — configs엔 있어서 여기서만 추가.
+        teams.value = [...(r.list || []), '135 연합', '246 연합']
         const map = {}
         for (const t of (r.teams || [])) map[t.name] = t.id
         teamIdMap.value = map
