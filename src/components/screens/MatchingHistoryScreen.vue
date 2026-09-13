@@ -87,7 +87,7 @@ const COLUMNS = [
 ]
 
 function valueOf(m, key) {
-  if (key === 'time') return m.time || '-'
+  if (key === 'time') return m.time ? (m.isSecondMeet ? `✌️${m.time}` : m.time) : '-'
   if (key === 'name') return m.name || '-'
   if (key === 'guide') return m.guide || m.manager || '-'
   if (key === 'teacher') return m.teacher || '-'
@@ -352,7 +352,7 @@ onUnmounted(() => {
           >{{ group.dateDisplay }}</div>
 
           <div v-for="m in group.items" :key="m.meetingId" class="hist-row">
-            <div class="hist-time">{{ m.time || '-' }}</div>
+            <div class="hist-time">{{ m.time ? (m.isSecondMeet ? `✌️${m.time}` : m.time) : '-' }}</div>
             <div class="hist-name">{{ m.name || '-' }}</div>
             <div class="hist-guide">{{ m.guide || m.manager || '-' }}</div>
             <div class="hist-teacher">{{ m.teacher || '-' }}</div>

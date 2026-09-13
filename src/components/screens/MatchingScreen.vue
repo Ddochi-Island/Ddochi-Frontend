@@ -129,7 +129,7 @@ const displayGroups = computed(() => {
                 const next = meetings[mi + 1]
                 displayList.push({
                     ...item,
-                    habjaeyang: { ...(item.habjaeyang || {}), mtDate: mt.date, mtTime: mt.time },
+                    habjaeyang: { ...(item.habjaeyang || {}), mtDate: mt.date, mtTime: mt.time, isSecondMeet: mt.isSecondMeet },
                     matchResultDetail: mt.outcome,
                     isGhost: true,
                     _cardKey: item.docId + ':m' + mt.meetingId,
@@ -784,8 +784,22 @@ function scrollToToday() {
     }
 }
 
+// 텔레그램 버튼(답장/창개설/재가)이 바꾼 상태를 화면에도 반영 — 실시간 푸시 인프라가
+// 없어서 짧은 주기 폴링으로 대체. 로딩 스피너/펼친 카드 상태를 안 건드리도록 setTmData만 호출.
+function pollMatchingData() {
+    callApi('/api/get-assets', { sabun: auth.currentSabun }, r => {
+        if (!r.success) return
+        tm.setTmData(r.list)
+    })
+}
+
+let _pollTimer = null
 onMounted(() => {
     loadMatchingData()
+    _pollTimer = setInterval(pollMatchingData, 5000)
+})
+onUnmounted(() => {
+    clearInterval(_pollTimer)
 })
 </script>
 
@@ -816,7 +830,7 @@ onMounted(() => {
                              class="meeting-item"
                              :class="{ 'is-selected': selectedAccordionId === item._accordionId }">
                             <div class="meeting-summary" @click="toggleDetail(item._accordionId)">
-                                <div>{{ (item.habjaeyang && item.habjaeyang.mtTime) || '-' }}</div>
+                                <div>{{ (item.habjaeyang && item.habjaeyang.mtTime) ? ((item.habjaeyang.isSecondMeet ? '✌️' : '') + item.habjaeyang.mtTime) : '-' }}</div>
                                 <div style="color:black; font-weight:bold;">{{ getNameDisplay(item) }}</div>
                                 <div>{{ (item.habjaeyang && item.habjaeyang.guide) || item.manager }}</div>
                                 <div style="line-height:1.2;" v-html="getTeacherDisplay(item)"></div>
@@ -872,7 +886,7 @@ onMounted(() => {
                     <div class="match-right-header">
                         <div>
                             <strong style="font-size:16px;">{{ getNameDisplay(selectedItem) }}</strong>
-                            <div style="color:#888;font-size:12px;margin-top:2px;">{{ (selectedItem.habjaeyang && selectedItem.habjaeyang.mtDate) || '-' }} {{ (selectedItem.habjaeyang && selectedItem.habjaeyang.mtTime) || '' }}</div>
+                            <div style="color:#888;font-size:12px;margin-top:2px;">{{ (selectedItem.habjaeyang && selectedItem.habjaeyang.mtDate) || '-' }} {{ (selectedItem.habjaeyang && selectedItem.habjaeyang.mtTime) ? ((selectedItem.habjaeyang.isSecondMeet ? '✌️' : '') + selectedItem.habjaeyang.mtTime) : '' }}</div>
                         </div>
                         <div v-html="getRightStatusHtml(selectedItem)"></div>
                     </div>
