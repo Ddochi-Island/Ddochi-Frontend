@@ -9,7 +9,7 @@ const { showAppAlert, showToast } = usePopup()
 
 const CHANNEL_DEFS = [
     { key: 'dashboard',       field: 'chatId',                label: '대시보드',   color: '#5D4037' },
-    { key: 'stats',           field: 'statsChatId',           label: '통계방',     color: '#1565C0' },
+    { key: 'stats',           field: 'statsChatId',           label: '일일보고',     color: '#1565C0' },
     { key: 'schedule',        field: 'scheduleChatId',        label: '일정방',     color: '#FF9800' },
     { key: 'activityReport',  field: 'activityReportChatId',  label: '일정통계',   color: '#37474F' },
     { key: 'currentSchedule', field: 'currentScheduleChatId', label: '현재일정',   color: '#6A1B9A' },
