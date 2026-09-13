@@ -265,8 +265,8 @@ function openSwap() {
 }
 
 function confirmSwap() {
-    if (!swapTeamId1.value || !swapTeamId2.value) return showAppAlert('두 팀을 모두 선택해줘')
-    if (swapTeamId1.value === swapTeamId2.value) return showAppAlert('서로 다른 팀을 선택해줘')
+    if (!swapTeamId1.value || !swapTeamId2.value) return showAppAlert('두 지역을 모두 선택해줘')
+    if (swapTeamId1.value === swapTeamId2.value) return showAppAlert('서로 다른 지역을 선택해줘')
     const t1 = teams.value.find(t => t.team_id === swapTeamId1.value)
     const t2 = teams.value.find(t => t.team_id === swapTeamId2.value)
     showAppConfirm(
@@ -326,7 +326,7 @@ function confirmBulk() {
     const targetSabuns = [...selectedSabuns.value]
     const payload = { targetSabuns, type: bulkPanel.value }
     if (bulkPanel.value === 'team') {
-        if (!bulkTeamId.value) return showAppAlert('팀을 선택해줘')
+        if (!bulkTeamId.value) return showAppAlert('지역을 선택해줘')
         payload.teamId = bulkTeamId.value
     } else if (bulkPanel.value === 'area') {
         if (!bulkAreaId.value) return showAppAlert('구역을 선택해줘')
@@ -396,7 +396,7 @@ onMounted(() => {
                             <span class="um-select-count">{{ selectedSabuns.size }}명 선택됨</span>
                             <button class="um-select-all" @click="selectAll">전체</button>
                             <div class="um-bulk-actions">
-                                <button @click="openBulkPanel('team')">팀 이동</button>
+                                <button @click="openBulkPanel('team')">지역 이동</button>
                                 <button @click="openBulkPanel('area')">구역 이동</button>
                                 <button @click="openBulkPanel('roles')">직책 변경</button>
                             </div>
@@ -405,16 +405,16 @@ onMounted(() => {
                         <!-- 일괄 변경 패널 -->
                         <div v-if="bulkPanel" class="um-bulk-panel">
                             <template v-if="bulkPanel === 'team'">
-                                <div class="um-bulk-panel-title">팀 이동 — {{ selectedSabuns.size }}명</div>
+                                <div class="um-bulk-panel-title">지역 이동 — {{ selectedSabuns.size }}명</div>
                                 <select v-model="bulkTeamId" class="input-card" style="margin:0;">
-                                    <option value="">팀 선택</option>
+                                    <option value="">지역 선택</option>
                                     <option v-for="t in teams" :key="t.team_id" :value="t.team_id">{{ t.display_name }}</option>
                                 </select>
                             </template>
                             <template v-else-if="bulkPanel === 'area'">
                                 <div class="um-bulk-panel-title">구역 이동 — {{ selectedSabuns.size }}명</div>
                                 <select v-model="bulkTeamId" class="input-card" style="margin:0 0 8px;" @change="bulkAreaId = ''">
-                                    <option value="">팀 먼저 선택 (선택 사항)</option>
+                                    <option value="">지역 먼저 선택 (선택 사항)</option>
                                     <option v-for="t in teams" :key="t.team_id" :value="t.team_id">{{ t.display_name }}</option>
                                 </select>
                                 <select v-model="bulkAreaId" class="input-card" style="margin:0;">
@@ -503,15 +503,15 @@ onMounted(() => {
 
                     <!-- ── 팀 스왑 뷰 ── -->
                     <template v-else-if="view === 'swap'">
-                        <div class="um-form-title">🔄 팀 스왑</div>
+                        <div class="um-form-title">🔄 지역 스왑</div>
                         <div style="font-size:13px; color:#888; margin-bottom:20px; line-height:1.6;">
-                            두 팀의 이름/코드를 교환해. 모든 과거 데이터도 자동으로 새 이름을 따라가.
+                            두 지역의 이름/코드를 교환해. 모든 과거 데이터도 자동으로 새 이름을 따라가.
                         </div>
 
                         <div class="um-field">
-                            <label>팀 A</label>
+                            <label>지역 A</label>
                             <select v-model="swapTeamId1" class="input-card" style="margin:0;">
-                                <option value="">팀 선택</option>
+                                <option value="">지역 선택</option>
                                 <option v-for="t in teams" :key="t.team_id" :value="t.team_id" :disabled="t.team_id === swapTeamId2">{{ t.display_name }}</option>
                             </select>
                         </div>
@@ -519,9 +519,9 @@ onMounted(() => {
                         <div style="text-align:center; font-size:22px; color:#888; margin: 4px 0;">⇅</div>
 
                         <div class="um-field">
-                            <label>팀 B</label>
+                            <label>지역 B</label>
                             <select v-model="swapTeamId2" class="input-card" style="margin:0;">
-                                <option value="">팀 선택</option>
+                                <option value="">지역 선택</option>
                                 <option v-for="t in teams" :key="t.team_id" :value="t.team_id" :disabled="t.team_id === swapTeamId1">{{ t.display_name }}</option>
                             </select>
                         </div>
@@ -577,9 +577,9 @@ onMounted(() => {
                         </div>
 
                         <div class="um-field">
-                            <label>팀 *</label>
+                            <label>지역 *</label>
                             <select v-model="form.teamId" class="input-card" style="margin:0;" @change="onTeamChange">
-                                <option value="">팀 선택</option>
+                                <option value="">지역 선택</option>
                                 <option v-for="t in teams" :key="t.team_id" :value="t.team_id">{{ t.display_name }}</option>
                             </select>
                         </div>

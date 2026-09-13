@@ -89,7 +89,7 @@ onMounted(load)
                         <span class="rv-tilde">~</span>
                         <input type="date" v-model="dateTo" class="rv-date">
                         <select v-if="scope === 'all'" v-model="teamId" class="rv-team-sel">
-                            <option value="">전체 팀</option>
+                            <option value="">전체 지역</option>
                             <option v-for="t in teams" :key="t.teamId" :value="t.teamId">{{ t.name }}</option>
                         </select>
                         <button class="rv-load-btn" @click="load">🔍 조회</button>

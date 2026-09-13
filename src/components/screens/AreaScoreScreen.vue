@@ -169,7 +169,7 @@ onMounted(load)
                     <div style="font-size:22px; color:var(--btn-color); font-weight:bold;">{{ week.areaTotal.toFixed(1) }}</div>
                 </div>
                 <div class="input-card" style="text-align:center;">
-                    <div style="font-size:12px; color:#999;">이번주 팀 총점</div>
+                    <div style="font-size:12px; color:#999;">이번주 지역 총점</div>
                     <div style="font-size:22px; color:var(--btn-color); font-weight:bold;">{{ week.teamTotal.toFixed(1) }}</div>
                 </div>
             </div>
@@ -210,7 +210,7 @@ onMounted(load)
         <template v-else-if="view === 'team_coach'">
             <div class="input-card">
                 <label style="margin-top:0; display:flex; align-items:center; justify-content:space-between;">
-                    <span>우리 팀 구역별 현황</span>
+                    <span>우리 지역 구역별 현황</span>
                     <span style="font-size:12px; color:#999;">터치하면 상세보기</span>
                 </label>
                 <div v-for="d in team.districts" :key="d.areaId">
@@ -239,7 +239,7 @@ onMounted(load)
             </div>
 
             <div class="input-card" style="text-align:center;">
-                <div style="font-size:12px; color:#999;">우리 팀 주간 총점</div>
+                <div style="font-size:12px; color:#999;">우리 지역 주간 총점</div>
                 <div style="font-size:26px; color:var(--btn-color); font-weight:bold;">{{ team.weekTotal.toFixed(1) }}</div>
                 <div style="font-size:13px; color:#aaa; margin-top:4px;">목표 {{ team.weekGoal }}점 (구역당 2점)</div>
             </div>
@@ -256,9 +256,9 @@ onMounted(load)
             </div>
 
             <div class="input-card">
-                <label style="margin-top:0;">타 팀 주간 총점</label>
+                <label style="margin-top:0;">타 지역 주간 총점</label>
                 <table class="admin-stats-table">
-                    <thead><tr><th>팀</th><th>주간 총점</th></tr></thead>
+                    <thead><tr><th>지역</th><th>주간 총점</th></tr></thead>
                     <tbody>
                         <tr v-for="t in otherTeams" :key="t.teamId">
                             <td class="stat-label">{{ t.name }}</td>

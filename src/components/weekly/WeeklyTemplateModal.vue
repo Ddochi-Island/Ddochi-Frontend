@@ -32,8 +32,8 @@ const DAY_NAMES = dayLabels
 
 const SCOPE_META = {
     personal: { icon: '📅', label: '내', color: '#1976D2' },
-    team:     { icon: '📆', label: '팀', color: '#388E3C' },
-    region:   { icon: '🗓️', label: '지역', color: '#D32F2F' }
+    team:     { icon: '📆', label: '지역', color: '#388E3C' },
+    region:   { icon: '🗓️', label: '수지역', color: '#D32F2F' }
 }
 
 // -------------- state --------------
@@ -56,13 +56,13 @@ const editorState = ref(null) // null | { dow, block, range }
 const scopeMeta = computed(() => SCOPE_META[props.scope] || SCOPE_META.personal)
 const scopeLabel = computed(() => {
     const base = scopeMeta.value.label
-    if (props.scope === 'team' && props.team && props.team !== auth.currentUserTeam) return `${props.team}팀 ${base}`
+    if (props.scope === 'team' && props.team && props.team !== auth.currentUserTeam) return `${props.team}지역 ${base}`
     return base
 })
 const infoText = computed(() => {
-    if (props.scope === 'personal') return '🔴 빨강 = 지역 일정 / 🟢 초록 = 팀 일정 (상위)<br>겹치는 셀에 ⚠️ 표시됨'
-    if (props.scope === 'team') return '🔴 빨강 = 지역 일정 (상위)<br>겹치는 셀에 ⚠️ 표시됨'
-    return '지역 일정은 모든 팀/개인의 최상위 일정이야'
+    if (props.scope === 'personal') return '🔴 빨강 = 수지역 일정 / 🟢 초록 = 지역 일정 (상위)<br>겹치는 셀에 ⚠️ 표시됨'
+    if (props.scope === 'team') return '🔴 빨강 = 수지역 일정 (상위)<br>겹치는 셀에 ⚠️ 표시됨'
+    return '수지역 일정은 모든 지역/개인의 최상위 일정이야'
 })
 
 const paletteTypes = computed(() => [...new Set(categories.value.map(c => c.type || '기타'))])
@@ -282,7 +282,7 @@ function onCellClick(dow, slotIdx) {
             memo: ''
         }
         const parent = weeklyParentData[dow][SLOTS[slotIdx]]
-        if (parent) showToast(`⚠️ ${parent.scope === 'region' ? '지역' : '팀'} 일정과 겹쳐!`)
+        if (parent) showToast(`⚠️ ${parent.scope === 'region' ? '수지역' : '지역'} 일정과 겹쳐!`)
         return
     }
 
@@ -441,7 +441,7 @@ onBeforeUnmount(() => {})
                                                     lineHeight: 1,
                                                     overflow: 'hidden'
                                                 }"
-                                                :title="`${cell.block.scope === 'region' ? '지역' : '팀'} 일정: ${cleanEmoji(cell.block.name)}`"
+                                                :title="`${cell.block.scope === 'region' ? '수지역' : '지역'} 일정: ${cleanEmoji(cell.block.name)}`"
                                                 @click="onCellClick(col.dow, cell.startIdx)">
                                                 {{ cleanEmoji(cell.block.name) }}
                                             </div>

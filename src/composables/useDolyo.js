@@ -25,7 +25,7 @@ const loading = ref(false)
 const errorMsg = ref('')
 
 // 조회 범위
-const scope = ref('나만')              // '전체' | '팀' | '구역' | '나만'
+const scope = ref('나만')              // '전체' | '지역' | '구역' | '나만'
 const scopeTeam = ref('')
 const scopeArea = ref('')
 
@@ -50,10 +50,10 @@ function getStage(item) {
 
 // 권한별 사용 가능 scope. 사용자 role 에 따라 단계적 노출.
 function getAvailableScopes(role, isAdmin) {
-    if (isAdmin) return ['전체', '팀', '구역', '나만']
+    if (isAdmin) return ['전체', '지역', '구역', '나만']
     const r = role || ''
-    if (/지역장|지구장|행정/.test(r)) return ['전체', '팀', '구역', '나만']
-    if (/팀장|부팀장/.test(r)) return ['팀', '구역', '나만']
+    if (/지역장|지구장|행정/.test(r)) return ['전체', '지역', '구역', '나만']
+    if (/팀장|부팀장/.test(r)) return ['지역', '구역', '나만']
     if (/구역장|순장/.test(r)) return ['구역', '나만']
     return ['나만']
 }
@@ -143,7 +143,7 @@ export function useDolyo() {
     function setScope(s) {
         scope.value = s
         if (s === '나만') { scopeTeam.value = ''; scopeArea.value = '' }
-        if (s === '팀') { scopeArea.value = '' }
+        if (s === '지역') { scopeArea.value = '' }
         getList()
     }
     function setScopeTeam(v) { scopeTeam.value = v; scopeArea.value = ''; getList() }

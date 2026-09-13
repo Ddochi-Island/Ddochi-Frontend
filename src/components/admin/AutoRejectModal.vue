@@ -26,7 +26,7 @@ const loading = ref(false)
 
 function loadTeams() {
     callApi('/api/get-teams', {}, (r) => {
-        if (!r?.success || !r.list?.length) return showAppAlert('팀 정보를 불러오지 못했어.')
+        if (!r?.success || !r.list?.length) return showAppAlert('지역 정보를 불러오지 못했어.')
         teams.value = r.list
     })
 }
@@ -72,8 +72,8 @@ onMounted(loadTeams)
                 <div class="modal-content-scroll">
                     <!-- 팀 선택 -->
                     <template v-if="step === 'teamSelect'">
-                        <div style="text-align:center; margin-bottom:15px; font-size:13px; color:#666;">설정할 팀을 선택해줘!</div>
-                        <div v-if="!teams.length" style="text-align:center; padding:20px; color:#888;">팀 정보 불러오는 중...</div>
+                        <div style="text-align:center; margin-bottom:15px; font-size:13px; color:#666;">설정할 지역을 선택해줘!</div>
+                        <div v-if="!teams.length" style="text-align:center; padding:20px; color:#888;">지역 정보 불러오는 중...</div>
                         <div v-else class="btn-col">
                             <button v-for="team in teams" :key="team"
                                 class="btn-pos" style="background:#795548; margin-bottom:8px;"
@@ -107,7 +107,7 @@ onMounted(loadTeams)
 
                         <div class="btn-group" style="margin-top:30px;">
                             <button class="btn-pos" style="background:#795548;" @click="saveConfig">💾 저장하기</button>
-                            <button class="btn-neg" @click="backToTeamSelect">팀 다시 선택</button>
+                            <button class="btn-neg" @click="backToTeamSelect">지역 다시 선택</button>
                         </div>
                     </template>
                 </div>

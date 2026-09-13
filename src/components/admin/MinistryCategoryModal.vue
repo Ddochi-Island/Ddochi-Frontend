@@ -206,7 +206,7 @@ onMounted(load)
 
                 <div class="modal-content-scroll" style="padding:20px;">
                     <div class="mc-team-info">
-                        <b>{{ targetTeam }}</b> 팀 · ☰ 끌어서 순서 변경 (자동 저장), ✏️ 로 수정
+                        <b>{{ targetTeam }}</b> 지역 · ☰ 끌어서 순서 변경 (자동 저장), ✏️ 로 수정
                     </div>
 
                     <!-- Loading / Error -->

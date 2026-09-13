@@ -67,7 +67,7 @@ const allZonesInTeam = computed(() => {
 const showRegionPicker = computed(() => {
     const role = auth.currentUserRole || ''
     return (
-        (scope.value === '팀' || scope.value === '구역') &&
+        (scope.value === '지역' || scope.value === '구역') &&
         (isAdmin.value || /지역장|지구장|행정/.test(role))
     )
 })
@@ -164,7 +164,7 @@ function onSaved(_docId) {
 
             <select v-if="showRegionPicker" :value="scopeTeam"
                 @change="setScopeTeam($event.target.value)" class="region-select">
-                <option value="">전체팀</option>
+                <option value="">전체지역</option>
                 <option v-for="t in allTeams" :key="t" :value="t">{{ t }}</option>
             </select>
 

@@ -404,7 +404,7 @@ function resolveReportName(inputName) {
             }
             return
         }
-        showAppAlert(`"${inputName}" 은(는) 우리 팀에 없는 이름이야!`)
+        showAppAlert(`"${inputName}" 은(는) 우리 지역에 없는 이름이야!`)
         reject(new Error('not_in_team'))
     })
 }
@@ -871,7 +871,7 @@ onMounted(async () => {
         <div v-if="dupChoice" class="dr-modal-backdrop" @click.self="dupChoice.onCancel()">
             <div class="dr-modal">
                 <div class="dr-modal-title">👥 {{ dupChoice.input }} - 누구?</div>
-                <div class="dr-modal-desc">팀 내에 동명이인이 있어! 선택해줘.</div>
+                <div class="dr-modal-desc">지역 내에 동명이인이 있어! 선택해줘.</div>
                 <div class="dr-modal-btns">
                     <button v-for="cand in dupChoice.candidates" :key="cand"
                         class="btn-pos dup-btn" @click="dupChoice.onPick(cand)">

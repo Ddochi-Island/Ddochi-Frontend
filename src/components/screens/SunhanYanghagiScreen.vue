@@ -20,8 +20,8 @@ const { showAppAlert, showAppConfirm, showToast } = usePopup()
 
 // ── 탭 ──────────────────────────────────────────────────────────────
 // 항상 유입자 팀 기준 — 링크 번호 fallback 없음
-const prospectEffTeam = (p) => p.team ? `${p.team}팀` : undefined
-const rowEffTeam = (r) => r.event ? `${r.event}팀` : undefined
+const prospectEffTeam = (p) => p.team ? `${p.team}지역` : undefined
+const rowEffTeam = (r) => r.event ? `${r.event}지역` : undefined
 
 const loading = ref(true)
 const asLoading = ref(false)
@@ -837,7 +837,7 @@ function fmtTmDt(val) {
 function copyProspect(p) {
   const lines = []
   lines.push(`${p.name}${p.age ? ` (${p.age}세)` : ''} / ${p.phone || '-'}`)
-  if (p.region) lines.push(`지역: ${p.region}`)
+  if (p.region) lines.push(`수지역: ${p.region}`)
   if (p.shedMeta?.env) lines.push(`환경: ${p.shedMeta.env}`)
   if (p.shedMeta?.reaction) lines.push(`반응: ${p.shedMeta.reaction}`)
   if (p.shedMeta?.introducer) lines.push(`유입: ${p.shedMeta.introducer}`)
@@ -881,7 +881,7 @@ async function doRegister(asRow) {
   const isDup = asRow.numberStatus === 'pending_dup'
   const fields = [
     ['연락처', asRow.phone],
-    ['지역', asRow.region],
+    ['수지역', asRow.region],
     ['MBTI', asRow.rest],
     ['환경', asRow.env],
     ['반응', asRow.reaction],
@@ -892,7 +892,7 @@ async function doRegister(asRow) {
 
   const msg = [
     isDup ? '<div class="confirm-warn">⚠️ 이미 ddochi에 등록된 번호예요.</div>' : '',
-    `<div class="confirm-head">[${escapeHtml(asRow.event)}팀] ${escapeHtml(asRow.name)}${asRow.age ? ` <span class="confirm-age">(${escapeHtml(asRow.age)}세)</span>` : ''}</div>`,
+    `<div class="confirm-head">[${escapeHtml(asRow.event)}지역] ${escapeHtml(asRow.name)}${asRow.age ? ` <span class="confirm-age">(${escapeHtml(asRow.age)}세)</span>` : ''}</div>`,
     '<div class="confirm-grid">' + fields.map(([k, v]) => `<span class="k">${k}</span><span class="v">${escapeHtml(v)}</span>`).join('') + '</div>',
     `<div class="confirm-q">${isDup ? '그래도 이관받을까요?' : '이관받을까요?'}</div>`,
   ].filter(Boolean).join('')
@@ -928,7 +928,7 @@ async function rejectShedDup() {
 async function doReject(asRow) {
   if (saving.value) return
   const msg = [
-    `[${asRow.event}팀] ${asRow.name}${asRow.age ? ` (${asRow.age}세)` : ''}`,
+    `[${asRow.event}지역] ${asRow.name}${asRow.age ? ` (${asRow.age}세)` : ''}`,
     `연락처 : ${asRow.phone || '-'}`,
     '',
     '반려하시겠어요? (반려 목록에서 회생 가능)',
@@ -1075,7 +1075,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span class="sy-final-badge">반려</span>
               </div>
               <div v-if="r.region || r.env || r.reaction || r.introducer || r.tmLocation || r.rest" class="sy-fields">
-                <span v-if="r.region" class="sy-field"><b>지역</b>{{ r.region }}</span>
+                <span v-if="r.region" class="sy-field"><b>수지역</b>{{ r.region }}</span>
                 <span v-if="r.rest" class="sy-field"><b>MBTI</b>{{ r.rest }}</span>
                 <span v-if="r.env" class="sy-field"><b>환경</b>{{ r.env }}</span>
                 <span v-if="r.reaction" class="sy-field"><b>반응</b>{{ r.reaction }}</span>
@@ -1103,7 +1103,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span class="sy-link-badge sy-intr-badge">{{ rowEffTeam(r) }}</span>
               </div>
               <div v-if="r.region || r.env || r.reaction || r.introducer || r.tmLocation || r.rest" class="sy-fields">
-                <span v-if="r.region" class="sy-field"><b>지역</b>{{ r.region }}</span>
+                <span v-if="r.region" class="sy-field"><b>수지역</b>{{ r.region }}</span>
                 <span v-if="r.rest" class="sy-field"><b>MBTI</b>{{ r.rest }}</span>
                 <span v-if="r.env" class="sy-field"><b>환경</b>{{ r.env }}</span>
                 <span v-if="r.reaction" class="sy-field"><b>반응</b>{{ r.reaction }}</span>
@@ -1132,7 +1132,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
               <span class="sy-name">{{ p.name }}</span>
               <span v-if="p.age" class="sy-age">({{ p.age }}세)</span>
               <span v-if="p.createdTs" class="sy-inflow-ts">{{ fmtInflowTs(p.createdTs) }}</span>
-              <span class="sy-link-badge sy-intr-badge">{{ p.team + '팀' }}</span>
+              <span class="sy-link-badge sy-intr-badge">{{ p.team + '지역' }}</span>
               <span class="sy-tm-badge" style="background:#1565C0">만남픽스✓</span>
             </div>
             <div class="sy-actions" style="margin-top:6px">
@@ -1181,7 +1181,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                   </template>
                 </template>
                 <span v-if="p.createdTs" class="sy-inflow-ts">{{ fmtInflowTs(p.createdTs) }}</span>
-                <span class="sy-link-badge sy-intr-badge">{{ p.team + '팀' }}</span>
+                <span class="sy-link-badge sy-intr-badge">{{ p.team + '지역' }}</span>
                 <span v-if="displayTmStatus(p)" class="sy-tm-badge" :style="{ background: TM_STATUS_COLOR[displayTmStatus(p)] || '#757575' }">
                   {{ TM_STATUS_LABEL[displayTmStatus(p)] || displayTmStatus(p) }}
                 </span>
@@ -1300,7 +1300,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
               <span class="sy-name">{{ p.name }}</span>
               <span v-if="p.age" class="sy-age">({{ p.age }}세)</span>
               <span v-if="p.createdTs" class="sy-inflow-ts">{{ fmtInflowTs(p.createdTs) }}</span>
-              <span class="sy-link-badge sy-intr-badge">{{ p.team + '팀' }}</span>
+              <span class="sy-link-badge sy-intr-badge">{{ p.team + '지역' }}</span>
               <span class="sy-done-guide" v-if="p.hasGuide">인도자: {{ p.guideName }}</span>
               <span class="sy-done-noguide" v-else>인도자 미정 🎰</span>
               <span v-if="p.hjCreatedTs" class="sy-done-date">{{ p.hjCreatedTs }}</span>
@@ -1330,12 +1330,12 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span class="sy-phone-num" style="cursor:pointer;" @click="copyPhone(callingProspect.phone)">📞 {{ callingProspect.phone }}</span>
                 <button class="ab cancel hangup" @click="endCall">끊기</button>
                 <button class="sy-script-toggle" :class="{ on: scriptOpen[callingProspect.docId] }" @click="toggleScript(callingProspect.docId)">📝 스크립트</button>
-                <span class="sy-link-badge sy-intr-badge">{{ callingProspect.team + '팀' }}</span>
+                <span class="sy-link-badge sy-intr-badge">{{ callingProspect.team + '지역' }}</span>
               </div>
               <div class="sy-meta">
                 <span v-if="callingProspect.tmLogs?.[0]?.category === 'tmReserved' || (!hasRealLog(callingProspect) && callingProspect.reservedAt)" class="meta-reserved">{{ callingProspect.reservedAt ? formatReservedAt(callingProspect.reservedAt) : '예약됨' }}</span>
                 <span v-else-if="callingProspect.noAnswerCount" class="meta-warn">안받음 {{ callingProspect.noAnswerCount }}회</span>
-                <span v-if="callingProspect.region" class="sy-field"><b>지역</b>{{ callingProspect.region }}</span>
+                <span v-if="callingProspect.region" class="sy-field"><b>수지역</b>{{ callingProspect.region }}</span>
                 <span v-if="callingProspect.shedMeta?.mbti" class="sy-field"><b>MBTI</b>{{ callingProspect.shedMeta.mbti }}</span>
                 <span v-if="callingProspect.shedMeta?.env" class="sy-field"><b>환경</b>{{ callingProspect.shedMeta.env }}</span>
                 <span v-if="callingProspect.shedMeta?.reaction" class="sy-field"><b>반응</b>{{ callingProspect.shedMeta.reaction }}</span>
@@ -1444,7 +1444,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
             <div v-for="(r, i) in searchUnregList" :key="i" class="sy-search-row">
               <span class="sy-search-name">{{ r.name }}</span>
               <span v-if="r.age" class="sy-search-age">({{ r.age }}세)</span>
-              <span class="sy-search-badge unreg">{{ r.event }}팀</span>
+              <span class="sy-search-badge unreg">{{ r.event }}지역</span>
               <span v-if="r.introducer" class="sy-search-sub">유입: {{ r.introducer }}</span>
             </div>
           </template>
@@ -1455,7 +1455,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
             <div v-for="p in searchTmActiveList" :key="p.docId" class="sy-search-row">
               <span class="sy-search-name">{{ p.name }}</span>
               <span v-if="p.age" class="sy-search-age">({{ p.age }}세)</span>
-              <span class="sy-search-badge active">{{ p.team + '팀' }}</span>
+              <span class="sy-search-badge active">{{ p.team + '지역' }}</span>
               <span v-if="p.noAnswerCount" class="sy-search-sub warn">안받음 {{ p.noAnswerCount }}회</span>
               <span v-else-if="p.reservedAt" class="sy-search-sub">예약: {{ formatReservedAt(p.reservedAt) }}</span>
               <span v-if="p.shedMeta?.introducer" class="sy-search-sub">유입: {{ p.shedMeta.introducer }}</span>
@@ -1469,7 +1469,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
             <div v-for="p in searchTmDoneList" :key="p.docId" class="sy-search-row">
               <span class="sy-search-name">{{ p.name }}</span>
               <span v-if="p.age" class="sy-search-age">({{ p.age }}세)</span>
-              <span class="sy-search-badge done">{{ p.team + '팀' }}</span>
+              <span class="sy-search-badge done">{{ p.team + '지역' }}</span>
               <span class="sy-search-final">{{ finalLabel(p) }}</span>
               <span v-if="p.shedMeta?.introducer" class="sy-search-sub">유입: {{ p.shedMeta.introducer }}</span>
             </div>

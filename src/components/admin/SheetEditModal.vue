@@ -205,7 +205,7 @@ async function testTabAccess() {
 async function save() {
     if (saving.value) return
     if (!form.name.trim()) return showAppAlert('시트 제목을 입력해줘')
-    if (!form.team.trim()) return showAppAlert('담당 팀을 입력해줘')
+    if (!form.team.trim()) return showAppAlert('담당 지역을 입력해줘')
     if (!form.path.trim()) return showAppAlert('경로를 입력해줘')
     if (!form.spreadsheetId.trim()) return showAppAlert('스프레드시트 ID 가 비어있어')
     if (!form.startRow) return showAppAlert('시작 행을 입력해줘')
@@ -308,9 +308,9 @@ function deleteSelf() {
             <div class="modal-content-scroll">
                 <!-- 기본 정보 -->
                 <div class="section-title">기본 정보</div>
-                <input type="text" v-model="form.name" class="input-card" placeholder="시트 제목 (예: 인스타 1팀)">
+                <input type="text" v-model="form.name" class="input-card" placeholder="시트 제목 (예: 인스타 1지역)">
                 <div class="row">
-                    <input type="text" v-model="form.team" class="input-card" placeholder="담당 팀 (예: 1팀)">
+                    <input type="text" v-model="form.team" class="input-card" placeholder="담당 지역 (예: 1지역)">
                     <input type="text" v-model="form.path" class="input-card" placeholder="경로 (예: 인스타광고)">
                 </div>
                 <input type="text" v-model="form.tool" class="input-card" placeholder="도구 (예: MBTI테스트)">

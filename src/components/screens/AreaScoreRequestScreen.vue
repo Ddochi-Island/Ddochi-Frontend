@@ -34,7 +34,7 @@ const itemLabel = computed(() => ITEM_OPTIONS.find((o) => o.code === itemCode.va
 function buildRequestText() {
     return [
         '[구역 점수 재가 요청서]',
-        `팀: ${auth.currentUserTeam || ''}`,
+        `지역: ${auth.currentUserTeam || ''}`,
         `구역: ${auth.currentUserArea || ''}`,
         `직책: ${auth.currentUserRole || ''}`,
         `이름: ${auth.currentUserName || ''}`,
@@ -68,7 +68,7 @@ async function submit() {
 function copyRequest(req) {
     const text = [
         '[구역 점수 재가 요청서]',
-        `팀: ${auth.currentUserTeam || ''}`,
+        `지역: ${auth.currentUserTeam || ''}`,
         `구역: ${auth.currentUserArea || ''}`,
         `직책: ${auth.currentUserRole || ''}`,
         `이름: ${auth.currentUserName || ''}`,
@@ -110,7 +110,7 @@ onMounted(() => {
 
             <div class="input-grid-2" style="margin-top:10px;">
                 <div>
-                    <label>팀</label>
+                    <label>지역</label>
                     <div class="input-card" style="margin-top:4px; color:#888;">{{ auth.currentUserTeam }}</div>
                 </div>
                 <div>

@@ -126,7 +126,7 @@ function pollTeamStatus(team) {
             chatIds[k] = r.chatId || ''
             chatTitles[k] = r.chatTitle || ''
             pairing.value = { ...pairing.value, [k]: { active: false, state: 'completed' } }
-            showToast(`✅ ${team.teamName} 팀전체 연결됨!`)
+            showToast(`✅ ${team.teamName} 지역전체 연결됨!`)
         } else if (r.state === 'expired') {
             clearInterval(timers[k])
             pairing.value = { ...pairing.value, [k]: { active: false, state: 'expired' } }
@@ -142,13 +142,13 @@ function cancelTeamPairing(team) {
 }
 
 function disconnectTeam(team) {
-    showAppAlert(`${team.teamName} 팀전체 연결을 해제할까요?`, () => {
+    showAppAlert(`${team.teamName} 지역전체 연결을 해제할까요?`, () => {
         callApi('/api/telegram-pair/disconnect', { team: team.teamName, channelType: TEAM_CHANNEL_TYPE }, (r) => {
             if (!r?.success) { showAppAlert(r?.message || '해제 실패'); return }
             const k = teamRowKey(team.teamName)
             chatIds[k] = ''
             chatTitles[k] = ''
-            showToast(`${team.teamName} 팀전체 연결 해제 완료`)
+            showToast(`${team.teamName} 지역전체 연결 해제 완료`)
         })
     }, { confirm: true })
 }
@@ -202,7 +202,7 @@ onUnmounted(() => { for (const id of Object.values(timers)) clearInterval(id) })
 
                             <!-- 팀전체 행 -->
                             <div class="channel-row team-whole-row">
-                                <span class="channel-label team-whole-label">팀전체</span>
+                                <span class="channel-label team-whole-label">지역전체</span>
                                 <template v-if="pairing[teamRowKey(team.teamName)]?.active">
                                     <div class="pair-box">
                                         <span class="pair-code">{{ pairing[teamRowKey(team.teamName)].command }}</span>

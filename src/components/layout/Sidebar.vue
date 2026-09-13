@@ -117,7 +117,7 @@ function openWeeklyTemplate(scope) {
     close()
     // 팀 scope + 관리자 → 팀 입력 팝업 (시스템 prompt 대신 인앱 팝업)
     if (scope === 'team' && auth.isAdmin) {
-        showPopup('text', '편집할 팀 번호 (예: 3)?', '', (res) => {
+        showPopup('text', '편집할 지역 번호 (예: 3)?', '', (res) => {
             if (!res || res.text === undefined) return
             const t = String(res.text).trim()
             if (!t) return
@@ -166,13 +166,13 @@ defineExpose({ open, close })
                 <div class="sidebar-item" @click="openMyReports">🌱 내 일일보고/잎사귀</div>
                 <div class="sidebar-item" @click="openMyPrayers">🙏 내 향연 기록</div>
                 <div class="sidebar-item" @click="openWeeklyTemplate('personal')">📅 내 주간 일정 템플릿</div>
-                <div v-if="canViewTeamTemplate" class="sidebar-item" @click="openWeeklyTemplate('team')">📅 팀 주간 일정 템플릿</div>
-                <div v-if="canViewRegionTemplate" class="sidebar-item" @click="openWeeklyTemplate('region')">📅 지역 주간 일정 템플릿</div>
+                <div v-if="canViewTeamTemplate" class="sidebar-item" @click="openWeeklyTemplate('team')">📅 지역 주간 일정 템플릿</div>
+                <div v-if="canViewRegionTemplate" class="sidebar-item" @click="openWeeklyTemplate('region')">📅 수지역 주간 일정 템플릿</div>
             </div>
 
             <div class="sidebar-section">
                 <div class="sidebar-title">🛠️ 사역 지원 도구</div>
-                <div class="sidebar-item" @click="openModal('tateamRegister')">🤝 타팀 교사건 등록</div>
+                <div class="sidebar-item" @click="openModal('tateamRegister')">🤝 타지역 교사건 등록</div>
                 <div class="sidebar-item" @click="openSemesterCalendar">📅 개강 일정 달력</div>
                 <div class="sidebar-item" @click="openModal('myGoal')">🏆 내 목표 설정</div>
                 <div v-if="canViewTeamTemplate" class="sidebar-item" @click="openModal('activityVenue')">📍 활동지 입력</div>

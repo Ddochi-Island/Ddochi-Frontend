@@ -13,7 +13,7 @@ const CHANNEL_DEFS = [
     { key: 'schedule',        field: 'scheduleChatId',        label: '일정방',     color: '#FF9800' },
     { key: 'activityReport',  field: 'activityReportChatId',  label: '일정통계',   color: '#37474F' },
     { key: 'currentSchedule', field: 'currentScheduleChatId', label: '현재일정',   color: '#6A1B9A' },
-    { key: 'matching',        field: 'matchingChatId',        label: '매칭현황',   color: '#00838F' },
+    { key: 'matching',        field: 'matchingChatId',        label: '매칭현황판', color: '#00838F' },
     { key: 'prospect',        field: 'prospectChatId',        label: '찾기현황',   color: '#E65100' },
     { key: 'feedback',        field: 'feedbackChatId',        label: '매칭피드',   color: '#827717' },
     { key: 'prayer',          field: 'prayerChatId',          label: '기도문',     color: '#9C27B0' },
@@ -38,7 +38,7 @@ const loading = ref(true)
 // 팀별 발송 잡 ON/OFF
 const JOB_LABELS = {
     sendMorningBriefing:   '📋 아침 브리핑',
-    sendStats:             '📊 팀 통계',
+    sendStats:             '📊 지역 통계',
     sendMatchingDashboard: '🛡️ 매칭 현황판',
     sendProspectDashboard: '🔎 찾기 현황판',
     sendFeedbackDashboard: '💬 매칭 피드백',
@@ -125,7 +125,7 @@ function loadTeams() {
     loading.value = true
     callApi('/api/get-teams', {}, (r) => {
         loading.value = false
-        if (!r || !r.success) { showAppAlert('팀 정보를 불러오지 못했어.'); return }
+        if (!r || !r.success) { showAppAlert('지역 정보를 불러오지 못했어.'); return }
         teams.value = r.list || []
         const map = {}
         for (const t of (r.teams || [])) map[t.name] = t.id
@@ -229,7 +229,7 @@ onUnmounted(() => {
                         3. 그 방에 명령어를 붙여넣으면 자동으로 등록돼!
                     </div>
 
-                    <div v-if="loading" style="text-align:center; padding:20px;">팀 정보 불러오는 중...</div>
+                    <div v-if="loading" style="text-align:center; padding:20px;">지역 정보 불러오는 중...</div>
 
                     <template v-else>
                         <div style="display:flex; overflow-x:auto; gap:5px; margin-bottom:15px; padding-bottom:5px;">

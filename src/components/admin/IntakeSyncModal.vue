@@ -115,7 +115,7 @@ const STEP_GUIDE = {
   'ask-more-extra': '또 저장할 열이 있나요?',
   'path': '섭외 경로를 선택하세요.',
   'tool': '도구(유입 경로)를 선택하세요.',
-  'team': '🏷️ 이 시트가 어느 팀 유입인지 선택하세요.',
+  'team': '🏷️ 이 시트가 어느 지역 유입인지 선택하세요.',
   'cfg-name': '이 연동 설정의 이름을 입력하세요.',
   'review': '설정을 확인하고 저장하세요.',
 }
@@ -275,7 +275,7 @@ function confirmTool() {
 }
 
 function confirmTeam() {
-  if (!selectedTeamId.value) return showAppAlert('팀을 선택하세요')
+  if (!selectedTeamId.value) return showAppAlert('지역을 선택하세요')
   step.value = 'cfg-name'
 }
 
@@ -286,7 +286,7 @@ function confirmCfgName() {
 
 const saving = ref(false)
 async function saveConfig() {
-  if (!selectedTeamId.value) return showAppAlert('팀을 선택하세요')
+  if (!selectedTeamId.value) return showAppAlert('지역을 선택하세요')
   saving.value = true
   try {
     const r = await callApiPromise('/api/intake/save-config', {
@@ -452,7 +452,7 @@ onMounted(loadConfigs)
         <div v-for="cfg in configs" :key="cfg.intake_config_id" class="config-card">
           <div class="config-info">
             <strong>{{ cfg.name }}</strong>
-            <span class="config-meta">🏷️ {{ cfg.team_name || '팀 미지정' }}</span>
+            <span class="config-meta">🏷️ {{ cfg.team_name || '지역 미지정' }}</span>
             <span class="config-meta">{{ cfg.path_name || '경로 없음' }} / {{ cfg.tool_name || '도구 없음' }}</span>
             <span class="config-meta">{{ cfg.sheet_tab_name }} · {{ cfg.start_row }}행부터</span>
             <span v-if="cfg.last_synced_at" class="config-meta sync-time">마지막 동기화: {{ new Date(cfg.last_synced_at).toLocaleString('ko-KR') }}</span>
@@ -639,7 +639,7 @@ onMounted(loadConfigs)
         <!-- 팀 선택 -->
         <div v-if="step === 'team'" class="step-form">
           <div class="guide-box">
-            <p class="guide-text">🏷️ 이 시트가 어느 팀 유입인지 선택하세요.</p>
+            <p class="guide-text">🏷️ 이 시트가 어느 지역 유입인지 선택하세요.</p>
             <select v-model="selectedTeamId" class="form-select">
               <option value="">-- 선택 --</option>
               <option v-for="t in teamOptions" :key="t.id" :value="t.id">{{ t.name }}</option>
@@ -665,7 +665,7 @@ onMounted(loadConfigs)
             <p class="guide-text" style="font-weight:600;">설정 확인</p>
             <table class="review-table">
               <tr><th>이름</th><td>{{ cfgName }}</td></tr>
-              <tr><th>팀</th><td>{{ selectedTeamName }}</td></tr>
+              <tr><th>지역</th><td>{{ selectedTeamName }}</td></tr>
               <tr><th>탭</th><td>{{ activeTab }}</td></tr>
               <tr><th>시작 행</th><td>{{ (startRow ?? 0) + 1 }}행</td></tr>
               <tr><th>유입일 열</th><td>{{ colDate !== null ? colLabels[colDate] : '미설정' }}</td></tr>

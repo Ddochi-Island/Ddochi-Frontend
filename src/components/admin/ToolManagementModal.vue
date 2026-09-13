@@ -150,10 +150,10 @@ onMounted(loadAll)
             <span class="modal-close-sticky" @click="cancelEdit">×</span>
           </div>
           <div class="modal-content-scroll">
-            <label class="form-label">적용 팀</label>
+            <label class="form-label">적용 지역</label>
             <select v-model="editing.team" class="input-card" style="margin-bottom:15px;">
               <option value="">전체 (공용)</option>
-              <option v-for="t in teamList" :key="t" :value="t">{{ t }}팀</option>
+              <option v-for="t in teamList" :key="t" :value="t">{{ t }}지역</option>
             </select>
 
             <label class="form-label">도구 이름</label>
@@ -182,7 +182,7 @@ onMounted(loadAll)
               :class="{ active: currentTab === t }"
               @click="currentTab = t"
             >
-              {{ t === '전체' ? t : t + '팀' }}
+              {{ t === '전체' ? t : t + '지역' }}
             </div>
           </div>
 
@@ -198,7 +198,7 @@ onMounted(loadAll)
                 <div>
                   <div class="tool-name">{{ t.toolName }}</div>
                   <span :class="['badge', isPublic(t) ? 'badge-public' : 'badge-team']">
-                    {{ isPublic(t) ? '공용' : t.team + '팀' }}
+                    {{ isPublic(t) ? '공용' : t.team + '지역' }}
                   </span>
                 </div>
                 <div class="tool-actions">

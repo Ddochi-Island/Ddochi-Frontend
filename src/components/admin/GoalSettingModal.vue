@@ -49,7 +49,7 @@ const computedTotal = computed(() => {
 async function loadTeams() {
     const r = await callApiPromise('/api/get-teams', {})
     if (!r || !r.success || !r.list?.length) {
-        showAppAlert('팀 정보를 불러오지 못했어. (데이터 없음)')
+        showAppAlert('지역 정보를 불러오지 못했어. (데이터 없음)')
         return
     }
     teams.value = r.list
@@ -149,8 +149,8 @@ onMounted(loadTeams)
                 <div class="modal-content-scroll">
                     <!-- 팀 선택 화면 -->
                     <template v-if="step === 'teamSelect'">
-                        <div style="text-align:center; margin-bottom:10px;">설정할 팀을 선택해줘!</div>
-                        <div v-if="!teams.length" style="text-align:center; padding:20px; color:#888;">팀 정보 불러오는 중...</div>
+                        <div style="text-align:center; margin-bottom:10px;">설정할 지역을 선택해줘!</div>
+                        <div v-if="!teams.length" style="text-align:center; padding:20px; color:#888;">지역 정보 불러오는 중...</div>
                         <div v-else class="btn-col">
                             <button v-for="team in teams" :key="team"
                                 class="btn-pos" style="background:#5D4037; margin-bottom:8px;"
@@ -170,7 +170,7 @@ onMounted(loadTeams)
 
                         <!-- 🏆 팀 전체 목표 — 직접 입력 시 구역 균등 분배 / 구역 수정 시 자동 합산 -->
                         <div style="background:#FFF3E0; padding:10px; border-radius:10px; margin-bottom:10px; border:1px solid #eee;">
-                            <div style="font-weight:bold; color:#E65100; margin-bottom:3px;">🏆 팀 전체 목표</div>
+                            <div style="font-weight:bold; color:#E65100; margin-bottom:3px;">🏆 지역 전체 목표</div>
                             <div style="font-size:10px; color:#888; margin-bottom:8px;">직접 입력하면 구역에 균등 분배 · 구역 수정하면 자동 합산</div>
                             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-bottom:5px;">
                                 <div v-for="m in METRICS" :key="m.key">
@@ -214,7 +214,7 @@ onMounted(loadTeams)
                             <button class="btn-pos" :disabled="saving" @click="saveGoals">
                                 {{ saving ? '저장 중...' : '저장하기' }}
                             </button>
-                            <button class="btn-neg" @click="backToTeamSelect">팀 다시 선택</button>
+                            <button class="btn-neg" @click="backToTeamSelect">지역 다시 선택</button>
                         </div>
                     </template>
                 </div>

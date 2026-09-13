@@ -23,7 +23,7 @@ function goHome() {
 <template>
   <div class="top-nav">
     <div class="nav-info">
-      {{ auth.currentUserTeam || "" }}팀 {{ auth.currentUserArea || "" }}구역
+      {{ auth.currentUserTeam || "" }}지역 {{ auth.currentUserArea || "" }}구역
       {{ auth.currentUserName || "" }}
     </div>
     <div class="nav-actions">

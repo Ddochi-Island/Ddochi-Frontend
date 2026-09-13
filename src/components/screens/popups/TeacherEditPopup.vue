@@ -45,7 +45,7 @@ function handleSubmit() {
 
                 <template v-if="step === 'confirm'">
                     <div class="modal-title">교사 교체 맞을까요!?</div>
-                    <div class="modal-desc" style="display:block;">타팀 교사 입력시 데이터가 타팀으로 이관돼!</div>
+                    <div class="modal-desc" style="display:block;">타지역 교사 입력시 데이터가 타지역으로 이관돼!</div>
                     <div class="btn-group">
                         <button class="btn-pos" @click="goInput">맞아!</button>
                         <button class="btn-neg" @click="emit('close')">아니야</button>

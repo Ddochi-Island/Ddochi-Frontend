@@ -34,7 +34,7 @@ function loadTeams() {
     loading.value = true
     callApi('/api/get-teams', {}, (r) => {
         loading.value = false
-        if (!r || !r.success) return showAppAlert('팀 정보를 불러오지 못했어.')
+        if (!r || !r.success) return showAppAlert('지역 정보를 불러오지 못했어.')
         teams.value = r.list || []
         for (const team of teams.value) {
             rowState[team] = { msg: '', time: '', loaded: false }
@@ -123,7 +123,7 @@ onMounted(loadTeams)
                 </div>
 
                 <div class="modal-content-scroll">
-                    <div v-if="loading" style="text-align:center; padding:20px;">팀 정보 불러오는 중...</div>
+                    <div v-if="loading" style="text-align:center; padding:20px;">지역 정보 불러오는 중...</div>
 
                     <template v-else>
                         <!-- 팀 탭 -->
