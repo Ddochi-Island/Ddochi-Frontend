@@ -331,6 +331,7 @@ function confirmBulk() {
     } else if (bulkPanel.value === 'area') {
         if (!bulkAreaId.value) return showAppAlert('구역을 선택해줘')
         payload.areaId = bulkAreaId.value
+        if (bulkTeamId.value) payload.teamId = bulkTeamId.value
     } else {
         payload.roleIds = bulkRoleIds.value
     }
