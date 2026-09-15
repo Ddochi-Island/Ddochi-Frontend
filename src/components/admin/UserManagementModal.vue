@@ -85,8 +85,8 @@ const groupedList = computed(() => {
     return groups
 })
 
-const GLOBAL_STAFF_ROLES = new Set(['임원', '지역장', '지역총무'])
-const TEAM_STAFF_ROLES = new Set(['팀장', '팀서기', '팀전도서기'])
+const GLOBAL_STAFF_ROLES = new Set(['수지역장', '전도교관', '지역총무'])
+const TEAM_STAFF_ROLES = new Set(['지역장', '팀서기', '팀전도서기'])
 
 // 여러 직책 중 가장 높은 순위
 function minPosOrder(u) {
@@ -208,9 +208,9 @@ function save() {
 
 // ── 직책 정렬 / 레이블 ──────────────────────────────────────
 const POSITION_ORDER = {
-  '관리자': 0, '임원': 1,
-  '지역장': 2, '지역총무': 3, '지역서기': 4, '지역전도서기': 5,
-  '팀장': 6, '팀전도교관': 7, '팀서기': 8, '팀전도서기': 9,
+  '관리자': 0, '수지역장': 1,
+  '전도교관': 2, '지역총무': 3, '지역서기': 4, '지역전도서기': 5,
+  '지역장': 6, '전도팀장': 7, '팀서기': 8, '팀전도서기': 9,
   '구역장': 10, '부구역장': 11,
 }
 function posOrder(pos) { return POSITION_ORDER[pos] ?? 99 }
@@ -222,9 +222,9 @@ function positionsLabel(positions) {
 
 // ── 직책 뱃지 색상 ───────────────────────────────────────────
 const ROLE_COLORS = {
-    '관리자': '#B71C1C', '임원': '#6A1B9A',
-    '지역장': '#7B1FA2', '지역총무': '#7B1FA2', '지역서기': '#7B1FA2', '지역전도서기': '#7B1FA2',
-    '팀장': '#1565C0', '팀전도교관': '#1565C0', '팀서기': '#1565C0', '팀전도서기': '#1565C0',
+    '관리자': '#B71C1C', '수지역장': '#6A1B9A',
+    '전도교관': '#7B1FA2', '지역총무': '#7B1FA2', '지역서기': '#7B1FA2', '지역전도서기': '#7B1FA2',
+    '지역장': '#1565C0', '전도팀장': '#1565C0', '팀서기': '#1565C0', '팀전도서기': '#1565C0',
     '구역장': '#2E7D32', '부구역장': '#00695C',
 }
 function roleColor(name) { return ROLE_COLORS[name] || '#757575' }
@@ -235,7 +235,7 @@ function roleList(u) {
 }
 function rowBgClass(u) {
     const names = u.positions ? u.positions.split(',').map(n => n.trim()) : []
-    if (names.includes('팀장') || names.includes('팀전도교관')) return 'um-row-team'
+    if (names.includes('지역장') || names.includes('전도팀장')) return 'um-row-team'
     if (names.includes('구역장')) return 'um-row-leader'
     if (names.includes('부구역장')) return 'um-row-subleader'
     return ''
@@ -442,7 +442,7 @@ onMounted(() => {
                         <div v-else-if="errorMsg" style="text-align:center; padding:20px; color:red;">{{ errorMsg }}</div>
 
                         <div v-else>
-                            <!-- 전체 탭 상단 고정: 임원/지역장/지역총무 -->
+                            <!-- 전체 탭 상단 고정: 수지역장/전도교관/지역총무 -->
                             <div v-if="globalStaff.length" class="um-team-staff">
                                 <div
                                     v-for="entry in globalStaff"
@@ -455,7 +455,7 @@ onMounted(() => {
                                 </div>
                             </div>
 
-                            <!-- 팀 상단 고정: 팀장/팀서기/팀전도서기 -->
+                            <!-- 팀 상단 고정: 지역장/팀서기/팀전도서기 -->
                             <div v-if="teamStaff.length" class="um-team-staff">
                                 <div
                                     v-for="entry in teamStaff"

@@ -114,7 +114,7 @@ function copyTeam(rows) {
 
 const isHost = computed(() => {
     const r = auth.currentUserRole || ''
-    return ['팀장', '팀전도교관', '지역장', '임원', '지역총무'].some(k => r.includes(k))
+    return ['지역장', '전도팀장', '전도교관', '수지역장', '지역총무'].some(k => r.includes(k))
 })
 
 function parseTs(ts) {

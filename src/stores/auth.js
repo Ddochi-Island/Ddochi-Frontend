@@ -21,7 +21,7 @@ export const useAuthStore = defineStore('auth', () => {
     const isLoggedIn = computed(() => !!currentSabun.value && !!currentUserName.value)
     // admin 판정 — USERS.POSITION 기반. 옛 sabun-prefix backdoor (12144000-N) 폐기됨.
     const isAdmin = computed(() =>
-        currentUserRole.value === '관리자' || currentUserRole.value === '임원'
+        currentUserRole.value === '관리자' || currentUserRole.value === '수지역장'
     )
 
     function setUser(data) {

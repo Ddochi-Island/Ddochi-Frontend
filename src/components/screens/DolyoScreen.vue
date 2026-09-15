@@ -68,7 +68,7 @@ const showRegionPicker = computed(() => {
     const role = auth.currentUserRole || ''
     return (
         (scope.value === '지역' || scope.value === '구역') &&
-        (isAdmin.value || /지역장|지구장|행정/.test(role))
+        (isAdmin.value || /전도교관|지구장|행정/.test(role))
     )
 })
 

@@ -120,12 +120,12 @@ function openQualityFind() {
 
 const showSunhan = computed(() => {
     const num = auth.currentUserTeam?.match(/(\d+)/)?.[1]
-    return ['1', '3', '5'].includes(num) || ['임원', '지역장', '총무'].includes(auth.currentUserRole)
+    return ['1', '3', '5'].includes(num) || ['수지역장', '전도교관', '총무'].includes(auth.currentUserRole)
 })
 
 const showQuality = computed(() => {
     const num = auth.currentUserTeam?.match(/(\d+)/)?.[1]
-    return ['2', '4', '6'].includes(num) || ['임원', '지역장', '총무'].includes(auth.currentUserRole) || auth.currentSabun === '00291203-00013'
+    return ['2', '4', '6'].includes(num) || ['수지역장', '전도교관', '총무'].includes(auth.currentUserRole) || auth.currentSabun === '00291203-00013'
 })
 
 function checkStatsPassword() {
@@ -180,7 +180,7 @@ onMounted(() => {
                 <div class="pipeline-arrow">➔</div>
             </div>
             <div class="pipeline-banner" style="background:#E8F5E9; border: 1px solid #A5D6A7;" @click="goTo('feedback')">
-                <div class="pipeline-info"><span class="pipeline-icon">⏱️</span><div><div class="pipeline-title">15분 피드백</div><div class="pipeline-desc">팀장/전도교관 피드백 신청</div></div></div>
+                <div class="pipeline-info"><span class="pipeline-icon">⏱️</span><div><div class="pipeline-title">15분 피드백</div><div class="pipeline-desc">지역장/전도교관 피드백 신청</div></div></div>
                 <div class="pipeline-arrow">➔</div>
             </div>
             <div class="pipeline-banner" style="background:#F3E5F5; border: 1px solid #CE93D8;" @click="openSuggestionModal">

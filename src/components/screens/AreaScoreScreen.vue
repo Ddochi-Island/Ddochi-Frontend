@@ -1,6 +1,6 @@
 <script setup>
 // 🎯 구역 점수 — 구역장/부구역장은 오늘 체크리스트 + 주간 총점,
-// 팀장/팀전도교관은 팀 산하 구역 현황 + 타 팀 총점 + 2일 미션.
+// 지역장/전도팀장은 팀 산하 구역 현황 + 타 팀 총점 + 2일 미션.
 // backend: POST /api/area-score/today, /api/area-score/toggle, /api/area-score/mission/complete
 
 import { ref, computed, onMounted } from 'vue'
@@ -93,7 +93,7 @@ function copyRegionOverview() {
             lines.push(`  ${d.name}: 오늘 ${d.today.toFixed(1)} / 주간 ${d.week.toFixed(1)}`)
         }
         const missionText = t.mission.map((b) => `${b.label} ${b.done ? '완료' : '미완료'}`).join(' / ')
-        lines.push(`  팀장교관 미션: ${missionText}`)
+        lines.push(`  지역장교관 미션: ${missionText}`)
         lines.push('')
     }
     copyText(lines.join('\n'))
@@ -132,7 +132,7 @@ onMounted(load)
         <div v-if="loading" style="text-align:center; padding:30px;">불러오는 중...</div>
 
         <div v-else-if="!view" class="input-card" style="text-align:center; padding:30px;">
-            구역 점수 기능은 구역장 · 부구역장 · 팀장 · 팀전도교관 · 지역장 · 지역총무 · 임원만 이용할 수 있어요.
+            구역 점수 기능은 구역장 · 부구역장 · 지역장 · 전도팀장 · 전도교관 · 지역총무 · 수지역장만 이용할 수 있어요.
         </div>
 
         <!-- ── 구역장 / 부구역장 ─────────────────────────────────── -->
@@ -178,7 +178,7 @@ onMounted(load)
                     @click="router.push({ name: 'areaScoreRequests' })">📝 재가 요청서 보기</button>
         </template>
 
-        <!-- ── 임원 / 지역장 / 지역총무 ───────────────────────────── -->
+        <!-- ── 수지역장 / 전도교관 / 지역총무 ───────────────────────────── -->
         <template v-else-if="view === 'region_admin'">
             <button class="btn" @click="copyRegionOverview">📋 전체 현황 복사하기</button>
 
@@ -198,7 +198,7 @@ onMounted(load)
                     </tbody>
                 </table>
                 <div style="font-size:12px; color:#888; margin-top:8px;">
-                    팀장교관 미션:
+                    지역장교관 미션:
                     <span v-for="(b, i) in t.mission" :key="b.code">
                         {{ b.label }} {{ b.done ? '✅' : '⬜' }}<span v-if="i < t.mission.length - 1"> / </span>
                     </span>
@@ -206,7 +206,7 @@ onMounted(load)
             </div>
         </template>
 
-        <!-- ── 팀장 / 팀전도교관 ─────────────────────────────────── -->
+        <!-- ── 지역장 / 전도팀장 ─────────────────────────────────── -->
         <template v-else-if="view === 'team_coach'">
             <div class="input-card">
                 <label style="margin-top:0; display:flex; align-items:center; justify-content:space-between;">
@@ -269,7 +269,7 @@ onMounted(load)
             </div>
 
             <div class="input-card">
-                <label style="margin-top:0;">팀장교관 2일 미션 <span style="font-size:12px; color:#999;">(오프라인 찾기 1건 / 2일)</span></label>
+                <label style="margin-top:0;">지역장교관 2일 미션 <span style="font-size:12px; color:#999;">(오프라인 찾기 1건 / 2일)</span></label>
                 <div v-for="b in mission" :key="b.code"
                      style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-top:1px dashed #eee;">
                     <span>{{ b.label }}</span>

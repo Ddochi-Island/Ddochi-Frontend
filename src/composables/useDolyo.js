@@ -52,8 +52,8 @@ function getStage(item) {
 function getAvailableScopes(role, isAdmin) {
     if (isAdmin) return ['전체', '지역', '구역', '나만']
     const r = role || ''
-    if (/지역장|지구장|행정/.test(r)) return ['전체', '지역', '구역', '나만']
-    if (/팀장|부팀장/.test(r)) return ['지역', '구역', '나만']
+    if (/전도교관|지구장|행정/.test(r)) return ['전체', '지역', '구역', '나만']
+    if (/지역장|부지역장/.test(r)) return ['지역', '구역', '나만']
     if (/구역장|순장/.test(r)) return ['구역', '나만']
     return ['나만']
 }
