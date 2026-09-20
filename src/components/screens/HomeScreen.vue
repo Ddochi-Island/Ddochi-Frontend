@@ -166,6 +166,10 @@ onMounted(() => {
                 <div class="pipeline-info"><span class="pipeline-icon">📑</span><div><div class="pipeline-title">합재양 작성</div><div class="pipeline-desc">만남 합재양 작성 및 관리</div></div></div>
                 <div class="pipeline-arrow">➔</div>
             </div>
+            <div class="pipeline-banner" style="background:#E0F7FA; border: 1px solid #80DEEA;" @click="goTo('shortCard')">
+                <div class="pipeline-info"><span class="pipeline-icon">📍</span><div><div class="pipeline-title">짧카 작성</div><div class="pipeline-desc">농부일지에 채울 지인 작성</div></div></div>
+                <div class="pipeline-arrow">➔</div>
+            </div>
             <div class="pipeline-banner" style="background:#FFF8E1; border: 1px solid #FFF59D;" @click="goTo('matching')">
                 <div class="pipeline-info"><span class="pipeline-icon">🛡️</span><div><div class="pipeline-title">매칭 절대 지켜!</div><div class="pipeline-desc">약속이 잡힌 만남 현황</div></div></div>
                 <div class="pipeline-arrow">➔</div>

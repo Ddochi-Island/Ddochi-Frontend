@@ -10,7 +10,7 @@
 //
 // 인덱스 (현재 도메인):
 //   1. path 매핑              pathMap, pathGroupMap
-//   2. 일반 라벨/필드          dayLabels, helpText, hjFields, ttagiFields, mbtiOptions
+//   2. 일반 라벨/필드          dayLabels, helpText, hjFields, scFields, ttagiFields, mbtiOptions
 //   3. prospect funnel        phaseOrder, statusColors, statusTextMap, phaseColorMap
 //   4. 인도권 (dolyo)         TM_RESULT_BIHAP, TM_RESULT_GEOJEOL, FAITH_LABEL_MAP,
 //                              stageLabels, stageNameToIndex
@@ -50,6 +50,11 @@ export const helpText = {
 
 export const hjFields = [
     { id: 'guide', label: '인도자 이름', type: 'text' }, { id: 'tmName', label: '티엠자 이름', type: 'text' }, { id: 'path', label: '섭외경로', type: 'select', opts: ['도구노방', '생노', '큐알', '바따장', '인스타디엠', '온라인폼', '소모임', '온찾', '인스타광고'] }, { id: 'tool', label: '섭외도구', type: 'toolSelect', opts: [] }, { id: 'mtDate', label: '매칭일자', type: 'date' }, { id: 'mtTime', label: '매칭시간', type: 'time' }, { id: 'mtPlace', label: '매칭장소', type: 'text' }, { id: 'subName', label: '섭외자 이름', type: 'text' }, { id: 'gender', label: '성별', type: 'select', opts: ['남', '여'] }, { id: 'age', label: '나이', type: 'number' }, { id: 'contact', label: '연락처', type: 'tel' }, { id: 'nearSt', label: '거주지 근처 역', type: 'text' }, { id: 'gwacheonMin', label: '과천까지(분)', type: 'minSelect' }, { id: 'gwacheonTransfer', label: '과천 환승', type: 'transferSelect' }, { id: 'centerMin', label: '센터까지(분)', type: 'minSelect' }, { id: 'centerTransfer', label: '센터 환승', type: 'transferSelect' }, { id: 'mbti', label: 'MBTI', type: 'text' }, { id: 'job', label: '학교(전공)/직장', type: 'text' }, { id: 'sch', label: '일정(학원,알바 등)', type: 'textarea' }, { id: 'plan', label: '1년 환경 구체적으로(군입대, 여행, 수술 등)', type: 'textarea' }, { id: 'purpose', label: '신청목적(메리트)', type: 'text' }, { id: 'selfImage', label: '나의 이미지(성격)', type: 'textarea' }, { id: 'trouble', label: '되고 싶은 내적 이미지(or 가장 고민되는 부분)', type: 'textarea' }, { id: 'att', label: '인성(전화 태도)', type: 'text' }, { id: 'wary', label: '경계', type: 'text' }, { id: 'dist', label: '거리부담', type: 'text' }, { id: 'etc', label: '특이사항', type: 'text' }, { id: 'centerEnv', label: '센터 환경', type: 'ox' }, { id: 'drug', label: '약물복용', type: 'ox' }, { id: 'mental', label: '정신질환', type: 'ox' }
+]
+
+// 짧카 작성 폼 필드 — hjFields와 동일한 형태. 농부일지용 밭 시드 최소 정보.
+export const scFields = [
+    { id: 'name', label: '이름', type: 'text' }, { id: 'age', label: '나이', type: 'number' }, { id: 'gender', label: '성별', type: 'select', opts: ['남', '여'] }, { id: 'phone', label: '번호', type: 'tel' }, { id: 'schoolMajor', label: '학교/전공', type: 'text' }, { id: 'environment', label: '환경', type: 'textarea' }, { id: 'residence', label: '사는 곳', type: 'text' }, { id: 'religion', label: '종교여부', type: 'select', opts: ['무교', '기독교', '불교', '천주교', '기타'] }, { id: 'recruitNote', label: '따기요소/고민', type: 'textarea' }
 ]
 
 export const ttagiFields = [

@@ -9,6 +9,7 @@ const routes = [
     { path: '/matching', name: 'matching', component: () => import('@/components/screens/MatchingScreen.vue'), meta: { requiresAuth: true } },
     { path: '/matching-history', name: 'matchingHistory', component: () => import('@/components/screens/MatchingHistoryScreen.vue'), meta: { requiresAuth: true } },
     { path: '/habjaeyang', name: 'habjaeyang', component: () => import('@/components/screens/HabjaeyangScreen.vue'), meta: { requiresAuth: true } },
+    { path: '/short-card', name: 'shortCard', component: () => import('@/components/screens/ShortCardScreen.vue'), meta: { requiresAuth: true } },
     { path: '/center', name: 'center', component: () => import('@/components/screens/CenterScreen.vue'), meta: { requiresAuth: true } },
     { path: '/dolyo', name: 'dolyo', component: () => import('@/components/screens/DolyoScreen.vue'), meta: { requiresAuth: true } },
     { path: '/admin', name: 'admin', component: () => import('@/components/screens/AdminScreen.vue'), meta: { requiresAuth: true } },
