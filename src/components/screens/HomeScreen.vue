@@ -174,6 +174,10 @@ onMounted(() => {
                 <div class="pipeline-info"><span class="pipeline-icon">🛡️</span><div><div class="pipeline-title">매칭 절대 지켜!</div><div class="pipeline-desc">약속이 잡힌 만남 현황</div></div></div>
                 <div class="pipeline-arrow">➔</div>
             </div>
+            <div class="pipeline-banner" style="background:#E0F2F1; border: 1px solid #80CBC4;" @click="goTo('shortCardList')">
+                <div class="pipeline-info"><span class="pipeline-icon">🏞️</span><div><div class="pipeline-title">밭 관리하기</div><div class="pipeline-desc">작성된 짧카 목록 보기</div></div></div>
+                <div class="pipeline-arrow">➔</div>
+            </div>
 
             <div class="pipeline-banner" style="background:#FCE4EC; border: 1px solid #F48FB1;" @click="openOnlineIntake">
                 <div class="pipeline-info"><span class="pipeline-icon">🌐</span><div><div class="pipeline-title">온라인 유입확인</div><div class="pipeline-desc">유입시트 자동연동 현황</div></div></div>
