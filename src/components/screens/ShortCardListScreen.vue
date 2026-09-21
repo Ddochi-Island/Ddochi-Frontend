@@ -1,9 +1,12 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { usePopup } from '@/composables/usePopup'
 import { useAuthStore } from '@/stores/auth'
+import { stageLabels, stageNameToIndex } from '@/constants'
 
+const router = useRouter()
 const { callApi } = useApi()
 const { showAppConfirm, showAppAlert, showToast } = usePopup()
 const auth = useAuthStore()
@@ -13,8 +16,13 @@ const canApprove = ref(false)
 const othersLabel = ref(null)
 const activeTab = ref('pending') // 'pending' | 'mine' | 'others'
 
-const STAGE_EMOJI = { pending: '🌱', approved: '🌻', rejected: '🥀' }
-const STAGE_LABEL = { pending: '대기중', approved: '재가완료', rejected: '반려됨' }
+const STATUS_EMOJI = { pending: '🌱', approved: '🌻', rejected: '🥀' }
+const STATUS_LABEL = { pending: '대기중', approved: '재가완료', rejected: '반려됨' }
+// 농부일지 성장 단계 — stageLabels/stageNameToIndex는 기존 인도권(dolyo) 상수 재사용
+// (constants/index.js). '씨앗 🌰' 형태라 라벨/이모지가 한 문자열에 같이 있음.
+function journalStageDisplay(stage) {
+    return stageLabels[stageNameToIndex[stage]] || stage
+}
 
 // 대기 목록: 아직 재가 안 된(대기중/반려됨) 전체. 나의 밭 / 구역·지역의 밭: 재가된 것만,
 // 인도자가 본인인지 아닌지로 갈림.
@@ -33,6 +41,17 @@ const counts = computed(() => {
     list.value.forEach(x => { if (c[x.approval_status] !== undefined) c[x.approval_status]++ })
     return c
 })
+
+// 나의 밭 / 구역·지역의 밭 탭에서는 상태 대신 성장 단계(씨앗/새싹/떡잎)로 상단 통계 교체.
+const stageCounts = computed(() => {
+    const c = { 씨앗: 0, 새싹: 0, 떡잎: 0 }
+    visibleList.value.forEach(x => { if (c[x.stage] !== undefined) c[x.stage]++ })
+    return c
+})
+
+function openJournal(card) {
+    router.push({ name: 'farmerJournal', query: { shortCardId: card.short_card_id } })
+}
 
 function fmtDate(iso) {
     if (!iso) return ''
@@ -69,7 +88,7 @@ function decide(card, statusKo) {
             <h1 class="sc-title">밭 관리하기</h1>
             <p class="sc-subtitle">내가 심은 짧카들, 무럭무럭 자라는 중</p>
 
-            <div class="sc-stat-row">
+            <div v-if="activeTab === 'pending'" class="sc-stat-row">
                 <div class="sc-stat-chip">
                     <span class="sc-stat-emoji">🌱</span>
                     <span class="sc-stat-num">{{ counts.pending }}</span>
@@ -86,6 +105,23 @@ function decide(card, statusKo) {
                     <span class="sc-stat-label">반려됨</span>
                 </div>
             </div>
+            <div v-else class="sc-stat-row">
+                <div class="sc-stat-chip">
+                    <span class="sc-stat-emoji">🌰</span>
+                    <span class="sc-stat-num">{{ stageCounts.씨앗 }}</span>
+                    <span class="sc-stat-label">씨앗</span>
+                </div>
+                <div class="sc-stat-chip">
+                    <span class="sc-stat-emoji">🌿</span>
+                    <span class="sc-stat-num">{{ stageCounts.새싹 }}</span>
+                    <span class="sc-stat-label">새싹</span>
+                </div>
+                <div class="sc-stat-chip">
+                    <span class="sc-stat-emoji">🍀</span>
+                    <span class="sc-stat-num">{{ stageCounts.떡잎 }}</span>
+                    <span class="sc-stat-label">떡잎</span>
+                </div>
+            </div>
         </div>
 
         <div class="sc-list-area">
@@ -98,14 +134,17 @@ function decide(card, statusKo) {
             </div>
 
             <div v-else class="sc-cards">
-                <div v-for="c in visibleList" :key="c.short_card_id" class="sc-card">
+                <div v-for="c in visibleList" :key="c.short_card_id"
+                     :class="['sc-card', activeTab !== 'pending' ? 'sc-card-clickable' : '']"
+                     @click="activeTab !== 'pending' && openJournal(c)">
                     <div class="sc-card-top">
-                        <div class="sc-icon-badge" :class="'sc-icon-' + c.approval_status">{{ STAGE_EMOJI[c.approval_status] || '🌱' }}</div>
+                        <div class="sc-icon-badge" :class="'sc-icon-' + c.approval_status">{{ STATUS_EMOJI[c.approval_status] || '🌱' }}</div>
                         <div class="sc-card-heading">
                             <div class="sc-name">{{ c.name }}</div>
                             <div class="sc-meta">{{ c.age || '-' }}세 · {{ c.gender || '-' }}</div>
                         </div>
-                        <span :class="['sc-badge', 'sc-badge-' + c.approval_status]">{{ STAGE_LABEL[c.approval_status] || c.approval_status }}</span>
+                        <span v-if="activeTab === 'pending'" :class="['sc-badge', 'sc-badge-' + c.approval_status]">{{ STATUS_LABEL[c.approval_status] || c.approval_status }}</span>
+                        <span v-else class="sc-badge sc-badge-stage">{{ journalStageDisplay(c.stage) }}</span>
                     </div>
 
                     <div class="sc-info">
@@ -231,6 +270,13 @@ function decide(card, statusKo) {
     padding: 16px;
     box-shadow: 0 1px 2px rgba(25,31,40,.04), 0 4px 14px rgba(25,31,40,.05);
 }
+.sc-card-clickable {
+    cursor: pointer;
+    transition: transform .08s;
+}
+.sc-card-clickable:active {
+    transform: scale(.98);
+}
 .sc-card-top {
     display: flex;
     align-items: center;
@@ -285,6 +331,10 @@ function decide(card, statusKo) {
 .sc-badge-rejected {
     background: #FCEEEE;
     color: #E0433F;
+}
+.sc-badge-stage {
+    background: #EAF7E9;
+    color: #22A340;
 }
 .sc-info {
     margin-top: 12px;
