@@ -203,23 +203,23 @@ function decide(card, statusKo) {
     min-height: calc(100vh - 50px);
     display: flex;
     flex-direction: column;
-    background: #F2F4F6;
+    background: var(--bg-color);
     padding-bottom: 76px;
 }
 
 .sc-top {
-    background: #fff;
+    background: var(--card-bg);
     padding: 24px 20px 18px;
 }
 .sc-title {
     font-size: 22px;
     font-weight: 800;
-    color: #191F28;
+    color: var(--text-color);
     margin: 0;
 }
 .sc-subtitle {
     font-size: 14px;
-    color: #8B95A1;
+    color: #A1887F;
     margin: 4px 0 18px;
 }
 .sc-stat-row {
@@ -228,7 +228,7 @@ function decide(card, statusKo) {
 }
 .sc-stat-chip {
     flex: 1;
-    background: #F7F8FA;
+    background: #FFF3E0;
     border-radius: 14px;
     padding: 12px 8px;
     display: flex;
@@ -242,11 +242,11 @@ function decide(card, statusKo) {
 .sc-stat-num {
     font-size: 17px;
     font-weight: 800;
-    color: #191F28;
+    color: var(--text-color);
 }
 .sc-stat-label {
     font-size: 11px;
-    color: #8B95A1;
+    color: #A1887F;
 }
 
 .sc-list-area {
@@ -256,7 +256,7 @@ function decide(card, statusKo) {
 .sc-empty {
     text-align: center;
     padding: 60px 10px;
-    color: #8B95A1;
+    color: #A1887F;
     font-size: 14px;
 }
 .sc-empty-icon {
@@ -269,10 +269,10 @@ function decide(card, statusKo) {
     gap: 10px;
 }
 .sc-card {
-    background: #fff;
+    background: var(--card-bg);
     border-radius: 18px;
     padding: 16px;
-    box-shadow: 0 1px 2px rgba(25,31,40,.04), 0 4px 14px rgba(25,31,40,.05);
+    box-shadow: var(--shadow);
 }
 .sc-card-clickable {
     cursor: pointer;
@@ -295,10 +295,10 @@ function decide(card, statusKo) {
     align-items: center;
     justify-content: center;
     font-size: 19px;
-    background: #F0F3EC;
+    background: #FFF3E0;
 }
 .sc-icon-approved {
-    background: #FFF6DC;
+    background: #FFE9B3;
 }
 .sc-icon-rejected {
     background: #FCEEEE;
@@ -319,11 +319,11 @@ function decide(card, statusKo) {
 .sc-name {
     font-size: 16px;
     font-weight: 700;
-    color: #191F28;
+    color: var(--text-color);
 }
 .sc-meta {
     font-size: 12px;
-    color: #8B95A1;
+    color: #A1887F;
     margin-top: 1px;
 }
 .sc-badge {
@@ -338,8 +338,8 @@ function decide(card, statusKo) {
     color: #E6720B;
 }
 .sc-badge-approved {
-    background: #E8F3FF;
-    color: #3182F6;
+    background: #FFE9B3;
+    color: var(--btn-color);
 }
 .sc-badge-rejected {
     background: #FCEEEE;
@@ -355,7 +355,7 @@ function decide(card, statusKo) {
 }
 .sc-row {
     font-size: 13px;
-    color: #4E5968;
+    color: var(--text-color);
     line-height: 1.6;
 }
 .sc-card-bottom {
@@ -364,9 +364,9 @@ function decide(card, statusKo) {
     margin-top: 12px;
     padding-top: 10px;
     padding-left: 50px;
-    border-top: 1px solid #F2F4F6;
+    border-top: 1px solid #F3E5D8;
     font-size: 11px;
-    color: #B0B8C1;
+    color: #BCAAA4;
 }
 .sc-decide-row {
     display: flex;
@@ -389,12 +389,12 @@ function decide(card, statusKo) {
     opacity: .85;
 }
 .sc-btn-primary {
-    background: #3182F6;
+    background: var(--btn-color);
     color: #fff;
 }
 .sc-btn-ghost {
-    background: #F2F4F6;
-    color: #4E5968;
+    background: #FFF3E0;
+    color: var(--text-color);
 }
 
 .sc-tabbar {
@@ -403,8 +403,8 @@ function decide(card, statusKo) {
     right: 0;
     bottom: 0;
     display: flex;
-    background: #fff;
-    border-top: 1px solid #EDEFF2;
+    background: var(--card-bg);
+    border-top: 1px solid #F3E5D8;
     padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
     z-index: 3;
 }
@@ -417,7 +417,7 @@ function decide(card, statusKo) {
     padding: 6px 4px;
     border: none;
     background: transparent;
-    color: #B0B8C1;
+    color: #BCAAA4;
     font-family: 'Jua', sans-serif;
     font-size: 11px;
     cursor: pointer;
@@ -435,7 +435,7 @@ function decide(card, statusKo) {
     position: absolute;
     top: -6px;
     right: -10px;
-    background: #E0433F;
+    background: #FF5252;
     color: #fff;
     font-size: 10px;
     line-height: 1;
@@ -445,7 +445,7 @@ function decide(card, statusKo) {
     text-align: center;
 }
 .sc-tab-active {
-    color: #3182F6;
+    color: var(--btn-color);
 }
 .sc-tab-active .sc-tab-icon {
     filter: none;

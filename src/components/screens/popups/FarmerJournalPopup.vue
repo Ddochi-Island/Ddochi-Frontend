@@ -141,24 +141,24 @@ function save() {
 .fj-header-title {
     font-size: 16px;
     font-weight: 800;
-    color: #191F28;
+    color: var(--text-color);
 }
 .fj-header-sub {
     font-size: 12px;
-    color: #8B95A1;
+    color: #A1887F;
     margin-top: 2px;
 }
 .fj-loading {
     padding: 40px 0;
     text-align: center;
-    color: #8B95A1;
+    color: #A1887F;
 }
 .fj-stage-tabs {
     display: flex;
     gap: 6px;
     padding: 10px 16px;
-    background: #F7F8FA;
-    border-bottom: 1px solid #EDEFF2;
+    background: #FFF3E0;
+    border-bottom: 1px solid #F3E5D8;
 }
 .fj-stage-tab {
     flex: 1;
@@ -166,15 +166,15 @@ function save() {
     border: none;
     border-radius: 10px;
     background: transparent;
-    color: #8B95A1;
+    color: #A1887F;
     font-family: 'Jua', sans-serif;
     font-size: 13px;
     cursor: pointer;
 }
 .fj-stage-tab-active {
     background: #fff;
-    color: #3182F6;
-    box-shadow: 0 1px 2px rgba(25,31,40,.08);
+    color: var(--btn-color);
+    box-shadow: var(--shadow);
 }
 .fj-scroll {
     text-align: left;
@@ -189,7 +189,7 @@ function save() {
 .fj-field label {
     display: block;
     font-size: 13px;
-    color: #4E5968;
+    color: var(--text-color);
     margin-bottom: 4px;
 }
 .fj-save-btn {
@@ -198,7 +198,7 @@ function save() {
 }
 .fj-readonly-note {
     text-align: center;
-    color: #8B95A1;
+    color: #A1887F;
     font-size: 13px;
     margin-top: 20px;
 }
