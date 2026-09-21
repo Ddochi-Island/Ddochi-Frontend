@@ -2,18 +2,26 @@
 import { ref, computed, onMounted } from 'vue'
 import { useApi } from '@/composables/useApi'
 import { usePopup } from '@/composables/usePopup'
+import { useAuthStore } from '@/stores/auth'
 
 const { callApi } = useApi()
 const { showAppConfirm, showAppAlert, showToast } = usePopup()
+const auth = useAuthStore()
 const list = ref([])
 const loading = ref(true)
 const canApprove = ref(false)
+const showMineOnly = ref(false)
 
 const STAGE_EMOJI = { pending: '🌱', approved: '🌻', rejected: '🥀' }
 
+const visibleList = computed(() => {
+    if (!showMineOnly.value) return list.value
+    return list.value.filter(c => c.member_id === auth.currentSabun)
+})
+
 const counts = computed(() => {
     const c = { pending: 0, approved: 0, rejected: 0 }
-    list.value.forEach(x => { if (c[x.approval_status] !== undefined) c[x.approval_status]++ })
+    visibleList.value.forEach(x => { if (c[x.approval_status] !== undefined) c[x.approval_status]++ })
     return c
 })
 
@@ -71,13 +79,13 @@ function decide(card, statusKo) {
 
             <div class="sc-field">
                 <div v-if="loading" class="sc-empty">🚜 밭 갈아엎는 중...</div>
-                <div v-else-if="!list.length" class="sc-empty">
+                <div v-else-if="!visibleList.length" class="sc-empty">
                     <div class="sc-empty-icon">🌾</div>
-                    <div>아직 심어둔 짧카가 없어요</div>
+                    <div>{{ showMineOnly ? '내가 심은 짧카가 없어요' : '아직 심어둔 짧카가 없어요' }}</div>
                 </div>
 
                 <div v-else class="sc-plots">
-                    <div v-for="c in list" :key="c.short_card_id" :class="['sc-plot', 'sc-plot-' + c.approval_status]">
+                    <div v-for="c in visibleList" :key="c.short_card_id" :class="['sc-plot', 'sc-plot-' + c.approval_status]">
                         <div class="sc-plant">{{ STAGE_EMOJI[c.approval_status] || '🌱' }}</div>
                         <div class="sc-plot-body">
                             <div class="sc-plot-top">
@@ -105,6 +113,17 @@ function decide(card, statusKo) {
             <div class="sc-fence">
                 <span v-for="n in 10" :key="n">🟫</span>
             </div>
+        </div>
+
+        <div class="sc-toolbar">
+            <button :class="['sc-tool-btn', !showMineOnly ? 'sc-tool-active' : '']" @click="showMineOnly = false">
+                <span class="sc-tool-icon">🏞️</span>
+                <span class="sc-tool-label">전체 밭</span>
+            </button>
+            <button :class="['sc-tool-btn', showMineOnly ? 'sc-tool-active' : '']" @click="showMineOnly = true">
+                <span class="sc-tool-icon">🧑‍🌾</span>
+                <span class="sc-tool-label">내가 심은 것</span>
+            </button>
         </div>
     </div>
 </template>
@@ -323,5 +342,46 @@ function decide(card, statusKo) {
     line-height: 1;
     opacity: .85;
     background: #7CB342;
+}
+
+/* ── 하단 툴바 ── */
+.sc-toolbar {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    gap: 8px;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    background: linear-gradient(0deg, #8D6E4B, #6D4C24);
+    box-shadow: 0 -3px 0 #4E3418, 0 -6px 10px rgba(0,0,0,.2);
+    z-index: 3;
+}
+.sc-tool-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 4px;
+    border: none;
+    border-radius: 12px;
+    background: rgba(0,0,0,.2);
+    color: #D8C6A4;
+    font-family: 'Jua', sans-serif;
+    cursor: pointer;
+    transition: transform .08s, background .15s, color .15s;
+}
+.sc-tool-btn:active {
+    transform: translateY(1px);
+}
+.sc-tool-icon {
+    font-size: 22px;
+}
+.sc-tool-label {
+    font-size: 11px;
+}
+.sc-tool-active {
+    background: #FFF6E0;
+    color: #6D4C24;
+    box-shadow: inset 0 0 0 2px #C29A65;
 }
 </style>
