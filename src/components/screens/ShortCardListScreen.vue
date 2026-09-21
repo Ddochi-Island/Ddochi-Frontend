@@ -136,7 +136,7 @@ function decide(card, statusKo) {
 
             <div v-else class="sc-cards">
                 <div v-for="c in visibleList" :key="c.short_card_id"
-                     :class="['sc-card', activeTab !== 'pending' ? 'sc-card-clickable' : '']"
+                     :class="['sc-card', activeTab !== 'pending' ? 'sc-card-clickable' : '', activeTab === 'pending' && c.approval_status !== 'pending' ? 'sc-card-decided' : '']"
                      @click="activeTab !== 'pending' && openJournal(c)">
                     <div class="sc-card-top">
                         <div v-if="activeTab === 'pending'" class="sc-icon-badge" :class="'sc-icon-' + c.approval_status">{{ STATUS_EMOJI[c.approval_status] || '🌱' }}</div>
@@ -280,6 +280,10 @@ function decide(card, statusKo) {
 }
 .sc-card-clickable:active {
     transform: scale(.98);
+}
+.sc-card-decided {
+    filter: grayscale(1);
+    opacity: .6;
 }
 .sc-card-top {
     display: flex;
