@@ -18,6 +18,7 @@ const activeTab = ref('pending') // 'pending' | 'mine' | 'others'
 
 const STATUS_EMOJI = { pending: '🌱', approved: '🌻', rejected: '🥀' }
 const STATUS_LABEL = { pending: '대기중', approved: '재가완료', rejected: '반려됨' }
+const STAGE_EMOJI = { 씨앗: '🌰', 새싹: '🌿', 떡잎: '🍀' }
 // 농부일지 성장 단계 — stageLabels/stageNameToIndex는 기존 인도권(dolyo) 상수 재사용
 // (constants/index.js). '씨앗 🌰' 형태라 라벨/이모지가 한 문자열에 같이 있음.
 function journalStageDisplay(stage) {
@@ -138,7 +139,8 @@ function decide(card, statusKo) {
                      :class="['sc-card', activeTab !== 'pending' ? 'sc-card-clickable' : '']"
                      @click="activeTab !== 'pending' && openJournal(c)">
                     <div class="sc-card-top">
-                        <div class="sc-icon-badge" :class="'sc-icon-' + c.approval_status">{{ STATUS_EMOJI[c.approval_status] || '🌱' }}</div>
+                        <div v-if="activeTab === 'pending'" class="sc-icon-badge" :class="'sc-icon-' + c.approval_status">{{ STATUS_EMOJI[c.approval_status] || '🌱' }}</div>
+                        <div v-else class="sc-icon-badge" :class="'sc-icon-stage-' + c.stage">{{ STAGE_EMOJI[c.stage] || '🌰' }}</div>
                         <div class="sc-card-heading">
                             <div class="sc-name">{{ c.name }}</div>
                             <div class="sc-meta">{{ c.age || '-' }}세 · {{ c.gender || '-' }}</div>
@@ -298,6 +300,15 @@ function decide(card, statusKo) {
 }
 .sc-icon-rejected {
     background: #FCEEEE;
+}
+.sc-icon-stage-씨앗 {
+    background: #FBF0DE;
+}
+.sc-icon-stage-새싹 {
+    background: #EAF7E9;
+}
+.sc-icon-stage-떡잎 {
+    background: #DEF2D9;
 }
 .sc-card-heading {
     flex: 1;
