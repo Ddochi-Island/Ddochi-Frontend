@@ -25,9 +25,9 @@ function journalStageDisplay(stage) {
     return stageLabels[stageNameToIndex[stage]] || stage
 }
 
-// 대기 목록: 아직 재가 안 된(대기중/반려됨) 전체. 나의 밭 / 구역·지역의 밭: 재가된 것만,
-// 인도자가 본인인지 아닌지로 갈림.
-const pendingList = computed(() => list.value.filter(c => c.approval_status !== 'approved'))
+// 대기 목록: 전체 — 대기중은 그대로, 재가완료/반려됨은 흐릿하게 표시(sc-card-decided).
+// 나의 밭 / 구역·지역의 밭: 재가된 것만, 인도자가 본인인지 아닌지로 갈림.
+const pendingList = computed(() => list.value)
 const mineList = computed(() => list.value.filter(c => c.approval_status === 'approved' && c.member_id === auth.currentSabun))
 const othersList = computed(() => list.value.filter(c => c.approval_status === 'approved' && c.member_id !== auth.currentSabun))
 
@@ -136,7 +136,7 @@ function decide(card, statusKo) {
 
             <div v-else class="sc-cards">
                 <div v-for="c in visibleList" :key="c.short_card_id"
-                     :class="['sc-card', activeTab !== 'pending' ? 'sc-card-clickable' : '']"
+                     :class="['sc-card', activeTab !== 'pending' ? 'sc-card-clickable' : '', activeTab === 'pending' && c.approval_status !== 'pending' ? 'sc-card-decided' : '']"
                      @click="activeTab !== 'pending' && openJournal(c)">
                     <div class="sc-card-top">
                         <div v-if="activeTab === 'pending'" class="sc-icon-badge" :class="'sc-icon-' + c.approval_status">{{ STATUS_EMOJI[c.approval_status] || '🌱' }}</div>
@@ -173,7 +173,7 @@ function decide(card, statusKo) {
             <button :class="['sc-tab', activeTab === 'pending' ? 'sc-tab-active' : '']" @click="activeTab = 'pending'">
                 <span class="sc-tab-icon-wrap">
                     <span class="sc-tab-icon">⏳</span>
-                    <span v-if="pendingList.length" class="sc-tab-count">{{ pendingList.length }}</span>
+                    <span v-if="counts.pending" class="sc-tab-count">{{ counts.pending }}</span>
                 </span>
                 <span>대기 목록</span>
             </button>
@@ -280,6 +280,11 @@ function decide(card, statusKo) {
 }
 .sc-card-clickable:active {
     transform: scale(.98);
+}
+.sc-card-decided {
+    filter: grayscale(.85) blur(.6px);
+    opacity: .55;
+    pointer-events: none;
 }
 .sc-card-top {
     display: flex;
