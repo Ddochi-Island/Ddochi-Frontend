@@ -71,8 +71,28 @@ function load() {
 }
 onMounted(load)
 
+function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+}
+
 function decide(card, statusKo) {
-    showAppConfirm(`${card.name}님 짧카를 ${statusKo}하시겠어요?`, (ok) => {
+    const fields = [
+        ['연락처', card.phone],
+        ['성별', card.gender],
+        ['학교/전공', card.school_major],
+        ['환경', card.environment],
+        ['사는 곳', card.residence],
+        ['종교', card.religion],
+        ['따기요소/고민', card.recruit_note],
+    ].filter(([, v]) => v)
+
+    const msg = [
+        `<div class="confirm-head">${escapeHtml(card.name)}${card.age ? ` <span class="confirm-age">(${escapeHtml(card.age)}세)</span>` : ''}</div>`,
+        '<div class="confirm-grid">' + fields.map(([k, v]) => `<span class="k">${k}</span><span class="v">${escapeHtml(v)}</span>`).join('') + '</div>',
+        `<div class="confirm-q">${statusKo}하시겠어요?</div>`,
+    ].join('')
+
+    showAppConfirm(msg, (ok) => {
         if (!ok) return
         callApi('/api/short-cards/approve', { shortCardId: card.short_card_id, status: statusKo }, r => {
             if (!r?.success) { showAppAlert(r?.message || '처리 실패'); return }
