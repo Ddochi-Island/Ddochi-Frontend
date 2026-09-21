@@ -32,7 +32,7 @@ function checkStage1Complete() {
     }
 }
 
-function load() {
+function load(onDone) {
     callApi('/api/short-cards/journal-get', { shortCardId: props.shortCardId }, r => {
         loading.value = false
         if (!r?.success) { showAppAlert(r?.message || '불러오기 실패'); emit('close'); return }
@@ -49,20 +49,30 @@ function load() {
             familyAtmosphere: c.family_atmosphere, humanRelations: c.human_relations,
             faithStatus: c.faith_status, noteSpecial: c.note_special, guideComment: c.guide_comment,
         })
+        onDone?.()
     })
 }
-onMounted(load)
+onMounted(() => load())
+
+const STAGE_ORDER = ['씨앗', '새싹', '떡잎']
 
 function save() {
     if (saving.value) return
     saving.value = true
+    const prevStage = stage.value
     const { name, ...data } = form // name은 짧카 작성 때 정해진 값, 여기선 안 바꿈
     callApi('/api/short-cards/journal-save', { shortCardId: props.shortCardId, data }, r => {
         saving.value = false
         if (!r?.success) { showAppAlert(r?.message || '저장 실패'); return }
-        showToast(r.message)
+        checkStage1Complete() // blur 타이밍에 상관없이 저장 시점에도 한 번 더 확인
         emit('saved')
-        load()
+        load(() => {
+            if (STAGE_ORDER.indexOf(stage.value) > STAGE_ORDER.indexOf(prevStage)) {
+                showAppAlert(`🎉 ${prevStage}에서 ${stage.value}(으)로 자랐어요!`)
+            } else {
+                showToast(r.message)
+            }
+        })
     })
 }
 </script>
