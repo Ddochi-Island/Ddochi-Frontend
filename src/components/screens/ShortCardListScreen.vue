@@ -10,19 +10,27 @@ const auth = useAuthStore()
 const list = ref([])
 const loading = ref(true)
 const canApprove = ref(false)
-const showMineOnly = ref(false)
+const othersLabel = ref(null)
+const activeTab = ref('pending') // 'pending' | 'mine' | 'others'
 
 const STAGE_EMOJI = { pending: '🌱', approved: '🌻', rejected: '🥀' }
 const STAGE_LABEL = { pending: '대기중', approved: '재가완료', rejected: '반려됨' }
 
+// 대기 목록: 아직 재가 안 된(대기중/반려됨) 전체. 나의 밭 / 구역·지역의 밭: 재가된 것만,
+// 인도자가 본인인지 아닌지로 갈림.
+const pendingList = computed(() => list.value.filter(c => c.approval_status !== 'approved'))
+const mineList = computed(() => list.value.filter(c => c.approval_status === 'approved' && c.member_id === auth.currentSabun))
+const othersList = computed(() => list.value.filter(c => c.approval_status === 'approved' && c.member_id !== auth.currentSabun))
+
 const visibleList = computed(() => {
-    if (!showMineOnly.value) return list.value
-    return list.value.filter(c => c.member_id === auth.currentSabun)
+    if (activeTab.value === 'mine') return mineList.value
+    if (activeTab.value === 'others') return othersList.value
+    return pendingList.value
 })
 
 const counts = computed(() => {
     const c = { pending: 0, approved: 0, rejected: 0 }
-    visibleList.value.forEach(x => { if (c[x.approval_status] !== undefined) c[x.approval_status]++ })
+    list.value.forEach(x => { if (c[x.approval_status] !== undefined) c[x.approval_status]++ })
     return c
 })
 
@@ -37,6 +45,7 @@ function load() {
         if (r?.success) {
             list.value = r.list || []
             canApprove.value = !!r.canApprove
+            othersLabel.value = r.othersLabel || null
         }
     })
 }
@@ -83,7 +92,9 @@ function decide(card, statusKo) {
             <div v-if="loading" class="sc-empty">불러오는 중...</div>
             <div v-else-if="!visibleList.length" class="sc-empty">
                 <div class="sc-empty-icon">🌾</div>
-                <div>{{ showMineOnly ? '내가 심은 짧카가 없어요' : '아직 심어둔 짧카가 없어요' }}</div>
+                <div v-if="activeTab === 'pending'">대기 중인 짧카가 없어요</div>
+                <div v-else-if="activeTab === 'mine'">재가받은 내 짧카가 없어요</div>
+                <div v-else>{{ othersLabel || '남의 밭' }}에 아직 없어요</div>
             </div>
 
             <div v-else class="sc-cards">
@@ -118,13 +129,26 @@ function decide(card, statusKo) {
         </div>
 
         <div class="sc-tabbar">
-            <button :class="['sc-tab', !showMineOnly ? 'sc-tab-active' : '']" @click="showMineOnly = false">
-                <span class="sc-tab-icon">🌍</span>
-                <span>전체 밭</span>
+            <button :class="['sc-tab', activeTab === 'pending' ? 'sc-tab-active' : '']" @click="activeTab = 'pending'">
+                <span class="sc-tab-icon-wrap">
+                    <span class="sc-tab-icon">⏳</span>
+                    <span v-if="pendingList.length" class="sc-tab-count">{{ pendingList.length }}</span>
+                </span>
+                <span>대기 목록</span>
             </button>
-            <button :class="['sc-tab', showMineOnly ? 'sc-tab-active' : '']" @click="showMineOnly = true">
-                <span class="sc-tab-icon">👤</span>
-                <span>내가 심은 것</span>
+            <button :class="['sc-tab', activeTab === 'mine' ? 'sc-tab-active' : '']" @click="activeTab = 'mine'">
+                <span class="sc-tab-icon-wrap">
+                    <span class="sc-tab-icon">👤</span>
+                    <span v-if="mineList.length" class="sc-tab-count">{{ mineList.length }}</span>
+                </span>
+                <span>나의 밭</span>
+            </button>
+            <button v-if="othersLabel" :class="['sc-tab', activeTab === 'others' ? 'sc-tab-active' : '']" @click="activeTab = 'others'">
+                <span class="sc-tab-icon-wrap">
+                    <span class="sc-tab-icon">🌍</span>
+                    <span v-if="othersList.length" class="sc-tab-count">{{ othersList.length }}</span>
+                </span>
+                <span>{{ othersLabel }}</span>
             </button>
         </div>
     </div>
@@ -335,10 +359,27 @@ function decide(card, statusKo) {
     font-size: 11px;
     cursor: pointer;
 }
+.sc-tab-icon-wrap {
+    position: relative;
+    display: inline-flex;
+}
 .sc-tab-icon {
     font-size: 19px;
     filter: grayscale(1);
     opacity: .5;
+}
+.sc-tab-count {
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    background: #E0433F;
+    color: #fff;
+    font-size: 10px;
+    line-height: 1;
+    padding: 3px 5px;
+    border-radius: 20px;
+    min-width: 14px;
+    text-align: center;
 }
 .sc-tab-active {
     color: #3182F6;
