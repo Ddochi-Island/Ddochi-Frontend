@@ -13,6 +13,7 @@ const canApprove = ref(false)
 const showMineOnly = ref(false)
 
 const STAGE_EMOJI = { pending: '🌱', approved: '🌻', rejected: '🥀' }
+const STAGE_LABEL = { pending: '대기중', approved: '재가완료', rejected: '반려됨' }
 
 const visibleList = computed(() => {
     if (!showMineOnly.value) return list.value
@@ -54,334 +55,296 @@ function decide(card, statusKo) {
 </script>
 
 <template>
-    <div class="screen sc-game">
-        <div class="sc-hud">
-            <div class="sc-hud-title">
-                <span class="sc-hud-icon">🏞️</span>
-                <div>
-                    <div class="sc-hud-h1">밭 관리하기</div>
-                    <div class="sc-hud-sub">내가 심은 짧카들, 무럭무럭 자라는 중</div>
+    <div class="screen sc-toss">
+        <div class="sc-top">
+            <h1 class="sc-title">밭 관리하기</h1>
+            <p class="sc-subtitle">내가 심은 짧카들, 무럭무럭 자라는 중</p>
+
+            <div class="sc-stat-row">
+                <div class="sc-stat-chip">
+                    <span class="sc-stat-emoji">🌱</span>
+                    <span class="sc-stat-num">{{ counts.pending }}</span>
+                    <span class="sc-stat-label">대기중</span>
                 </div>
-            </div>
-            <div class="sc-hud-stats">
-                <span class="sc-stat">🌱 {{ counts.pending }}</span>
-                <span class="sc-stat">🌻 {{ counts.approved }}</span>
-                <span class="sc-stat">🥀 {{ counts.rejected }}</span>
+                <div class="sc-stat-chip">
+                    <span class="sc-stat-emoji">🌻</span>
+                    <span class="sc-stat-num">{{ counts.approved }}</span>
+                    <span class="sc-stat-label">재가완료</span>
+                </div>
+                <div class="sc-stat-chip">
+                    <span class="sc-stat-emoji">🥀</span>
+                    <span class="sc-stat-num">{{ counts.rejected }}</span>
+                    <span class="sc-stat-label">반려됨</span>
+                </div>
             </div>
         </div>
 
-        <div class="sc-meadow">
-            <span class="sc-deco sc-tree-l">🌲</span>
-            <span class="sc-deco sc-bush-l">🌳</span>
-            <span class="sc-deco sc-tree-r">🌳</span>
-            <span class="sc-deco sc-rock">🪨</span>
-            <span class="sc-deco sc-flower">🌼</span>
+        <div class="sc-list-area">
+            <div v-if="loading" class="sc-empty">불러오는 중...</div>
+            <div v-else-if="!visibleList.length" class="sc-empty">
+                <div class="sc-empty-icon">🌾</div>
+                <div>{{ showMineOnly ? '내가 심은 짧카가 없어요' : '아직 심어둔 짧카가 없어요' }}</div>
+            </div>
 
-            <div class="sc-field">
-                <div v-if="loading" class="sc-empty">🚜 밭 갈아엎는 중...</div>
-                <div v-else-if="!visibleList.length" class="sc-empty">
-                    <div class="sc-empty-icon">🌾</div>
-                    <div>{{ showMineOnly ? '내가 심은 짧카가 없어요' : '아직 심어둔 짧카가 없어요' }}</div>
-                </div>
-
-                <div v-else class="sc-plots">
-                    <div v-for="c in visibleList" :key="c.short_card_id" :class="['sc-plot', 'sc-plot-' + c.approval_status]">
-                        <div class="sc-plant">{{ STAGE_EMOJI[c.approval_status] || '🌱' }}</div>
-                        <div class="sc-plot-body">
-                            <div class="sc-plot-top">
-                                <span class="sc-name">{{ c.name }}</span>
-                                <span :class="['sc-badge', 'sc-badge-' + c.approval_status]">{{ c.approval_status_label }}</span>
-                            </div>
+            <div v-else class="sc-cards">
+                <div v-for="c in visibleList" :key="c.short_card_id" class="sc-card">
+                    <div class="sc-card-top">
+                        <div class="sc-icon-badge" :class="'sc-icon-' + c.approval_status">{{ STAGE_EMOJI[c.approval_status] || '🌱' }}</div>
+                        <div class="sc-card-heading">
+                            <div class="sc-name">{{ c.name }}</div>
                             <div class="sc-meta">{{ c.age || '-' }}세 · {{ c.gender || '-' }}</div>
-                            <div class="sc-row">🏫 {{ c.school_major || '-' }}</div>
-                            <div class="sc-row">📍 {{ c.residence || '-' }} · 🙏 {{ c.religion || '-' }}</div>
-                            <div v-if="c.environment" class="sc-row">🌤️ {{ c.environment }}</div>
-                            <div v-if="c.recruit_note" class="sc-row">💭 {{ c.recruit_note }}</div>
-                            <div class="sc-plot-bottom">
-                                <span>인도자 {{ c.author_name }}</span>
-                                <span>{{ fmtDate(c.created_at) }}</span>
-                            </div>
-                            <div v-if="canApprove && c.approval_status === 'pending'" class="sc-decide-row">
-                                <button class="sc-btn sc-btn-approve" @click="decide(c, '재가')">💧 재가로 물 주기</button>
-                                <button class="sc-btn sc-btn-reject" @click="decide(c, '반려')">🥀 반려</button>
-                            </div>
                         </div>
+                        <span :class="['sc-badge', 'sc-badge-' + c.approval_status]">{{ STAGE_LABEL[c.approval_status] || c.approval_status }}</span>
+                    </div>
+
+                    <div class="sc-info">
+                        <div class="sc-row">🏫 {{ c.school_major || '-' }}</div>
+                        <div class="sc-row">📍 {{ c.residence || '-' }} · 🙏 {{ c.religion || '-' }}</div>
+                        <div v-if="c.environment" class="sc-row">🌤️ {{ c.environment }}</div>
+                        <div v-if="c.recruit_note" class="sc-row">💭 {{ c.recruit_note }}</div>
+                    </div>
+
+                    <div class="sc-card-bottom">
+                        <span>인도자 {{ c.author_name }}</span>
+                        <span>{{ fmtDate(c.created_at) }}</span>
+                    </div>
+
+                    <div v-if="canApprove && c.approval_status === 'pending'" class="sc-decide-row">
+                        <button class="sc-btn sc-btn-primary" @click="decide(c, '재가')">재가</button>
+                        <button class="sc-btn sc-btn-ghost" @click="decide(c, '반려')">반려</button>
                     </div>
                 </div>
             </div>
-
-            <div class="sc-fence">
-                <span v-for="n in 10" :key="n">🟫</span>
-            </div>
         </div>
 
-        <div class="sc-toolbar">
-            <button :class="['sc-tool-btn', !showMineOnly ? 'sc-tool-active' : '']" @click="showMineOnly = false">
-                <span class="sc-tool-icon">🏞️</span>
-                <span class="sc-tool-label">전체 밭</span>
+        <div class="sc-tabbar">
+            <button :class="['sc-tab', !showMineOnly ? 'sc-tab-active' : '']" @click="showMineOnly = false">
+                <span class="sc-tab-icon">🌍</span>
+                <span>전체 밭</span>
             </button>
-            <button :class="['sc-tool-btn', showMineOnly ? 'sc-tool-active' : '']" @click="showMineOnly = true">
-                <span class="sc-tool-icon">🧑‍🌾</span>
-                <span class="sc-tool-label">내가 심은 것</span>
+            <button :class="['sc-tab', showMineOnly ? 'sc-tab-active' : '']" @click="showMineOnly = true">
+                <span class="sc-tab-icon">👤</span>
+                <span>내가 심은 것</span>
             </button>
         </div>
     </div>
 </template>
 
 <style scoped>
-.sc-game {
+.sc-toss {
     margin: 0 -20px;
     min-height: calc(100vh - 50px);
     display: flex;
     flex-direction: column;
-    background: linear-gradient(180deg, #EFF7E1, #DCEEC3);
+    background: #F2F4F6;
+    padding-bottom: 76px;
 }
 
-/* ── 상단 HUD ── */
-.sc-hud {
+.sc-top {
+    background: #fff;
+    padding: 24px 20px 18px;
+}
+.sc-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #191F28;
+    margin: 0;
+}
+.sc-subtitle {
+    font-size: 14px;
+    color: #8B95A1;
+    margin: 4px 0 18px;
+}
+.sc-stat-row {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 16px;
-    background: linear-gradient(180deg, #8D6E4B, #6D4C24);
-    box-shadow: 0 3px 0 #4E3418, 0 6px 10px rgba(0,0,0,.25);
-    position: relative;
-    z-index: 2;
+    gap: 8px;
 }
-.sc-hud-title {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.sc-hud-icon {
-    font-size: 26px;
-    filter: drop-shadow(0 2px 1px rgba(0,0,0,.3));
-}
-.sc-hud-h1 {
-    font-size: 18px;
-    font-weight: bold;
-    color: #FFF6E0;
-    text-shadow: 0 2px 0 rgba(0,0,0,.35);
-}
-.sc-hud-sub {
-    font-size: 11px;
-    color: #E4D2AC;
-    margin-top: 1px;
-}
-.sc-hud-stats {
-    display: flex;
-    gap: 6px;
-    flex-shrink: 0;
-}
-.sc-stat {
-    background: rgba(0,0,0,.22);
-    border: 1px solid rgba(255,255,255,.25);
-    border-radius: 20px;
-    padding: 4px 9px;
-    font-size: 12px;
-    color: #FFF6E0;
-    white-space: nowrap;
-}
-
-/* ── 초원 ── */
-.sc-meadow {
-    position: relative;
+.sc-stat-chip {
     flex: 1;
-    padding: 18px 14px 0;
-    background:
-        radial-gradient(circle at 15% 8%, rgba(255,255,255,.35), transparent 40%),
-        linear-gradient(180deg, #AEDC7F, #8BC34A 60%, #7CB342);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-.sc-deco {
-    position: absolute;
-    filter: drop-shadow(0 2px 2px rgba(0,0,0,.15));
-    pointer-events: none;
-}
-.sc-tree-l { top: 6px; left: 6px; font-size: 32px; }
-.sc-bush-l { top: 46px; left: -6px; font-size: 24px; opacity: .85; }
-.sc-tree-r { top: 2px; right: 10px; font-size: 30px; }
-.sc-rock { bottom: 34px; left: 12px; font-size: 20px; }
-.sc-flower { bottom: 30px; right: 18px; font-size: 18px; }
-
-.sc-field {
-    position: relative;
-    z-index: 1;
-    background: linear-gradient(160deg, #DCC098, #C29A65);
-    border-radius: 18px 18px 0 0;
-    padding: 16px 12px;
-    box-shadow: inset 0 0 0 3px rgba(255,255,255,.25), 0 -4px 10px rgba(90,60,20,.15);
-    flex: 1;
-}
-.sc-empty {
-    text-align: center;
-    padding: 30px 10px;
-    color: #6D4C24;
-    font-size: 15px;
-}
-.sc-empty-icon {
-    font-size: 34px;
-    margin-bottom: 6px;
-}
-.sc-plots {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-.sc-plot {
-    display: flex;
-    gap: 10px;
-    background: #FBF3E3;
+    background: #F7F8FA;
     border-radius: 14px;
-    padding: 12px;
-    box-shadow: 0 2px 4px rgba(90,60,20,.2);
-    border: 2px solid #EADCB8;
-}
-.sc-plot-rejected {
-    opacity: .75;
-}
-.sc-plant {
-    font-size: 30px;
-    line-height: 1;
-    flex-shrink: 0;
-    padding-top: 2px;
-}
-.sc-plot-body {
-    flex: 1;
-    min-width: 0;
-}
-.sc-plot-top {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.sc-name {
-    font-size: 17px;
-    font-weight: bold;
-    color: #4E342E;
-}
-.sc-meta {
-    font-size: 13px;
-    color: #8D6E4B;
-    margin-top: 2px;
-}
-.sc-row {
-    font-size: 13px;
-    color: #6D5738;
-    margin-top: 4px;
-}
-.sc-plot-bottom {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 10px;
-    padding-top: 8px;
-    border-top: 1px dashed #DCC9A0;
-    font-size: 11px;
-    color: #A38A62;
-}
-.sc-badge {
-    font-size: 11px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-weight: bold;
-}
-.sc-badge-pending {
-    background: #FFF3E0;
-    color: #EF6C00;
-}
-.sc-badge-approved {
-    background: #E8F5E9;
-    color: #2E7D32;
-}
-.sc-badge-rejected {
-    background: #FBE9E7;
-    color: #A1424A;
-}
-.sc-decide-row {
-    display: flex;
-    gap: 8px;
-    margin-top: 10px;
-}
-.sc-btn {
-    flex: 1;
-    padding: 9px;
-    border: none;
-    border-radius: 10px;
-    font-family: 'Jua', sans-serif;
-    font-size: 13px;
-    cursor: pointer;
-    transition: transform .08s, box-shadow .08s;
-}
-.sc-btn:active {
-    transform: translateY(2px);
-}
-.sc-btn-approve {
-    background: #7CB342;
-    color: #fff;
-    box-shadow: 0 3px 0 #5D8C2C;
-}
-.sc-btn-approve:active {
-    box-shadow: 0 1px 0 #5D8C2C;
-}
-.sc-btn-reject {
-    background: #EFE5D2;
-    color: #8D6E4B;
-    box-shadow: 0 3px 0 #D9C7A0;
-}
-.sc-btn-reject:active {
-    box-shadow: 0 1px 0 #D9C7A0;
-}
-.sc-fence {
-    display: flex;
-    justify-content: space-between;
-    padding: 4px 10px 10px;
-    font-size: 18px;
-    line-height: 1;
-    opacity: .85;
-    background: #7CB342;
-}
-
-/* ── 하단 툴바 ── */
-.sc-toolbar {
-    position: sticky;
-    bottom: 0;
-    display: flex;
-    gap: 8px;
-    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-    background: linear-gradient(0deg, #8D6E4B, #6D4C24);
-    box-shadow: 0 -3px 0 #4E3418, 0 -6px 10px rgba(0,0,0,.2);
-    z-index: 3;
-}
-.sc-tool-btn {
-    flex: 1;
+    padding: 12px 8px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 2px;
-    padding: 8px 4px;
+}
+.sc-stat-emoji {
+    font-size: 18px;
+}
+.sc-stat-num {
+    font-size: 17px;
+    font-weight: 800;
+    color: #191F28;
+}
+.sc-stat-label {
+    font-size: 11px;
+    color: #8B95A1;
+}
+
+.sc-list-area {
+    flex: 1;
+    padding: 16px 16px 0;
+}
+.sc-empty {
+    text-align: center;
+    padding: 60px 10px;
+    color: #8B95A1;
+    font-size: 14px;
+}
+.sc-empty-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+.sc-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.sc-card {
+    background: #fff;
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 1px 2px rgba(25,31,40,.04), 0 4px 14px rgba(25,31,40,.05);
+}
+.sc-card-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.sc-icon-badge {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 19px;
+    background: #F0F3EC;
+}
+.sc-icon-approved {
+    background: #FFF6DC;
+}
+.sc-icon-rejected {
+    background: #FCEEEE;
+}
+.sc-card-heading {
+    flex: 1;
+    min-width: 0;
+}
+.sc-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #191F28;
+}
+.sc-meta {
+    font-size: 12px;
+    color: #8B95A1;
+    margin-top: 1px;
+}
+.sc-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 9px;
+    border-radius: 20px;
+    flex-shrink: 0;
+}
+.sc-badge-pending {
+    background: #FFF1E6;
+    color: #E6720B;
+}
+.sc-badge-approved {
+    background: #E8F3FF;
+    color: #3182F6;
+}
+.sc-badge-rejected {
+    background: #FCEEEE;
+    color: #E0433F;
+}
+.sc-info {
+    margin-top: 12px;
+    padding-left: 50px;
+}
+.sc-row {
+    font-size: 13px;
+    color: #4E5968;
+    line-height: 1.6;
+}
+.sc-card-bottom {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding-top: 10px;
+    padding-left: 50px;
+    border-top: 1px solid #F2F4F6;
+    font-size: 11px;
+    color: #B0B8C1;
+}
+.sc-decide-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding-left: 50px;
+}
+.sc-btn {
+    flex: 1;
+    padding: 11px;
     border: none;
     border-radius: 12px;
-    background: rgba(0,0,0,.2);
-    color: #D8C6A4;
     font-family: 'Jua', sans-serif;
+    font-size: 14px;
     cursor: pointer;
-    transition: transform .08s, background .15s, color .15s;
+    transition: transform .08s, opacity .08s;
 }
-.sc-tool-btn:active {
-    transform: translateY(1px);
+.sc-btn:active {
+    transform: scale(.97);
+    opacity: .85;
 }
-.sc-tool-icon {
-    font-size: 22px;
+.sc-btn-primary {
+    background: #3182F6;
+    color: #fff;
 }
-.sc-tool-label {
+.sc-btn-ghost {
+    background: #F2F4F6;
+    color: #4E5968;
+}
+
+.sc-tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    background: #fff;
+    border-top: 1px solid #EDEFF2;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+    z-index: 3;
+}
+.sc-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 4px;
+    border: none;
+    background: transparent;
+    color: #B0B8C1;
+    font-family: 'Jua', sans-serif;
     font-size: 11px;
+    cursor: pointer;
 }
-.sc-tool-active {
-    background: #FFF6E0;
-    color: #6D4C24;
-    box-shadow: inset 0 0 0 2px #C29A65;
+.sc-tab-icon {
+    font-size: 19px;
+    filter: grayscale(1);
+    opacity: .5;
+}
+.sc-tab-active {
+    color: #3182F6;
+}
+.sc-tab-active .sc-tab-icon {
+    filter: none;
+    opacity: 1;
 }
 </style>
