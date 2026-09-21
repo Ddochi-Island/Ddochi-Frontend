@@ -11,7 +11,6 @@ const routes = [
     { path: '/habjaeyang', name: 'habjaeyang', component: () => import('@/components/screens/HabjaeyangScreen.vue'), meta: { requiresAuth: true } },
     { path: '/short-card', name: 'shortCard', component: () => import('@/components/screens/ShortCardScreen.vue'), meta: { requiresAuth: true } },
     { path: '/short-cards', name: 'shortCardList', component: () => import('@/components/screens/ShortCardListScreen.vue'), meta: { requiresAuth: true, fullScreen: true } },
-    { path: '/farmer-journal', name: 'farmerJournal', component: () => import('@/components/screens/FarmerJournalScreen.vue'), meta: { requiresAuth: true } },
     { path: '/center', name: 'center', component: () => import('@/components/screens/CenterScreen.vue'), meta: { requiresAuth: true } },
     { path: '/dolyo', name: 'dolyo', component: () => import('@/components/screens/DolyoScreen.vue'), meta: { requiresAuth: true } },
     { path: '/admin', name: 'admin', component: () => import('@/components/screens/AdminScreen.vue'), meta: { requiresAuth: true } },

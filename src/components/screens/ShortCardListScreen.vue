@@ -1,12 +1,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { usePopup } from '@/composables/usePopup'
 import { useAuthStore } from '@/stores/auth'
 import { stageLabels, stageNameToIndex } from '@/constants'
+import FarmerJournalPopup from './popups/FarmerJournalPopup.vue'
 
-const router = useRouter()
 const { callApi } = useApi()
 const { showAppConfirm, showAppAlert, showToast } = usePopup()
 const auth = useAuthStore()
@@ -14,7 +13,8 @@ const list = ref([])
 const loading = ref(true)
 const canApprove = ref(false)
 const othersLabel = ref(null)
-const activeTab = ref('pending') // 'pending' | 'mine' | 'others'
+const activeTab = ref('mine') // 'pending' | 'mine' | 'others'
+const journalCardId = ref(null)
 
 const STATUS_EMOJI = { pending: '🌱', approved: '🌻', rejected: '🥀' }
 const STATUS_LABEL = { pending: '대기중', approved: '재가완료', rejected: '반려됨' }
@@ -51,7 +51,7 @@ const stageCounts = computed(() => {
 })
 
 function openJournal(card) {
-    router.push({ name: 'farmerJournal', query: { shortCardId: card.short_card_id } })
+    journalCardId.value = card.short_card_id
 }
 
 function fmtDate(iso) {
@@ -192,6 +192,8 @@ function decide(card, statusKo) {
                 <span>{{ othersLabel }}</span>
             </button>
         </div>
+
+        <FarmerJournalPopup v-if="journalCardId" :short-card-id="journalCardId" @close="journalCardId = null" @saved="load" />
     </div>
 </template>
 
