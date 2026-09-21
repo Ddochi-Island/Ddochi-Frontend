@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useApi } from '@/composables/useApi'
 import { usePopup } from '@/composables/usePopup'
 
@@ -10,6 +10,12 @@ const loading = ref(true)
 const canApprove = ref(false)
 
 const STAGE_EMOJI = { pending: '🌱', approved: '🌻', rejected: '🥀' }
+
+const counts = computed(() => {
+    const c = { pending: 0, approved: 0, rejected: 0 }
+    list.value.forEach(x => { if (c[x.approval_status] !== undefined) c[x.approval_status]++ })
+    return c
+})
 
 function fmtDate(iso) {
     if (!iso) return ''
@@ -40,15 +46,28 @@ function decide(card, statusKo) {
 </script>
 
 <template>
-    <div class="screen">
-        <div class="header sc-header">
-            <h3>🏞️ 밭 관리하기</h3>
-            <p>내가 심은 짧카들, 무럭무럭 자라는 중</p>
+    <div class="screen sc-game">
+        <div class="sc-hud">
+            <div class="sc-hud-title">
+                <span class="sc-hud-icon">🏞️</span>
+                <div>
+                    <div class="sc-hud-h1">밭 관리하기</div>
+                    <div class="sc-hud-sub">내가 심은 짧카들, 무럭무럭 자라는 중</div>
+                </div>
+            </div>
+            <div class="sc-hud-stats">
+                <span class="sc-stat">🌱 {{ counts.pending }}</span>
+                <span class="sc-stat">🌻 {{ counts.approved }}</span>
+                <span class="sc-stat">🥀 {{ counts.rejected }}</span>
+            </div>
         </div>
 
         <div class="sc-meadow">
-            <span class="sc-tree sc-tree-l">🌲</span>
-            <span class="sc-tree sc-tree-r">🌳</span>
+            <span class="sc-deco sc-tree-l">🌲</span>
+            <span class="sc-deco sc-bush-l">🌳</span>
+            <span class="sc-deco sc-tree-r">🌳</span>
+            <span class="sc-deco sc-rock">🪨</span>
+            <span class="sc-deco sc-flower">🌼</span>
 
             <div class="sc-field">
                 <div v-if="loading" class="sc-empty">🚜 밭 갈아엎는 중...</div>
@@ -81,42 +100,102 @@ function decide(card, statusKo) {
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="sc-fence">
-                    <span v-for="n in 8" :key="n">🟫</span>
-                </div>
+            <div class="sc-fence">
+                <span v-for="n in 10" :key="n">🟫</span>
             </div>
         </div>
     </div>
 </template>
 
 <style scoped>
-.sc-header p {
-    color: #689F38;
+.sc-game {
+    margin: 0 -20px;
+    min-height: calc(100vh - 50px);
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, #EFF7E1, #DCEEC3);
 }
+
+/* ── 상단 HUD ── */
+.sc-hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    background: linear-gradient(180deg, #8D6E4B, #6D4C24);
+    box-shadow: 0 3px 0 #4E3418, 0 6px 10px rgba(0,0,0,.25);
+    position: relative;
+    z-index: 2;
+}
+.sc-hud-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.sc-hud-icon {
+    font-size: 26px;
+    filter: drop-shadow(0 2px 1px rgba(0,0,0,.3));
+}
+.sc-hud-h1 {
+    font-size: 18px;
+    font-weight: bold;
+    color: #FFF6E0;
+    text-shadow: 0 2px 0 rgba(0,0,0,.35);
+}
+.sc-hud-sub {
+    font-size: 11px;
+    color: #E4D2AC;
+    margin-top: 1px;
+}
+.sc-hud-stats {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.sc-stat {
+    background: rgba(0,0,0,.22);
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 20px;
+    padding: 4px 9px;
+    font-size: 12px;
+    color: #FFF6E0;
+    white-space: nowrap;
+}
+
+/* ── 초원 ── */
 .sc-meadow {
     position: relative;
-    margin: 4px 4px 16px;
-    padding: 22px 14px 14px;
-    border-radius: 24px;
-    background: radial-gradient(circle at 20% 10%, #C5E1A5, #9CCC65 55%, #8BC34A);
+    flex: 1;
+    padding: 18px 14px 0;
+    background:
+        radial-gradient(circle at 15% 8%, rgba(255,255,255,.35), transparent 40%),
+        linear-gradient(180deg, #AEDC7F, #8BC34A 60%, #7CB342);
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
 }
-.sc-tree {
+.sc-deco {
     position: absolute;
-    top: -6px;
-    font-size: 30px;
     filter: drop-shadow(0 2px 2px rgba(0,0,0,.15));
+    pointer-events: none;
 }
-.sc-tree-l { left: 4px; }
-.sc-tree-r { right: 8px; }
+.sc-tree-l { top: 6px; left: 6px; font-size: 32px; }
+.sc-bush-l { top: 46px; left: -6px; font-size: 24px; opacity: .85; }
+.sc-tree-r { top: 2px; right: 10px; font-size: 30px; }
+.sc-rock { bottom: 34px; left: 12px; font-size: 20px; }
+.sc-flower { bottom: 30px; right: 18px; font-size: 18px; }
 
 .sc-field {
     position: relative;
-    background: linear-gradient(160deg, #D9BA8C, #C29A65);
-    border-radius: 18px;
-    padding: 16px 12px 10px;
-    box-shadow: inset 0 0 0 3px rgba(255,255,255,.25), 0 4px 10px rgba(90,60,20,.25);
+    z-index: 1;
+    background: linear-gradient(160deg, #DCC098, #C29A65);
+    border-radius: 18px 18px 0 0;
+    padding: 16px 12px;
+    box-shadow: inset 0 0 0 3px rgba(255,255,255,.25), 0 -4px 10px rgba(90,60,20,.15);
+    flex: 1;
 }
 .sc-empty {
     text-align: center;
@@ -215,24 +294,34 @@ function decide(card, statusKo) {
     font-family: 'Jua', sans-serif;
     font-size: 13px;
     cursor: pointer;
+    transition: transform .08s, box-shadow .08s;
+}
+.sc-btn:active {
+    transform: translateY(2px);
 }
 .sc-btn-approve {
     background: #7CB342;
     color: #fff;
-    box-shadow: 0 2px 0 #5D8C2C;
+    box-shadow: 0 3px 0 #5D8C2C;
+}
+.sc-btn-approve:active {
+    box-shadow: 0 1px 0 #5D8C2C;
 }
 .sc-btn-reject {
     background: #EFE5D2;
     color: #8D6E4B;
-    box-shadow: 0 2px 0 #D9C7A0;
+    box-shadow: 0 3px 0 #D9C7A0;
+}
+.sc-btn-reject:active {
+    box-shadow: 0 1px 0 #D9C7A0;
 }
 .sc-fence {
     display: flex;
     justify-content: space-between;
-    margin-top: 12px;
-    padding: 0 2px;
-    font-size: 20px;
+    padding: 4px 10px 10px;
+    font-size: 18px;
     line-height: 1;
     opacity: .85;
+    background: #7CB342;
 }
 </style>
