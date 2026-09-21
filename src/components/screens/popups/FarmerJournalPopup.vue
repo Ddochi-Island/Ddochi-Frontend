@@ -24,6 +24,14 @@ function stageDisplay() {
     return stageLabels[stageNameToIndex[stage.value]] || stage.value
 }
 
+// 1단계 필드가 다 채워지면 자동으로 2단계 탭으로 이동.
+function checkStage1Complete() {
+    if (activeStage.value !== 1) return
+    if (form.gender && form.age && form.relation && form.phone && form.residence) {
+        activeStage.value = 2
+    }
+}
+
 function load() {
     callApi('/api/short-cards/journal-get', { shortCardId: props.shortCardId }, r => {
         loading.value = false
@@ -88,16 +96,16 @@ function save() {
                                     <option v-for="(label, code) in FAITH_LABEL_MAP" :key="code" :value="code">{{ label }}</option>
                                 </select>
                             </div>
-                            <div class="fj-field"><label>나이</label><input type="number" class="input-card" v-model="form.age" :disabled="!isEditable"></div>
+                            <div class="fj-field"><label>나이</label><input type="number" class="input-card" v-model="form.age" :disabled="!isEditable" @blur="checkStage1Complete"></div>
                             <div class="fj-field">
                                 <label>성별</label>
-                                <select class="input-card" v-model="form.gender" :disabled="!isEditable">
+                                <select class="input-card" v-model="form.gender" :disabled="!isEditable" @change="checkStage1Complete">
                                     <option value="">선택</option><option>남</option><option>여</option>
                                 </select>
                             </div>
-                            <div class="fj-field"><label>관계</label><input type="text" class="input-card" v-model="form.relation" :disabled="!isEditable" placeholder="예) 과 후배, 동아리 친구"></div>
-                            <div class="fj-field"><label>연락처</label><input type="tel" class="input-card" v-model="form.phone" :disabled="!isEditable"></div>
-                            <div class="fj-field"><label>거주지</label><input type="text" class="input-card" v-model="form.residence" :disabled="!isEditable"></div>
+                            <div class="fj-field"><label>관계</label><input type="text" class="input-card" v-model="form.relation" :disabled="!isEditable" placeholder="예) 과 후배, 동아리 친구" @blur="checkStage1Complete"></div>
+                            <div class="fj-field"><label>연락처</label><input type="tel" class="input-card" v-model="form.phone" :disabled="!isEditable" @blur="checkStage1Complete"></div>
+                            <div class="fj-field"><label>거주지</label><input type="text" class="input-card" v-model="form.residence" :disabled="!isEditable" @blur="checkStage1Complete"></div>
                         </div>
 
                         <div v-show="activeStage === 2" class="fj-grid">
