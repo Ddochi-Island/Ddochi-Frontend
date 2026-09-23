@@ -1,15 +1,17 @@
 <script setup>
-import { reactive, ref, onMounted, watch } from 'vue'
+import { reactive, ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { usePopup } from '@/composables/usePopup'
 import { useFormatters } from '@/composables/useFormatters'
+import { useAuthStore } from '@/stores/auth'
 import { scFields } from '@/constants'
 
 const router = useRouter()
 const { callApiPromise } = useApi()
 const { showAppAlert, showToast } = usePopup()
 const { moveFocus } = useFormatters()
+const auth = useAuthStore()
 
 const formData = reactive({})
 const submitting = ref(false)
@@ -19,6 +21,45 @@ const phone3 = ref('')
 
 function handlePhoneFocus(el, max, nextId) { moveFocus(el, max, nextId) }
 function onPhone3Input(event) { if (phone3.value.length >= 4) event.target.blur() }
+
+// 인도자 자동완성 — 기본값은 본인, 지우고 다른 사람 이름을 고르면 그 사람 명의로 제출됨.
+const guideAcOpen = ref(false)
+const guideAcQuery = ref('')
+const guideAcConfirmed = ref(false)
+const guideAcStatus = ref('') // '' | 'valid' | 'invalid'
+const guideAcOpts = computed(() => {
+    if (!guideAcOpen.value || !guideAcQuery.value) return []
+    const lower = guideAcQuery.value.toLowerCase()
+    return (auth.validNames || []).filter(n => n.toLowerCase().includes(lower)).slice(0, 10)
+})
+function onGuideInput(e) {
+    guideAcQuery.value = e.target.value
+    formData.guideName = e.target.value
+    guideAcConfirmed.value = false
+    guideAcStatus.value = ''
+}
+function openGuideAc() { guideAcOpen.value = true }
+function closeGuideAc() {
+    setTimeout(() => {
+        guideAcOpen.value = false
+        if (!guideAcQuery.value) return
+        if (!guideAcConfirmed.value) {
+            guideAcStatus.value = 'invalid'
+            setTimeout(() => {
+                formData.guideName = ''
+                guideAcQuery.value = ''
+                guideAcStatus.value = ''
+            }, 600)
+        }
+    }, 150)
+}
+function selectGuide(name) {
+    formData.guideName = name
+    guideAcQuery.value = name
+    guideAcConfirmed.value = true
+    guideAcStatus.value = 'valid'
+    guideAcOpen.value = false
+}
 
 const DRAFT_KEY = 'sc_draft'
 function saveDraft() {
@@ -41,7 +82,11 @@ function clearDraft() {
 
 onMounted(() => {
     scFields.forEach(f => { if (!(f.id in formData)) formData[f.id] = '' })
+    formData.guideName = auth.currentUserName || ''
     loadDraft()
+    guideAcQuery.value = formData.guideName
+    guideAcConfirmed.value = true
+    guideAcStatus.value = formData.guideName ? 'valid' : ''
 })
 watch(formData, saveDraft, { deep: true })
 watch([phone1, phone2, phone3], saveDraft)
@@ -49,6 +94,9 @@ watch([phone1, phone2, phone3], saveDraft)
 async function submitShortCard() {
     if (submitting.value) return
     if (!(formData.name || '').trim()) { showAppAlert('이름을 입력해줘!'); return }
+    const guideName = (formData.guideName || '').trim()
+    if (!guideName) { showAppAlert('인도자를 입력해줘!'); return }
+    if (!auth.validNames.includes(guideName)) { showAppAlert(`인도자 이름[${guideName}]이(가) 명단에 없어! 확인해줘.`); return }
 
     submitting.value = true
     const data = {}
@@ -77,7 +125,17 @@ async function submitShortCard() {
             <template v-for="f in scFields" :key="f.id">
                 <div class="hj-field">
                     <label>{{ f.label }}</label>
-                    <div v-if="f.id === 'phone'" class="input-card phone-group">
+                    <div v-if="f.id === 'guideName'" class="ac-wrap">
+                        <input type="text" :class="['input-card', guideAcStatus ? `ac-input-${guideAcStatus}` : '']"
+                               :value="guideAcQuery" placeholder="명단에서 선택"
+                               autocomplete="off"
+                               @input="onGuideInput"
+                               @focus="openGuideAc" @blur="closeGuideAc">
+                        <div v-if="guideAcOpts.length" class="ac-dropdown">
+                            <div v-for="n in guideAcOpts" :key="n" class="ac-item" @mousedown.prevent="selectGuide(n)">{{ n }}</div>
+                        </div>
+                    </div>
+                    <div v-else-if="f.id === 'phone'" class="input-card phone-group">
                         <input type="tel" class="phone-input" id="sc-phone1" maxlength="3" v-model="phone1" @input="handlePhoneFocus($event.target, 3, 'sc-phone2')">
                         <span class="dash">-</span>
                         <input type="tel" class="phone-input" id="sc-phone2" maxlength="4" v-model="phone2" @input="handlePhoneFocus($event.target, 4, 'sc-phone3')">
@@ -106,5 +164,39 @@ async function submitShortCard() {
 }
 .hj-field {
     margin-bottom: 15px;
+}
+.ac-wrap { position: relative; }
+.ac-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    z-index: 1000;
+    max-height: 180px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+.ac-item {
+    padding: 10px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+}
+.ac-item:last-child { border-bottom: none; }
+.ac-item:active { background: #f5f5f5; }
+.ac-input-valid { border-color: #4CAF50 !important; background: #F1F8E9 !important; }
+.ac-input-invalid {
+    border-color: #EF5350 !important;
+    background: #FFEBEE !important;
+    animation: ac-shake 0.45s ease;
+}
+@keyframes ac-shake {
+    0%, 100% { transform: translateX(0); }
+    20%       { transform: translateX(-7px); }
+    40%       { transform: translateX(7px); }
+    60%       { transform: translateX(-4px); }
+    80%       { transform: translateX(4px); }
 }
 </style>

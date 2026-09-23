@@ -54,7 +54,7 @@ export const hjFields = [
 
 // 짧카 작성 폼 필드 — hjFields와 동일한 형태. 농부일지용 밭 시드 최소 정보.
 export const scFields = [
-    { id: 'name', label: '이름', type: 'text' }, { id: 'age', label: '나이', type: 'number' }, { id: 'gender', label: '성별', type: 'select', opts: ['남', '여'] }, { id: 'phone', label: '번호', type: 'tel' }, { id: 'schoolMajor', label: '학교/전공', type: 'text' }, { id: 'environment', label: '환경', type: 'textarea' }, { id: 'residence', label: '사는 곳', type: 'text' }, { id: 'religion', label: '종교여부', type: 'select', opts: ['무교', '기독교', '불교', '천주교', '기타'] }, { id: 'recruitNote', label: '따기요소/고민', type: 'textarea' }
+    { id: 'guideName', label: '인도자', type: 'text' }, { id: 'name', label: '이름', type: 'text' }, { id: 'age', label: '나이', type: 'number' }, { id: 'gender', label: '성별', type: 'select', opts: ['남', '여'] }, { id: 'phone', label: '번호', type: 'tel' }, { id: 'schoolMajor', label: '학교/전공', type: 'text' }, { id: 'environment', label: '환경', type: 'textarea' }, { id: 'residence', label: '사는 곳', type: 'text' }, { id: 'religion', label: '종교여부', type: 'select', opts: ['무교', '기독교', '불교', '천주교', '기타'] }, { id: 'recruitNote', label: '따기요소/고민', type: 'textarea' }
 ]
 
 export const ttagiFields = [
