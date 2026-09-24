@@ -19,16 +19,18 @@ pages_build_output_dir = "dist"
 # ────────
 # Browser hits   page.ddochi.cloud   (this CF Pages project, custom domain)
 # SPA calls      /api/*              (relative; same origin)
-# Pages Function /api/[[path]] fetches  https://app.ddochi.cloud/api/*
-#                                    (a separate hostname routed via CF Tunnel
-#                                     to main:8080 inside the VM)
+# Pages Function /api/[[path]] fetches  https://app2.ddochi.cloud/api/*
+#                                    (Django rewrite, routed via CF Tunnel
+#                                     ddochi-backend-v2 → main:8000 inside the VM)
 #
-# So app.ddochi.cloud stays dedicated to the tunnel (existing setup),
-# and page.ddochi.cloud serves the SPA + Functions.
+# [2026-09-25] 실서버 컷오버 — app.ddochi.cloud(레거시 Express)에서
+# app2.ddochi.cloud(Django 재작성)로 전환. 레거시는 그대로 살려둠(롤백 시
+# 이 값만 되돌리면 됨). 아직 미구현 라우트(주간점수/게시판/통계/일일계획 등)와
+# SARANG(사랑이/매칭) 데이터 마이그레이션 전이라 해당 화면은 비어있거나 501.
 
 # Default vars — non-secret. Override per environment under [env.*].
 [vars]
-ORIGIN_API_URL = "https://app.ddochi.cloud"
+ORIGIN_API_URL = "https://app2.ddochi.cloud"
 
 # OCI S3-compatible endpoint base — fill once an OCI bucket exists.
 # Format: https://<namespace>.compat.objectstorage.<region>.oraclecloud.com
@@ -38,7 +40,7 @@ OCI_BUCKET_NAME = ""
 
 [env.production]
 [env.production.vars]
-ORIGIN_API_URL = "https://app.ddochi.cloud"
+ORIGIN_API_URL = "https://app2.ddochi.cloud"
 # wrangler 가 top-level [vars] 를 환경별 vars 로 상속하지 않음 (env.production.vars 미명시 시 경고).
 # 현재 OCI bucket 미구성 — 빈 값 유지. Pages Functions 가 OCI 호출 안 함 (services/main 만 호출).
 OCI_S3_ENDPOINT = ""
@@ -47,7 +49,7 @@ OCI_BUCKET_NAME = ""
 
 [env.preview]
 [env.preview.vars]
-ORIGIN_API_URL = "https://app.ddochi.cloud"
+ORIGIN_API_URL = "https://app2.ddochi.cloud"
 OCI_S3_ENDPOINT = ""
 OCI_S3_REGION   = ""
 OCI_BUCKET_NAME = ""
