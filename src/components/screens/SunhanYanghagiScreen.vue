@@ -1098,7 +1098,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
               <div class="sy-card-header">
                 <span class="sy-name">{{ r.name }}</span>
                 <span v-if="r.age" class="sy-age">({{ r.age }}세)</span>
-                <span v-if="r.timestamp" class="sy-inflow-ts">{{ fmtInflowTs(r.timestamp) }}</span>
+                <span v-if="r.createdAt" class="sy-inflow-ts">{{ fmtInflowTs(r.createdAt) }}</span>
                 <span v-if="r.numberStatus === 'pending_dup'" class="sy-link-badge" style="background:#ff5252;color:#fff;">중복</span>
                 <span class="sy-link-badge sy-intr-badge">{{ rowEffTeam(r) }}</span>
               </div>
