@@ -1,11 +1,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { usePopup } from '@/composables/usePopup'
 import { useAuthStore } from '@/stores/auth'
 import { stageLabels, stageNameToIndex } from '@/constants'
 import FarmerJournalPopup from './popups/FarmerJournalPopup.vue'
 
+const router = useRouter()
 const { callApi } = useApi()
 const { showAppConfirm, showAppAlert, showToast } = usePopup()
 const auth = useAuthStore()
@@ -106,6 +108,7 @@ function decide(card, statusKo) {
 <template>
     <div class="screen sc-toss">
         <div class="sc-top">
+            <button class="sc-plant-btn" @click="router.push({ name: 'shortCard' })">🌱 씨앗 심기</button>
             <h1 class="sc-title">밭 관리하기</h1>
             <p class="sc-subtitle">내가 심은 짧카들, 무럭무럭 자라는 중</p>
 
@@ -228,8 +231,21 @@ function decide(card, statusKo) {
 }
 
 .sc-top {
+    position: relative;
     background: var(--card-bg);
     padding: 24px 20px 18px;
+}
+.sc-plant-btn {
+    position: absolute;
+    top: 24px;
+    right: 20px;
+    border: 1px solid var(--btn-color);
+    background: #E8F5E9;
+    color: var(--btn-color);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 7px 12px;
+    border-radius: 20px;
 }
 .sc-title {
     font-size: 22px;
