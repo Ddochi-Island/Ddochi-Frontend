@@ -184,7 +184,7 @@ async function loadPromoOptions() {
 
 // 홍보학교 항목 표시용 문자열 — "학교명/경로(도구)". 도구 없으면 "학교명/경로". 백엔드와 동일 포맷.
 function formatPromoItem(row) {
-    const school = (row.name || '').trim()
+    const school = (row.school || row.name || '').trim()
     const path = (row.path || '').trim()
     const tool = (row.tool || '').trim()
     const pathPart = tool ? `${path}(${tool})` : path
