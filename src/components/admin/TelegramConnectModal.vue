@@ -30,6 +30,13 @@ const SHED_CHANNEL_DEFS = [
     { key: 'schedDash',    field: 'schedDashChatId',    label: '예약타임테이블',    color: '#0277BD' },
 ]
 
+// 수지역(수지역장/전도교관용 전체 지역 통합 매칭현황판) — matchingChatId를 그대로
+// 재사용(백엔드 matching_dashboard.py가 TEAM_ID='수지역'일 때 REGION_CODE 필터
+// 없이 전체를 가져오도록 분기함). 다른 채널 타입은 이 가상 팀엔 의미 없어서 안 보여줌.
+const ALL_REGIONS_CHANNEL_DEFS = [
+    { key: 'matching', field: 'matchingChatId', label: '전체 매칭현황판', color: '#00838F' },
+]
+
 const teams = ref([])
 const teamIdMap = ref({})   // displayName → team_id
 const activeTabIndex = ref(0)
@@ -68,6 +75,7 @@ const SHED246_JOB_LABELS = {
 
 function getChannelDefs(team) {
     if (team === '135 연합' || team === '246 연합') return SHED_CHANNEL_DEFS
+    if (team === '수지역') return ALL_REGIONS_CHANNEL_DEFS
     return CHANNEL_DEFS
 }
 
@@ -126,10 +134,11 @@ function loadTeams() {
     callApi('/api/get-teams', {}, (r) => {
         loading.value = false
         if (!r || !r.success) { showAppAlert('지역 정보를 불러오지 못했어.'); return }
-        // 135/246 연합(사쉐 통합 대시보드) — 이 화면에만 있는 가상 팀 탭. 다른
-        // 화면들도 /api/get-teams를 공유해서 list/teams엔 안 실려있음(백엔드
-        // 참고: api/views/teams.py get_teams 주석) — configs엔 있어서 여기서만 추가.
-        teams.value = [...(r.list || []), '135 연합', '246 연합']
+        // 135/246 연합(사쉐 통합 대시보드), 수지역(수지역장/전도교관용 전체
+        // 지역 통합 매칭현황판) — 이 화면에만 있는 가상 팀 탭. 다른 화면들도
+        // /api/get-teams를 공유해서 list/teams엔 안 실려있음(백엔드 참고:
+        // api/views/teams.py get_teams 주석) — configs엔 있어서 여기서만 추가.
+        teams.value = [...(r.list || []), '135 연합', '246 연합', '수지역']
         const map = {}
         for (const t of (r.teams || [])) map[t.name] = t.id
         teamIdMap.value = map
