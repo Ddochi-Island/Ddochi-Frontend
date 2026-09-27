@@ -73,6 +73,11 @@ const SHED246_JOB_LABELS = {
     updateShed246SchedDashboard:   '🔄 예약타임테이블 갱신',
 }
 
+// 숫자 팀(1~6)이 아닌 가상 탭 — 연합/전체 보드는 색을 다르게 줘서 구별되게 함.
+function isVirtualTeam(team) {
+    return !/^\d+$/.test(team)
+}
+
 function getChannelDefs(team) {
     if (team === '135 연합' || team === '246 연합') return SHED_CHANNEL_DEFS
     if (team === '수지역') return ALL_REGIONS_CHANNEL_DEFS
@@ -246,7 +251,7 @@ onUnmounted(() => {
                     <template v-else>
                         <div style="display:flex; overflow-x:auto; gap:5px; margin-bottom:15px; padding-bottom:5px;">
                             <div v-for="(team, i) in teams" :key="team" class="sheet-tab-btn"
-                                :class="{ active: activeTabIndex === i }" @click="activeTabIndex = i">
+                                :class="{ active: activeTabIndex === i, virtual: isVirtualTeam(team) }" @click="activeTabIndex = i">
                                 {{ team }}
                             </div>
                         </div>
@@ -331,6 +336,32 @@ onUnmounted(() => {
     text-align: left;
     line-height: 1.6;
     margin-bottom: 15px;
+}
+.sheet-tab-btn {
+    flex-shrink: 0;
+    padding: 7px 14px;
+    border-radius: 16px;
+    background: #F0F0F0;
+    color: #666;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.sheet-tab-btn.active {
+    background: var(--btn-color, #6D4C41);
+    color: #fff;
+}
+.sheet-tab-btn.virtual {
+    background: #EDE7F6;
+    color: #5E35B1;
+    border: 1px dashed #B39DDB;
+}
+.sheet-tab-btn.virtual.active {
+    background: #5E35B1;
+    color: #fff;
+    border-style: solid;
 }
 .team-panel {
     background: #fff;
