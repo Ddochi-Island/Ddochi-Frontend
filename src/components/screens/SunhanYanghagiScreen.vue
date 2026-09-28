@@ -837,7 +837,7 @@ function fmtTmDt(val) {
 function copyProspect(p) {
   const lines = []
   lines.push(`${p.name}${p.age ? ` (${p.age}세)` : ''} / ${p.phone || '-'}`)
-  if (p.region) lines.push(`수지역: ${p.region}`)
+  if (p.region) lines.push(`지역: ${p.region}`)
   if (p.shedMeta?.env) lines.push(`환경: ${p.shedMeta.env}`)
   if (p.shedMeta?.reaction) lines.push(`반응: ${p.shedMeta.reaction}`)
   if (p.shedMeta?.introducer) lines.push(`유입: ${p.shedMeta.introducer}`)
@@ -881,7 +881,7 @@ async function doRegister(asRow) {
   const isDup = asRow.numberStatus === 'pending_dup'
   const fields = [
     ['연락처', asRow.phone],
-    ['수지역', asRow.region],
+    ['지역', asRow.region],
     ['MBTI', asRow.rest],
     ['환경', asRow.env],
     ['반응', asRow.reaction],
@@ -1075,7 +1075,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span class="sy-final-badge">반려</span>
               </div>
               <div v-if="r.region || r.env || r.reaction || r.introducer || r.tmLocation || r.rest" class="sy-fields">
-                <span v-if="r.region" class="sy-field"><b>수지역</b>{{ r.region }}</span>
+                <span v-if="r.region" class="sy-field"><b>지역</b>{{ r.region }}</span>
                 <span v-if="r.rest" class="sy-field"><b>MBTI</b>{{ r.rest }}</span>
                 <span v-if="r.env" class="sy-field"><b>환경</b>{{ r.env }}</span>
                 <span v-if="r.reaction" class="sy-field"><b>반응</b>{{ r.reaction }}</span>
@@ -1103,7 +1103,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span class="sy-link-badge sy-intr-badge">{{ rowEffTeam(r) }}</span>
               </div>
               <div v-if="r.region || r.env || r.reaction || r.introducer || r.tmLocation || r.rest" class="sy-fields">
-                <span v-if="r.region" class="sy-field"><b>수지역</b>{{ r.region }}</span>
+                <span v-if="r.region" class="sy-field"><b>지역</b>{{ r.region }}</span>
                 <span v-if="r.rest" class="sy-field"><b>MBTI</b>{{ r.rest }}</span>
                 <span v-if="r.env" class="sy-field"><b>환경</b>{{ r.env }}</span>
                 <span v-if="r.reaction" class="sy-field"><b>반응</b>{{ r.reaction }}</span>
@@ -1335,7 +1335,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
               <div class="sy-meta">
                 <span v-if="callingProspect.tmLogs?.[0]?.category === 'tmReserved' || (!hasRealLog(callingProspect) && callingProspect.reservedAt)" class="meta-reserved">{{ callingProspect.reservedAt ? formatReservedAt(callingProspect.reservedAt) : '예약됨' }}</span>
                 <span v-else-if="callingProspect.noAnswerCount" class="meta-warn">안받음 {{ callingProspect.noAnswerCount }}회</span>
-                <span v-if="callingProspect.region" class="sy-field"><b>수지역</b>{{ callingProspect.region }}</span>
+                <span v-if="callingProspect.region" class="sy-field"><b>지역</b>{{ callingProspect.region }}</span>
                 <span v-if="callingProspect.shedMeta?.mbti" class="sy-field"><b>MBTI</b>{{ callingProspect.shedMeta.mbti }}</span>
                 <span v-if="callingProspect.shedMeta?.env" class="sy-field"><b>환경</b>{{ callingProspect.shedMeta.env }}</span>
                 <span v-if="callingProspect.shedMeta?.reaction" class="sy-field"><b>반응</b>{{ callingProspect.shedMeta.reaction }}</span>
