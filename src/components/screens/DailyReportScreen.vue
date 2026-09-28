@@ -558,7 +558,8 @@ function actuallySubmit(data) {
             })
         }
         ui.setProcessing(false)
-        showAppAlert(res.message, () => {
+        // 서버가 메시지 없이 실패(예: HTML 500 → callApi가 {}로 처리)해도 빈 알림창이 안 뜨게
+        showAppAlert(res.message || '저장에 실패했어. 잠시 후 다시 시도해줘!', () => {
             if (res.success) {
                 localStorage.removeItem('dailyReportDraft')
                 router.push({ name: 'home' })
