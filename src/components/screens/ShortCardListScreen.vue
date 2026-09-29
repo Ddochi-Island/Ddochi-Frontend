@@ -13,13 +13,11 @@ const { showAppConfirm, showAppAlert, showToast } = usePopup()
 const auth = useAuthStore()
 const list = ref([])
 const loading = ref(true)
-const canApprove = ref(false)
 const othersLabel = ref(null)
-const activeTab = ref('mine') // 'pending' | 'mine' | 'others'
+const groupGoals = ref([]) // 반장 이상: [{name, sprouts, goal, leaderName}]
+const activeTab = ref('mine') // 'sprout' | 'mine' | 'others'
 const journalCardId = ref(null)
 
-const STATUS_EMOJI = { pending: '🌱', approved: '🌻', rejected: '🥀' }
-const STATUS_LABEL = { pending: '대기중', approved: '재가완료', rejected: '반려됨' }
 const STAGE_EMOJI = { 씨앗: '🌰', 새싹: '🌿', 떡잎: '🍀' }
 // 농부일지 성장 단계 — stageLabels/stageNameToIndex는 기존 인도권(dolyo) 상수 재사용
 // (constants/index.js). '씨앗 🌰' 형태라 라벨/이모지가 한 문자열에 같이 있음.
@@ -27,25 +25,19 @@ function journalStageDisplay(stage) {
     return stageLabels[stageNameToIndex[stage]] || stage
 }
 
-// 대기 목록: 전체 — 대기중/재가완료/반려됨 모두 표시.
-// 나의 밭 / 구역·지역의 밭: 재가된 것만, 인도자가 본인인지 아닌지로 갈림.
-const pendingList = computed(() => list.value)
-const mineList = computed(() => list.value.filter(c => c.approval_status === 'approved' && c.member_id === auth.currentSabun))
-const othersList = computed(() => list.value.filter(c => c.approval_status === 'approved' && c.member_id !== auth.currentSabun))
+// 짧카는 재가 없이 바로 밭에 올라감. 재가는 3단계를 다 채운 뒤 떡잎이 될 때만(반장 이상).
+// 떡잎 재가 탭: 재가 대기 중인 짧카 — 재가할 수 있는 사람에겐 재가/반려 버튼, 작성자에겐 진행 상황.
+const sproutList = computed(() => list.value.filter(c => c.sprout_status === 'pending'))
+const mineList = computed(() => list.value.filter(c => c.member_id === auth.currentSabun))
+const othersList = computed(() => list.value.filter(c => c.member_id !== auth.currentSabun))
+const sproutDecidable = computed(() => sproutList.value.filter(c => c.can_decide_sprout).length)
 
 const visibleList = computed(() => {
     if (activeTab.value === 'mine') return mineList.value
     if (activeTab.value === 'others') return othersList.value
-    return pendingList.value
+    return sproutList.value
 })
 
-const counts = computed(() => {
-    const c = { pending: 0, approved: 0, rejected: 0 }
-    list.value.forEach(x => { if (c[x.approval_status] !== undefined) c[x.approval_status]++ })
-    return c
-})
-
-// 나의 밭 / 구역·지역의 밭 탭에서는 상태 대신 성장 단계(씨앗/새싹/떡잎)로 상단 통계 교체.
 const stageCounts = computed(() => {
     const c = { 씨앗: 0, 새싹: 0, 떡잎: 0 }
     visibleList.value.forEach(x => { if (c[x.stage] !== undefined) c[x.stage]++ })
@@ -66,37 +58,20 @@ function load() {
         loading.value = false
         if (r?.success) {
             list.value = r.list || []
-            canApprove.value = !!r.canApprove
             othersLabel.value = r.othersLabel || null
+            groupGoals.value = r.groupGoals || []
         }
     })
 }
 onMounted(load)
 
-function escapeHtml(s) {
-    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
-}
-
-function decide(card, statusKo) {
-    const fields = [
-        ['연락처', card.phone],
-        ['성별', card.gender],
-        ['학교/전공', card.school_major],
-        ['환경', card.environment],
-        ['사는 곳', card.residence],
-        ['종교', card.religion],
-        ['따기요소/고민', card.recruit_note],
-    ].filter(([, v]) => v)
-
-    const msg = [
-        `<div class="confirm-head">${escapeHtml(card.name)}${card.age ? ` <span class="confirm-age">(${escapeHtml(card.age)}세)</span>` : ''}</div>`,
-        '<div class="confirm-grid">' + fields.map(([k, v]) => `<span class="k">${k}</span><span class="v">${escapeHtml(v)}</span>`).join('') + '</div>',
-        `<div class="confirm-q">${statusKo}하시겠어요?</div>`,
-    ].join('')
-
+function decideSprout(card, statusKo) {
+    const msg = statusKo === '재가'
+        ? `${card.name} 짧카를 떡잎으로 올릴까요? 🍀`
+        : `${card.name} 짧카의 떡잎 재가를 반려할까요? (인도자가 3단계를 고쳐 다시 저장하면 다시 올라와요)`
     showAppConfirm(msg, (ok) => {
         if (!ok) return
-        callApi('/api/short-cards/approve', { shortCardId: card.short_card_id, status: statusKo }, r => {
+        callApi('/api/short-cards/sprout-decide', { shortCardId: card.short_card_id, status: statusKo }, r => {
             if (!r?.success) { showAppAlert(r?.message || '처리 실패'); return }
             showToast(r.message)
             load()
@@ -112,24 +87,13 @@ function decide(card, statusKo) {
             <h1 class="sc-title">밭 관리하기</h1>
             <p class="sc-subtitle">내가 심은 짧카들, 무럭무럭 자라는 중</p>
 
-            <div v-if="activeTab === 'pending'" class="sc-stat-row">
-                <div class="sc-stat-chip">
-                    <span class="sc-stat-emoji">🌱</span>
-                    <span class="sc-stat-num">{{ counts.pending }}</span>
-                    <span class="sc-stat-label">대기중</span>
-                </div>
-                <div class="sc-stat-chip">
-                    <span class="sc-stat-emoji">🌻</span>
-                    <span class="sc-stat-num">{{ counts.approved }}</span>
-                    <span class="sc-stat-label">재가완료</span>
-                </div>
-                <div class="sc-stat-chip">
-                    <span class="sc-stat-emoji">🥀</span>
-                    <span class="sc-stat-num">{{ counts.rejected }}</span>
-                    <span class="sc-stat-label">반려됨</span>
+            <div v-if="groupGoals.length" class="sc-goal-row">
+                <div v-for="g in groupGoals" :key="g.groupId" :class="['sc-goal-chip', g.sprouts >= g.goal ? 'sc-goal-done' : '']">
+                    <span class="sc-goal-name">{{ g.name }}{{ g.leaderName ? ' · ' + g.leaderName : '' }}</span>
+                    <span class="sc-goal-num">🍀 {{ g.sprouts }} / {{ g.goal }}</span>
                 </div>
             </div>
-            <div v-else class="sc-stat-row">
+            <div class="sc-stat-row">
                 <div class="sc-stat-chip">
                     <span class="sc-stat-emoji">🌰</span>
                     <span class="sc-stat-num">{{ stageCounts.씨앗 }}</span>
@@ -152,24 +116,24 @@ function decide(card, statusKo) {
             <div v-if="loading" class="sc-empty">불러오는 중...</div>
             <div v-else-if="!visibleList.length" class="sc-empty">
                 <div class="sc-empty-icon">🌾</div>
-                <div v-if="activeTab === 'pending'">대기 중인 짧카가 없어요</div>
-                <div v-else-if="activeTab === 'mine'">재가받은 내 짧카가 없어요</div>
+                <div v-if="activeTab === 'sprout'">떡잎 재가를 기다리는 짧카가 없어요</div>
+                <div v-else-if="activeTab === 'mine'">아직 심은 짧카가 없어요</div>
                 <div v-else>{{ othersLabel || '남의 밭' }}에 아직 없어요</div>
             </div>
 
             <div v-else class="sc-cards">
-                <div v-for="c in visibleList" :key="c.short_card_id"
-                     :class="['sc-card', activeTab !== 'pending' ? 'sc-card-clickable' : '', activeTab === 'pending' && c.approval_status !== 'pending' ? 'sc-card-decided' : '']"
-                     @click="activeTab !== 'pending' && openJournal(c)">
+                <div v-for="c in visibleList" :key="c.short_card_id" class="sc-card sc-card-clickable" @click="openJournal(c)">
                     <div class="sc-card-top">
-                        <div v-if="activeTab === 'pending'" class="sc-icon-badge" :class="'sc-icon-' + c.approval_status">{{ STATUS_EMOJI[c.approval_status] || '🌱' }}</div>
-                        <div v-else class="sc-icon-badge" :class="'sc-icon-stage-' + c.stage">{{ STAGE_EMOJI[c.stage] || '🌰' }}</div>
+                        <div class="sc-icon-badge" :class="'sc-icon-stage-' + c.stage">{{ STAGE_EMOJI[c.stage] || '🌰' }}</div>
                         <div class="sc-card-heading">
                             <div class="sc-name">{{ c.name }}</div>
                             <div class="sc-meta">{{ c.age || '-' }}세 · {{ c.gender || '-' }}</div>
                         </div>
-                        <span v-if="activeTab === 'pending'" :class="['sc-badge', 'sc-badge-' + c.approval_status]">{{ STATUS_LABEL[c.approval_status] || c.approval_status }}</span>
-                        <span v-else class="sc-badge sc-badge-stage">{{ journalStageDisplay(c.stage) }}</span>
+                        <span class="sc-badge sc-badge-stage">{{ journalStageDisplay(c.stage) }}</span>
+                    </div>
+                    <div v-if="c.sprout_status === 'pending' || c.sprout_status === 'rejected'"
+                         :class="['sc-sprout-status', 'sc-sprout-' + c.sprout_status]">
+                        {{ c.sprout_status === 'pending' ? '⏳ 떡잎 재가 대기' : '🥀 떡잎 반려 — 3단계를 고쳐 저장하면 다시 올라가요' }}
                     </div>
 
                     <div class="sc-info">
@@ -184,21 +148,21 @@ function decide(card, statusKo) {
                         <span>{{ fmtDate(c.created_at) }}</span>
                     </div>
 
-                    <div v-if="canApprove && c.approval_status === 'pending'" class="sc-decide-row">
-                        <button class="sc-btn sc-btn-primary" @click="decide(c, '재가')">재가</button>
-                        <button class="sc-btn sc-btn-ghost" @click="decide(c, '반려')">반려</button>
+                    <div v-if="activeTab === 'sprout' && c.can_decide_sprout" class="sc-decide-row" @click.stop>
+                        <button class="sc-btn sc-btn-primary" @click="decideSprout(c, '재가')">떡잎 재가</button>
+                        <button class="sc-btn sc-btn-ghost" @click="decideSprout(c, '반려')">반려</button>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="sc-tabbar">
-            <button :class="['sc-tab', activeTab === 'pending' ? 'sc-tab-active' : '']" @click="activeTab = 'pending'">
+            <button :class="['sc-tab', activeTab === 'sprout' ? 'sc-tab-active' : '']" @click="activeTab = 'sprout'">
                 <span class="sc-tab-icon-wrap">
-                    <span class="sc-tab-icon">⏳</span>
-                    <span v-if="counts.pending" class="sc-tab-count">{{ counts.pending }}</span>
+                    <span class="sc-tab-icon">🍀</span>
+                    <span v-if="sproutDecidable || sproutList.length" class="sc-tab-count">{{ sproutDecidable || sproutList.length }}</span>
                 </span>
-                <span>대기 목록</span>
+                <span>떡잎 재가</span>
             </button>
             <button :class="['sc-tab', activeTab === 'mine' ? 'sc-tab-active' : '']" @click="activeTab = 'mine'">
                 <span class="sc-tab-icon-wrap">
@@ -258,6 +222,28 @@ function decide(card, statusKo) {
     color: #A1887F;
     margin: 4px 0 18px;
 }
+.sc-goal-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+.sc-goal-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #F1F8E9;
+    border: 1px solid #C5E1A5;
+    border-radius: 20px;
+    padding: 5px 10px;
+    font-size: 12px;
+}
+.sc-goal-done { background: #DCEDC8; border-color: #7CB342; }
+.sc-goal-name { color: #558B2F; font-weight: 600; }
+.sc-goal-num { color: var(--text-color); font-weight: 800; }
+.sc-sprout-status { margin: 8px 0 0; font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 8px; }
+.sc-sprout-pending { background: #FFF8E1; color: #F57F17; }
+.sc-sprout-rejected { background: #FFEBEE; color: #C62828; }
 .sc-stat-row {
     display: flex;
     gap: 8px;
@@ -317,10 +303,6 @@ function decide(card, statusKo) {
 .sc-card-clickable:active {
     transform: scale(.98);
 }
-.sc-card-decided {
-    filter: grayscale(1);
-    opacity: .6;
-}
 .sc-card-top {
     display: flex;
     align-items: center;
@@ -336,12 +318,6 @@ function decide(card, statusKo) {
     justify-content: center;
     font-size: 19px;
     background: #FFF3E0;
-}
-.sc-icon-approved {
-    background: #FFE9B3;
-}
-.sc-icon-rejected {
-    background: #FCEEEE;
 }
 .sc-icon-stage-씨앗 {
     background: #FBF0DE;
@@ -372,18 +348,6 @@ function decide(card, statusKo) {
     padding: 4px 9px;
     border-radius: 20px;
     flex-shrink: 0;
-}
-.sc-badge-pending {
-    background: #FFF1E6;
-    color: #E6720B;
-}
-.sc-badge-approved {
-    background: #FFE9B3;
-    color: var(--btn-color);
-}
-.sc-badge-rejected {
-    background: #FCEEEE;
-    color: #E0433F;
 }
 .sc-badge-stage {
     background: #EAF7E9;

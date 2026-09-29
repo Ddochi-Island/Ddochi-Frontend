@@ -39,6 +39,7 @@ function load(onDone) {
         const c = r.card
         isEditable.value = !!c.is_editable
         stage.value = c.stage || '씨앗'
+        sproutLabel.value = c.sprout_status_label || ''
         authorName.value = c.author_name
         Object.assign(form, {
             name: c.name, age: c.age, gender: c.gender, relation: c.relation,
@@ -55,6 +56,8 @@ function load(onDone) {
 onMounted(() => load())
 
 const STAGE_ORDER = ['씨앗', '새싹', '떡잎']
+// 3단계를 다 채워도 떡잎은 반장 이상 재가 후 — '떡잎 재가 대기/완료/반려' 표시용
+const sproutLabel = ref('')
 
 function save() {
     if (saving.value) return
@@ -67,7 +70,9 @@ function save() {
         checkStage1Complete() // blur 타이밍에 상관없이 저장 시점에도 한 번 더 확인
         emit('saved')
         load(() => {
-            if (STAGE_ORDER.indexOf(stage.value) > STAGE_ORDER.indexOf(prevStage)) {
+            if (r.sproutRequested) {
+                showAppAlert(r.message) // 3단계 완료 → 반장 이상 떡잎 재가 대기
+            } else if (STAGE_ORDER.indexOf(stage.value) > STAGE_ORDER.indexOf(prevStage)) {
                 showAppAlert(`🎉 ${prevStage}에서 ${stage.value}(으)로 자랐어요!`)
             } else {
                 showToast(r.message)
@@ -84,7 +89,7 @@ function save() {
                 <div class="modal-header-sticky">
                     <div class="fj-header-text">
                         <div class="fj-header-title">🌱 {{ form.name || '' }}님의 농부일지</div>
-                        <div class="fj-header-sub">인도자 {{ authorName }} · 지금 단계 {{ stageDisplay() }}</div>
+                        <div class="fj-header-sub">인도자 {{ authorName }} · 지금 단계 {{ stageDisplay() }}<span v-if="sproutLabel"> · {{ sproutLabel }}</span></div>
                     </div>
                     <span class="modal-close-sticky" @click="emit('close')">X</span>
                 </div>
