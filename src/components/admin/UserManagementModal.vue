@@ -211,7 +211,7 @@ const POSITION_ORDER = {
   '관리자': 0, '수지역장': 1,
   '전도교관': 2, '지역총무': 3, '수서기': 4, '지역전도서기': 5,
   '지역장': 6, '전도팀장': 7, '지역부서기': 8, '지역부전서': 9,
-  '구역장': 10, '부구역장': 11,
+  '반장': 10, '구역장': 11, '부구역장': 12,
 }
 function posOrder(pos) { return POSITION_ORDER[pos] ?? 99 }
 function posLabel(pos) { return pos || '회원' }
@@ -225,7 +225,7 @@ const ROLE_COLORS = {
     '관리자': '#B71C1C', '수지역장': '#6A1B9A',
     '전도교관': '#7B1FA2', '지역총무': '#7B1FA2', '수서기': '#7B1FA2', '지역전도서기': '#7B1FA2',
     '지역장': '#1565C0', '전도팀장': '#1565C0', '지역부서기': '#1565C0', '지역부전서': '#1565C0',
-    '구역장': '#2E7D32', '부구역장': '#00695C',
+    '반장': '#EF6C00', '구역장': '#2E7D32', '부구역장': '#00695C',
 }
 function roleColor(name) { return ROLE_COLORS[name] || '#757575' }
 function roleList(u) {
@@ -343,6 +343,79 @@ function confirmBulk() {
     })
 }
 
+// ── 반 관리 (구역 3~4개 묶음 + 반장) ─────────────────────────
+// 반장 직책(group_lead)은 여기서 반장을 지정/해제하면 서버가 자동으로 붙이고 뗌 — 명단 폼에서 따로 체크할 필요 없음.
+const groups = ref([])
+const groupTeamId = ref('')
+const groupForm = ref(null) // null | { groupId, name, areaIds, leaderSabun }
+const groupSaving = ref(false)
+
+const areaSort = (a, b) => (parseInt(a) || 0) - (parseInt(b) || 0) || String(a).localeCompare(String(b))
+const groupAreas = computed(() => areas.value
+    .filter(a => a.team_id === groupTeamId.value && a.area_id && a.area_id !== '0')
+    .map(a => a.area_id).sort(areaSort))
+const groupMembers = computed(() => list.value
+    .filter(u => u.team_id === groupTeamId.value)
+    .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko')))
+// 다른 반에 이미 들어간 구역 — 한 구역은 한 반에만
+const takenAreas = computed(() => {
+    const m = {}
+    for (const g of groups.value) {
+        if (groupForm.value && g.groupId === groupForm.value.groupId) continue
+        for (const a of g.areaIds) m[a] = g.name
+    }
+    return m
+})
+
+function openGroups() {
+    groupTeamId.value = selectedTeamId.value || ''
+    groupForm.value = null
+    const go = () => { view.value = 'groups'; loadGroups() }
+    teams.value.length ? go() : loadMeta(go)
+}
+function loadGroups() {
+    groupForm.value = null
+    if (!groupTeamId.value) { groups.value = []; return }
+    callApi('/api/admin/groups/list', { teamId: groupTeamId.value }, (r) => {
+        if (!r?.success) { showAppAlert('⛔ ' + (r?.message || '반 목록을 못 불러왔어')); return }
+        groups.value = r.list || []
+    })
+}
+function editGroup(g) {
+    groupForm.value = g
+        ? { groupId: g.groupId, name: g.name, areaIds: [...g.areaIds], leaderSabun: g.leaderSabun || '' }
+        : { groupId: '', name: `${groups.value.length + 1}반`, areaIds: [], leaderSabun: '' }
+}
+function toggleGroupArea(id) {
+    const ids = groupForm.value.areaIds
+    const i = ids.indexOf(id)
+    i >= 0 ? ids.splice(i, 1) : ids.push(id)
+}
+function saveGroup() {
+    const f = groupForm.value
+    if (!f.name.trim()) return showAppAlert('반 이름을 입력해줘')
+    if (!f.areaIds.length) return showAppAlert('구역을 하나 이상 골라줘')
+    groupSaving.value = true
+    callApi('/api/admin/groups/save', { ...f, teamId: groupTeamId.value, name: f.name.trim() }, (r) => {
+        groupSaving.value = false
+        if (!r?.success) { showAppAlert('⛔ ' + (r?.message || '저장 실패')); return }
+        showToast(r.message || '✅ 저장됨')
+        loadGroups()
+        load() // 반장 직책 자동 반영된 명단 새로고침
+    })
+}
+function deleteGroup(g) {
+    showAppConfirm(`${g.name}을 삭제할게. 반장 직책도 같이 빠져. 계속할게?`, (ok) => {
+        if (!ok) return
+        callApi('/api/admin/groups/delete', { groupId: g.groupId }, (r) => {
+            if (!r?.success) { showAppAlert('⛔ ' + (r?.message || '삭제 실패')); return }
+            showToast(r.message || '✅ 삭제됨')
+            loadGroups()
+            load()
+        })
+    })
+}
+
 onMounted(() => {
     load()
 })
@@ -388,6 +461,7 @@ onMounted(() => {
                             />
                             <button v-if="!selectMode" class="btn-pos" style="flex-shrink:0; padding:10px 16px;" @click="openAdd">+ 추가</button>
                             <button v-if="!selectMode" class="btn-swap" @click="openSwap">스왑</button>
+                            <button v-if="!selectMode" class="btn-group-mgmt" @click="openGroups">반</button>
                             <button v-if="!selectMode" class="btn-select" @click="enterSelectMode">선택</button>
                             <button v-else class="btn-neg" style="flex-shrink:0; padding:10px 14px;" @click="exitSelectMode">취소</button>
                         </div>
@@ -503,6 +577,74 @@ onMounted(() => {
                     </template>
 
                     <!-- ── 팀 스왑 뷰 ── -->
+                    <template v-else-if="view === 'groups'">
+                        <div class="um-form-title">🧩 반 관리</div>
+                        <div style="font-size:13px; color:#888; margin-bottom:16px; line-height:1.6;">
+                            구역 몇 개를 묶어 반을 만들고 반장을 정해. 반장은 반에 속한 구역 전체의 밭을 볼 수 있어.
+                        </div>
+
+                        <div class="um-field">
+                            <label>지역</label>
+                            <select v-model="groupTeamId" class="input-card" style="margin:0;" @change="loadGroups">
+                                <option value="">지역 선택</option>
+                                <option v-for="t in teams" :key="t.team_id" :value="t.team_id">{{ t.display_name }}</option>
+                            </select>
+                        </div>
+
+                        <template v-if="groupTeamId && !groupForm">
+                            <div v-if="!groups.length" style="text-align:center; color:#aaa; padding:16px;">아직 반이 없어</div>
+                            <div v-for="g in groups" :key="g.groupId" class="um-group-row">
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-weight:600;">{{ g.name }}</div>
+                                    <div style="font-size:12px; color:#666;">
+                                        {{ g.areaIds.map(a => a + '구역').join(' · ') }} · 반장 {{ g.leaderName || '미정' }}
+                                    </div>
+                                </div>
+                                <button class="btn-sm" @click="editGroup(g)">수정</button>
+                                <button class="btn-sm" style="color:#C62828;" @click="deleteGroup(g)">삭제</button>
+                            </div>
+                            <div class="btn-group" style="margin-top:16px;">
+                                <button class="btn-pos" @click="editGroup(null)">+ 반 추가</button>
+                                <button class="btn-neg" @click="view = 'list'">닫기</button>
+                            </div>
+                        </template>
+
+                        <template v-if="groupTeamId && groupForm">
+                            <div class="um-field">
+                                <label>반 이름</label>
+                                <input v-model="groupForm.name" type="text" class="input-card" style="margin:0;" placeholder="예: 1반" />
+                            </div>
+                            <div class="um-field">
+                                <label>구역 (여러 개 선택)</label>
+                                <div class="um-group-areas">
+                                    <button v-for="a in groupAreas" :key="a" type="button" class="um-group-area"
+                                        :class="{ on: groupForm.areaIds.includes(a) }" :disabled="!!takenAreas[a]"
+                                        :title="takenAreas[a] ? takenAreas[a] + '에 이미 있음' : ''"
+                                        @click="toggleGroupArea(a)">
+                                        {{ a }}구역<span v-if="takenAreas[a]" style="font-size:10px;"> ({{ takenAreas[a] }})</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="um-field">
+                                <label>반장</label>
+                                <select v-model="groupForm.leaderSabun" class="input-card" style="margin:0;">
+                                    <option value="">미정</option>
+                                    <option v-for="u in groupMembers" :key="u.sabun" :value="u.sabun">
+                                        {{ u.name }} · {{ u.area_id }}구역{{ u.positions ? ' · ' + u.positions : '' }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="btn-group" style="margin-top:16px;">
+                                <button class="btn-pos" :disabled="groupSaving" @click="saveGroup">{{ groupSaving ? '저장 중...' : '저장' }}</button>
+                                <button class="btn-neg" @click="groupForm = null">취소</button>
+                            </div>
+                        </template>
+
+                        <div v-if="!groupTeamId" class="btn-group" style="margin-top:16px;">
+                            <button class="btn-neg" @click="view = 'list'">닫기</button>
+                        </div>
+                    </template>
+
                     <template v-else-if="view === 'swap'">
                         <div class="um-form-title">🔄 지역 스왑</div>
                         <div style="font-size:13px; color:#888; margin-bottom:20px; line-height:1.6;">
@@ -729,6 +871,23 @@ onMounted(() => {
 .um-row-subleader { background: #F1FBF4; }
 .um-row-subleader:hover { background: #E6F7EB; }
 .um-row-selected { outline: 2px solid #1565C0 !important; outline-offset: -2px; }
+
+.btn-group-mgmt {
+    flex-shrink: 0;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid #EF6C00;
+    background: #fff;
+    color: #EF6C00;
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+}
+.um-group-row { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; }
+.um-group-areas { display: flex; flex-wrap: wrap; gap: 6px; }
+.um-group-area { padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; background: #fff; font-family: inherit; font-size: 13px; cursor: pointer; }
+.um-group-area.on { background: #EF6C00; border-color: #EF6C00; color: #fff; }
+.um-group-area:disabled { opacity: .45; cursor: not-allowed; }
 
 .btn-swap {
     flex-shrink: 0;
