@@ -122,7 +122,7 @@ function toggleTeamJob(teamName, handler) {
         if (!r?.success) { showAppAlert(r?.message || '변경 실패'); return }
         if (!teamCronJobs.value[teamName]) teamCronJobs.value[teamName] = {}
         teamCronJobs.value[teamName][handler] = next
-        showToast(`${JOB_LABELS[handler]} ${next ? 'ON ✅' : 'OFF ⏸'}`)
+        showToast(`${getJobLabels(teamName)[handler]} ${next ? 'ON ✅' : 'OFF ⏸'}`)
     })
 }
 // chatIds[team][channelKey] = string
