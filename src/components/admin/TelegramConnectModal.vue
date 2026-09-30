@@ -62,6 +62,8 @@ const SHED_JOB_LABELS = {
     updateShedTmDashboard:      '🔄 TM현황 갱신',
     sendShedUnifiedDashboard:   '📢 통합현황판 발송',
     updateShedUnifiedDashboard: '🔄 통합현황판 갱신',
+    sendShedSchedDashboard:     '📅 예약타임테이블 발송',
+    updateShedSchedDashboard:   '🔄 예약타임테이블 갱신',
 }
 
 const SHED246_JOB_LABELS = {
