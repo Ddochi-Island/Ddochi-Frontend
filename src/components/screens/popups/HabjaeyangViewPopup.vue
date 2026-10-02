@@ -144,7 +144,6 @@ const matchTime = computed(() => (props.item.habjaeyang && props.item.habjaeyang
 
 function handleCopy() {
     const safe = safeData.value
-    const item = props.item
     const teamName = auth.currentUserTeam || ''
     const pathInfo = (route.value || '-') + (tool.value && !route.value.includes(tool.value) ? `(${tool.value})` : '')
     const dayStr = safe.mtDate && safe.mtDate !== '미정' ? getDay(safe.mtDate) : ''
