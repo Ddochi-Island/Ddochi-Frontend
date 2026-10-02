@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { usePopup } from '@/composables/usePopup'
 import { useFormatters } from '@/composables/useFormatters'
@@ -20,6 +20,30 @@ const auth = useAuthStore()
 const { showToast, showAppAlert, showPopup } = usePopup()
 const { getDay } = useFormatters()
 const { callApi } = useApi()
+
+// 섭외경로/섭외도구 — 작성 폼(HabjaeyangScreen)과 같은 선택지
+const pathOpts = ref([])
+const toolOpts = ref([])
+const route = ref(props.item.habjaeyang?.route || '')
+const tool = ref(props.item.habjaeyang?.tool || '')
+onMounted(() => {
+    if (props.readonly) return
+    callApi('/api/get-path-configs', {}, res => { if (res?.list) pathOpts.value = res.list.map(p => p.pathName) })
+    callApi('/api/get-tool-configs', {}, res => { if (res?.list) toolOpts.value = res.list.map(t => t.toolName) })
+})
+function onSelect(type, e) {
+    const target = type === 'path' ? route : tool
+    const prev = target.value
+    target.value = e.target.value
+    callApi('/api/edit-match', { sabun: auth.currentSabun, rowIndex: props.item.docId, type, value: target.value }, (res) => {
+        if (!res?.success) { target.value = prev; return showAppAlert(res?.message || '저장 실패') }
+        showToast('저장 완료!')
+        emit('fieldSaved')
+    })
+}
+// 선택지 목록에 없는 기존 값(구 경로명 등)도 select에 보이게
+const pathChoices = computed(() => route.value && !pathOpts.value.includes(route.value) ? [route.value, ...pathOpts.value] : pathOpts.value)
+const toolChoices = computed(() => tool.value && !toolOpts.value.includes(tool.value) ? [tool.value, ...toolOpts.value] : toolOpts.value)
 
 // 라벨은 합재양 작성 폼(hjFields)과 같은 걸 씀
 const LABEL = Object.fromEntries(hjFields.map(f => [f.id, f.label]))
@@ -122,7 +146,7 @@ function handleCopy() {
     const safe = safeData.value
     const item = props.item
     const teamName = auth.currentUserTeam || ''
-    const pathInfo = (item.path || '') + (item.tool && !String(item.path || '').includes(item.tool) ? `(${item.tool})` : '')
+    const pathInfo = (route.value || '-') + (tool.value && !route.value.includes(tool.value) ? `(${tool.value})` : '')
     const dayStr = safe.mtDate && safe.mtDate !== '미정' ? getDay(safe.mtDate) : ''
     const txt = `🐑 대학 ${teamName}의 합재양 🐑\n\n🚿인도자 : ${safe.guide || '-'}\n🚿티엠자 : ${safe.tmName || '-'}\n🚿섭외경로(도구) : ${pathInfo}\n🚿매칭 일시/장소 : ${safe.mtDate || '-'}(${dayStr}) ${safe.mtTime || ''} ${safe.mtPlace || ''}\n\n🫧인적\n• 이름(성별/나이) : ${safe.subName || '-'}(${safe.gender || '-'}/${safe.age || '-'})\n• 연락처 : ${safe.contact || '-'}\n• 거주지 : ${safe.nearSt || '-'}\n• MBTI : ${safe.mbti || '-'}\n\n🫧환경\n• 학교(전공)/직장 : ${safe.job || '-'}\n• 일정(학원,동아리,학생회,알바 등) : ${safe.sch || '-'}\n• 1년 환경 구체적으로 : ${safe.plan || '-'}\n\n🫧내면\n• 신청 목적 (메리트) : ${safe.purpose || '-'}\n• 나의 이미지(성격) : ${safe.selfImage || '-'}\n• 되고 싶은 내적 이미지(or 가장 고민되는 부분) : ${safe.trouble || '-'}\n\n• 인성(전화 태도) : ${safe.att || '-'}\n• 경계 : ${safe.wary || '-'}\n• 거리부담 : ${safe.dist || '-'}\n• 특이사항 : ${safe.etc || '-'}`
     navigator.clipboard.writeText(txt).then(() => showToast('복사 완료!'))
@@ -147,8 +171,18 @@ function handleCopy() {
                         <div class="hj-section hj-stack">
                             <div class="hj-row"><span class="hj-label">인도자</span><div class="hj-val hj-editable" @click="editHjField('guide', '인도자', safeData.guide)">{{ safeData.guide || '-' }}</div></div>
                             <div class="hj-row"><span class="hj-label">티엠자</span><div class="hj-val hj-editable" @click="editHjField('tmName', '티엠자', safeData.tmName)">{{ safeData.tmName || '-' }}</div></div>
-                            <div class="hj-row"><span class="hj-label">섭외경로</span><span class="hj-val hj-editable" @click="editProspectField('path', '섭외경로', item.path)">{{ item.path || '-' }}</span></div>
-                            <div class="hj-row"><span class="hj-label">섭외도구</span><span class="hj-val hj-editable" @click="editProspectField('tool', '섭외도구', item.tool)">{{ item.tool || '-' }}</span></div>
+                            <div class="hj-row"><span class="hj-label">섭외경로</span>
+                                <span v-if="readonly" class="hj-val">{{ route || '-' }}</span>
+                                <select v-else class="hj-select" :value="route" @change="onSelect('path', $event)">
+                                    <option value="">선택 안 함</option>
+                                    <option v-for="opt in pathChoices" :key="opt" :value="opt">{{ opt }}</option>
+                                </select></div>
+                            <div class="hj-row"><span class="hj-label">섭외도구</span>
+                                <span v-if="readonly" class="hj-val">{{ tool || '-' }}</span>
+                                <select v-else class="hj-select" :value="tool" @change="onSelect('tool', $event)">
+                                    <option value="">선택 안 함</option>
+                                    <option v-for="opt in toolChoices" :key="opt" :value="opt">{{ opt }}</option>
+                                </select></div>
                             <div class="hj-row"><span class="hj-label">만픽시간</span><span class="hj-val" style="cursor:default;">{{ matchTime }}</span></div>
                         </div>
                         <div class="hj-blue-box">매칭 {{ matchDateFull }}</div>
@@ -215,6 +249,15 @@ function handleCopy() {
     border: 1px solid #EEE;
     border-radius: 8px;
     padding: 8px 10px;
+}
+.hj-select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #EEE;
+    border-radius: 8px;
+    background: #FAFAF7;
+    font-size: 14px;
+    color: #333;
 }
 .hj-editable {
     cursor: pointer;
