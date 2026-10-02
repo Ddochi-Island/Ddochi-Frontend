@@ -144,16 +144,16 @@ function handleCopy() {
                     <div class="modal-title" style="margin-top:0;">합재양 상세</div>
                     <div class="hj-modal-content" :class="{ 'hj-readonly': readonly }">
                         <div class="hj-sec-title">📋 매칭 정보</div>
-                        <div class="hj-section">
+                        <div class="hj-section hj-stack">
                             <div class="hj-row"><span class="hj-label">인도자</span><div class="hj-val hj-editable" @click="editHjField('guide', '인도자', safeData.guide)">{{ safeData.guide || '-' }}</div></div>
                             <div class="hj-row"><span class="hj-label">티엠자</span><div class="hj-val hj-editable" @click="editHjField('tmName', '티엠자', safeData.tmName)">{{ safeData.tmName || '-' }}</div></div>
-                            <div class="hj-row"><span class="hj-label">섭외경로</span><span class="hj-val hj-editable" style="border:none;" @click="editProspectField('path', '섭외경로', item.path)">{{ item.path || '-' }}</span></div>
-                            <div class="hj-row"><span class="hj-label">섭외도구</span><span class="hj-val hj-editable" style="border:none;" @click="editProspectField('tool', '섭외도구', item.tool)">{{ item.tool || '-' }}</span></div>
-                            <div class="hj-row"><span class="hj-label">만픽시간</span><span class="hj-val" style="cursor:default;border:none;">{{ matchTime }}</span></div>
+                            <div class="hj-row"><span class="hj-label">섭외경로</span><span class="hj-val hj-editable" @click="editProspectField('path', '섭외경로', item.path)">{{ item.path || '-' }}</span></div>
+                            <div class="hj-row"><span class="hj-label">섭외도구</span><span class="hj-val hj-editable" @click="editProspectField('tool', '섭외도구', item.tool)">{{ item.tool || '-' }}</span></div>
+                            <div class="hj-row"><span class="hj-label">만픽시간</span><span class="hj-val" style="cursor:default;">{{ matchTime }}</span></div>
                         </div>
                         <div class="hj-blue-box">매칭 {{ matchDateFull }}</div>
                         <div class="hj-sec-title">👤 섭외자</div>
-                        <div class="hj-section">
+                        <div class="hj-section hj-stack">
                             <div class="hj-row"><span class="hj-label">이름</span><div class="hj-val hj-editable" @click="editProspectField('subGuide', '섭외자 이름', safeData.subName)">{{ safeData.subName || '-' }}</div></div>
                             <div class="hj-row"><span class="hj-label">성별</span><div class="hj-val hj-editable" @click="editProspectField('gender', '성별 (남/여)', safeData.gender)">{{ safeData.gender || '-' }}</div></div>
                             <div class="hj-row"><span class="hj-label">나이</span><div class="hj-val hj-editable" @click="editProspectField('age', '나이', safeData.age)">{{ safeData.age || '-' }}</div></div>
