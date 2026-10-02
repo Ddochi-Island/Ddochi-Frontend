@@ -187,7 +187,18 @@ function handleReasonSubmit() {
             <!-- Text input (legacy 'text' type — 단일 줄 입력) -->
             <template v-else-if="currentPopup.type === 'text'">
                 <div class="input-card" style="margin-top: 10px;">
+                    <!-- opts.multiline: 긴 서술형(합재양 등) — input은 줄바꿈을 지워버려서 textarea로 -->
+                    <textarea
+                        v-if="currentPopup.opts?.multiline"
+                        ref="textInputRef"
+                        v-model="textInput"
+                        rows="8"
+                        class="popup-text-input"
+                        style="resize: vertical; white-space: pre-wrap; line-height: 1.5;"
+                        :placeholder="currentPopup.desc || ''"
+                    ></textarea>
                     <input
+                        v-else
                         ref="textInputRef"
                         v-model="textInput"
                         type="text"

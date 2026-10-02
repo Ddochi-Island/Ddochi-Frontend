@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 import { usePopup } from '@/composables/usePopup'
 import { useFormatters } from '@/composables/useFormatters'
 import { useApi } from '@/composables/useApi'
+import { hjFields } from '@/constants'
 
 // CenterScreen 의 합재양 read-only 상세 팝업.
 // legacy: viewHabjaeyangPopupForCenter / __copyHabjaeyang 정합.
@@ -20,6 +21,10 @@ const { showToast, showAppAlert, showPopup } = usePopup()
 const { getDay } = useFormatters()
 const { callApi } = useApi()
 
+// 라벨은 합재양 작성 폼(hjFields)과 같은 걸 씀
+const LABEL = Object.fromEntries(hjFields.map(f => [f.id, f.label]))
+const MULTILINE = new Set(['sch', 'schedule', 'plan', 'purpose', 'selfImage', 'trouble', 'att', 'wary', 'dist', 'etc', 'job'])
+
 function editHjField(apiKey, label, currentVal) {
     if (props.readonly) return
     showPopup('text', label, label + ' 입력', ({ text }) => {
@@ -35,7 +40,7 @@ function editHjField(apiKey, label, currentVal) {
             showToast('저장 완료!')
             emit('fieldSaved')
         })
-    }, { value: currentVal })
+    }, { value: currentVal, multiline: MULTILINE.has(apiKey) })
 }
 
 function editProspectField(type, label, currentVal) {
@@ -90,6 +95,7 @@ const safeData = computed(() => {
         sch: hj.sch || note.sch,
         plan: hj.plan || note.plan,
         purpose: hj.purpose || note.purpose,
+        selfImage: hj.selfImage || note.selfImage,
         trouble: hj.trouble || note.trouble,
         att: hj.att || note.att,
         wary: hj.wary || note.wary,
@@ -118,7 +124,7 @@ function handleCopy() {
     const teamName = auth.currentUserTeam || ''
     const pathInfo = (item.path || '') + (item.tool && !String(item.path || '').includes(item.tool) ? `(${item.tool})` : '')
     const dayStr = safe.mtDate && safe.mtDate !== '미정' ? getDay(safe.mtDate) : ''
-    const txt = `🐑 대학 ${teamName}의 합재양 🐑\n\n🚿인도자 : ${safe.guide || '-'}\n🚿티엠자 : ${safe.tmName || '-'}\n🚿섭외경로(도구) : ${pathInfo}\n🚿매칭 일시/장소 : ${safe.mtDate || '-'}(${dayStr}) ${safe.mtTime || ''} ${safe.mtPlace || ''}\n\n🫧인적\n• 이름(성별/나이) : ${safe.subName || '-'}(${safe.gender || '-'}/${safe.age || '-'})\n• 연락처 : ${safe.contact || '-'}\n• 거주지 : ${safe.nearSt || '-'}\n• MBTI : ${safe.mbti || '-'}\n\n🫧환경\n• 학교(전공)/직장 : ${safe.job || '-'}\n• 일정(학원,동아리,학생회,알바 등) : ${safe.sch || '-'}\n• 향후 계획 : ${safe.plan || '-'}\n\n🫧내면\n• 신청 목적 (메리트) : ${safe.purpose || '-'}\n• 내적 고민(00%, 되고싶은 모습) : ${safe.trouble || '-'}\n\n• 태도 : ${safe.att || '-'}\n• 경계 : ${safe.wary || '-'}\n• 거리부담 : ${safe.dist || '-'}\n• 특이사항 : ${safe.etc || '-'}`
+    const txt = `🐑 대학 ${teamName}의 합재양 🐑\n\n🚿인도자 : ${safe.guide || '-'}\n🚿티엠자 : ${safe.tmName || '-'}\n🚿섭외경로(도구) : ${pathInfo}\n🚿매칭 일시/장소 : ${safe.mtDate || '-'}(${dayStr}) ${safe.mtTime || ''} ${safe.mtPlace || ''}\n\n🫧인적\n• 이름(성별/나이) : ${safe.subName || '-'}(${safe.gender || '-'}/${safe.age || '-'})\n• 연락처 : ${safe.contact || '-'}\n• 거주지 : ${safe.nearSt || '-'}\n• MBTI : ${safe.mbti || '-'}\n\n🫧환경\n• 학교(전공)/직장 : ${safe.job || '-'}\n• 일정(학원,동아리,학생회,알바 등) : ${safe.sch || '-'}\n• 1년 환경 구체적으로 : ${safe.plan || '-'}\n\n🫧내면\n• 신청 목적 (메리트) : ${safe.purpose || '-'}\n• 나의 이미지(성격) : ${safe.selfImage || '-'}\n• 되고 싶은 내적 이미지(or 가장 고민되는 부분) : ${safe.trouble || '-'}\n\n• 인성(전화 태도) : ${safe.att || '-'}\n• 경계 : ${safe.wary || '-'}\n• 거리부담 : ${safe.dist || '-'}\n• 특이사항 : ${safe.etc || '-'}`
     navigator.clipboard.writeText(txt).then(() => showToast('복사 완료!'))
 }
 </script>
@@ -137,7 +143,8 @@ function handleCopy() {
                 <div class="modal-content-scroll">
                     <div class="modal-title" style="margin-top:0;">합재양 상세</div>
                     <div class="hj-modal-content" :class="{ 'hj-readonly': readonly }">
-                        <div class="hj-section" style="margin-top:10px;">
+                        <div class="hj-sec-title">📋 매칭 정보</div>
+                        <div class="hj-section">
                             <div class="hj-row"><span class="hj-label">인도자</span><div class="hj-val hj-editable" @click="editHjField('guide', '인도자', safeData.guide)">{{ safeData.guide || '-' }}</div></div>
                             <div class="hj-row"><span class="hj-label">티엠자</span><div class="hj-val hj-editable" @click="editHjField('tmName', '티엠자', safeData.tmName)">{{ safeData.tmName || '-' }}</div></div>
                             <div class="hj-row"><span class="hj-label">섭외경로</span><span class="hj-val hj-editable" style="border:none;" @click="editProspectField('path', '섭외경로', item.path)">{{ item.path || '-' }}</span></div>
@@ -145,28 +152,30 @@ function handleCopy() {
                             <div class="hj-row"><span class="hj-label">만픽시간</span><span class="hj-val" style="cursor:default;border:none;">{{ matchTime }}</span></div>
                         </div>
                         <div class="hj-blue-box">매칭 {{ matchDateFull }}</div>
+                        <div class="hj-sec-title">👤 섭외자</div>
                         <div class="hj-section">
                             <div class="hj-row"><span class="hj-label">이름</span><div class="hj-val hj-editable" @click="editProspectField('subGuide', '섭외자 이름', safeData.subName)">{{ safeData.subName || '-' }}</div></div>
                             <div class="hj-row"><span class="hj-label">성별</span><div class="hj-val hj-editable" @click="editProspectField('gender', '성별 (남/여)', safeData.gender)">{{ safeData.gender || '-' }}</div></div>
                             <div class="hj-row"><span class="hj-label">나이</span><div class="hj-val hj-editable" @click="editProspectField('age', '나이', safeData.age)">{{ safeData.age || '-' }}</div></div>
-                            <div class="hj-row"><span class="hj-label">MBTI</span><div class="hj-val hj-editable" @click="editHjField('mbti', 'MBTI', safeData.mbti)">{{ safeData.mbti || '-' }}</div></div>
                             <div class="hj-row"><span class="hj-label">연락처</span><div class="hj-val hj-editable" @click="editProspectField('phone', '연락처', safeData.contact)">{{ safeData.contact || '-' }}</div></div>
+                            <div class="hj-row"><span class="hj-label">{{ LABEL.nearSt }}</span><div class="hj-val hj-editable" @click="editProspectField('residence', LABEL.nearSt, safeData.nearSt)">{{ safeData.nearSt || '-' }}</div></div>
+                            <div class="hj-row"><span class="hj-label">MBTI</span><div class="hj-val hj-editable" @click="editHjField('mbti', 'MBTI', safeData.mbti)">{{ safeData.mbti || '-' }}</div></div>
+                            <div class="hj-row"><span class="hj-label">{{ LABEL.job }}</span><div class="hj-val hj-editable" @click="editHjField('job', LABEL.job, safeData.job)">{{ safeData.job || '-' }}</div></div>
                         </div>
-                        <div class="hj-section">
-                            <div class="hj-row"><span class="hj-label">거주지</span><div class="hj-val hj-editable" @click="editProspectField('residence', '거주지', safeData.nearSt)">{{ safeData.nearSt || '-' }}</div></div>
-                            <div class="hj-row"><span class="hj-label">학교/직장</span><div class="hj-val hj-editable" @click="editHjField('job', '학교/직장', safeData.job)">{{ safeData.job || '-' }}</div></div>
-                            <div class="hj-row"><span class="hj-label">일정</span><div class="hj-val hj-editable" @click="editHjField('schedule', '일정', safeData.sch)">{{ safeData.sch || '-' }}</div></div>
-                            <div class="hj-row"><span class="hj-label">향후계획</span><div class="hj-val hj-editable" @click="editHjField('plan', '향후계획', safeData.plan)">{{ safeData.plan || '-' }}</div></div>
+                        <div class="hj-sec-title">💭 내면 파악</div>
+                        <div class="hj-section hj-stack">
+                            <div class="hj-row"><span class="hj-label">{{ LABEL.sch }}</span><div class="hj-val hj-editable" @click="editHjField('schedule', LABEL.sch, safeData.sch)">{{ safeData.sch || '-' }}</div></div>
+                            <div class="hj-row"><span class="hj-label">{{ LABEL.plan }}</span><div class="hj-val hj-editable" @click="editHjField('plan', LABEL.plan, safeData.plan)">{{ safeData.plan || '-' }}</div></div>
+                            <div class="hj-row"><span class="hj-label">{{ LABEL.purpose }}</span><div class="hj-val hj-editable" @click="editHjField('purpose', LABEL.purpose, safeData.purpose)">{{ safeData.purpose || '-' }}</div></div>
+                            <div class="hj-row"><span class="hj-label">{{ LABEL.selfImage }}</span><div class="hj-val hj-editable" @click="editHjField('selfImage', LABEL.selfImage, safeData.selfImage)">{{ safeData.selfImage || '-' }}</div></div>
+                            <div class="hj-row"><span class="hj-label">{{ LABEL.trouble }}</span><div class="hj-val hj-editable" @click="editHjField('trouble', LABEL.trouble, safeData.trouble)">{{ safeData.trouble || '-' }}</div></div>
                         </div>
-                        <div class="hj-section">
-                            <div class="hj-row"><span class="hj-label">신청목적</span><div class="hj-val hj-editable" @click="editHjField('purpose', '신청목적', safeData.purpose)">{{ safeData.purpose || '-' }}</div></div>
-                            <div class="hj-row"><span class="hj-label">내적고민</span><div class="hj-val hj-editable" @click="editHjField('trouble', '내적고민', safeData.trouble)">{{ safeData.trouble || '-' }}</div></div>
-                        </div>
-                        <div class="hj-section" style="margin-bottom:20px;">
-                            <div class="hj-row"><span class="hj-label">태도</span><div class="hj-val hj-editable" @click="editHjField('att', '태도', safeData.att)">{{ safeData.att || '-' }}</div></div>
-                            <div class="hj-row"><span class="hj-label">경계</span><div class="hj-val hj-editable" @click="editHjField('wary', '경계', safeData.wary)">{{ safeData.wary || '-' }}</div></div>
-                            <div class="hj-row"><span class="hj-label">거리부담</span><div class="hj-val hj-editable" @click="editHjField('dist', '거리부담', safeData.dist)">{{ safeData.dist || '-' }}</div></div>
-                            <div class="hj-row"><span class="hj-label">특이사항</span><div class="hj-val hj-editable" @click="editHjField('etc', '특이사항', safeData.etc)">{{ safeData.etc || '-' }}</div></div>
+                        <div class="hj-sec-title">📝 태도 &amp; 기타</div>
+                        <div class="hj-section hj-stack" style="margin-bottom:20px;">
+                            <div class="hj-row"><span class="hj-label">{{ LABEL.att }}</span><div class="hj-val hj-editable" @click="editHjField('att', LABEL.att, safeData.att)">{{ safeData.att || '-' }}</div></div>
+                            <div class="hj-row"><span class="hj-label">{{ LABEL.wary }}</span><div class="hj-val hj-editable" @click="editHjField('wary', LABEL.wary, safeData.wary)">{{ safeData.wary || '-' }}</div></div>
+                            <div class="hj-row"><span class="hj-label">{{ LABEL.dist }}</span><div class="hj-val hj-editable" @click="editHjField('dist', LABEL.dist, safeData.dist)">{{ safeData.dist || '-' }}</div></div>
+                            <div class="hj-row"><span class="hj-label">{{ LABEL.etc }}</span><div class="hj-val hj-editable" @click="editHjField('etc', LABEL.etc, safeData.etc)">{{ safeData.etc || '-' }}</div></div>
                         </div>
                     </div>
                     <div class="btn-group"><button class="btn-neg" @click="emit('back')">뒤로가기</button></div>
@@ -177,6 +186,36 @@ function handleCopy() {
 </template>
 
 <style scoped>
+.hj-sec-title {
+    margin: 14px 0 6px;
+    font-family: 'Jua';
+    font-size: 14px;
+    color: #5D4037;
+}
+/* 서술형 값은 줄바꿈 그대로 보이게 */
+.hj-val {
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.55;
+}
+/* 긴 라벨(작성 폼과 같은 문구)은 값 위에 따로 한 줄로 */
+.hj-stack .hj-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+}
+.hj-stack .hj-label {
+    width: auto;
+    min-width: 0;
+}
+.hj-stack .hj-val {
+    text-align: left;
+    font-weight: normal;
+    background: #FAFAF7;
+    border: 1px solid #EEE;
+    border-radius: 8px;
+    padding: 8px 10px;
+}
 .hj-editable {
     cursor: pointer;
     border-bottom: 1px dotted #eee;
