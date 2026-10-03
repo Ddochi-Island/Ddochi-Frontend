@@ -9,7 +9,7 @@ const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
 const { callApi, callApiPromise } = useApi()
-const { showAppAlert, showPasswordPrompt } = usePopup()
+const { showAppAlert, showPasswordPrompt, showToast } = usePopup()
 
 // editPlan 마이크로 팝업
 
@@ -135,6 +135,15 @@ function checkStatsPassword() {
     })
 }
 
+// PIONEER /event 추천 링크 — 인스타 프로필에 붙일 본인 고유 링크(사번 대신 HMAC 코드). docs/REFERRAL_CODE.md
+function copyMyReferralLink() {
+    callApi('/api/referral/my-link', {}, (r) => {
+        if (!r?.success) return showAppAlert(r?.message || '링크를 불러오지 못했어요')
+        navigator.clipboard?.writeText(r.url).then(() => showToast('내 추천 링크 복사 완료!')).catch(() => {})
+        showAppAlert(`인스타 프로필 링크에 붙여주세요.<br><br><b style="word-break:break-all;">${r.url}</b>`)
+    })
+}
+
 onMounted(() => {
     if (route.query.editPlan) {
         openEditPlanPopup(route.query.editPlan)
@@ -189,6 +198,10 @@ onMounted(() => {
             </div>
             <div class="pipeline-banner" style="background:#E8F5E9; border: 1px solid #A5D6A7;" @click="goTo('feedback')">
                 <div class="pipeline-info"><span class="pipeline-icon">⏱️</span><div><div class="pipeline-title">15분 피드백</div><div class="pipeline-desc">지역장/전도교관 피드백 신청</div></div></div>
+                <div class="pipeline-arrow">➔</div>
+            </div>
+            <div class="pipeline-banner" style="background:#EDE7F6; border: 1px solid #B39DDB;" @click="copyMyReferralLink">
+                <div class="pipeline-info"><span class="pipeline-icon">🔗</span><div><div class="pipeline-title">내 추천 링크</div><div class="pipeline-desc">PIONEER 이벤트 링크 복사</div></div></div>
                 <div class="pipeline-arrow">➔</div>
             </div>
             <div class="pipeline-banner" style="background:#F3E5F5; border: 1px solid #CE93D8;" @click="openSuggestionModal">
