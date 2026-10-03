@@ -185,9 +185,13 @@ defineExpose({ open, close })
                 <div class="sidebar-item" @click="openModal('tateamRegister')">🤝 타지역 교사건 등록</div>
                 <div class="sidebar-item" @click="openSemesterCalendar">📅 개강 일정 달력</div>
                 <div class="sidebar-item" @click="openModal('myGoal')">🏆 내 목표 설정</div>
-                <div class="sidebar-item" @click="copyMyReferralLink">🔗 내 추천 링크 복사</div>
                 <div v-if="canViewTeamTemplate" class="sidebar-item" @click="openModal('activityVenue')">📍 활동지 입력</div>
             </div> -->
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">🔗 PIONEER 이벤트</div>
+                <div class="sidebar-item" @click="copyMyReferralLink">🔗 내 추천 링크 복사</div>
+            </div>
 
             <div class="sidebar-section">
                 <div class="sidebar-title">🏆 주간 점수제</div>
