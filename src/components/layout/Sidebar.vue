@@ -12,7 +12,7 @@ import SemesterCalendarModal from '@/components/sidebar/SemesterCalendarModal.vu
 
 const router = useRouter()
 const auth = useAuthStore()
-const { showAppAlert, showAppConfirm, showPopup, closePopup, showPasswordPrompt } = usePopup()
+const { showAppAlert, showAppConfirm, showPopup, closePopup, showPasswordPrompt, showToast } = usePopup()
 const { callApi, callApiPromise } = useApi()
 const { hasRegionRole, hasTeamRole } = useRoles()
 
@@ -35,6 +35,16 @@ function open() { isOpen.value = true }
 function close() { isOpen.value = false }
 
 function goTo(name) { close(); router.push({ name }) }
+
+// PIONEER /event 추천 링크 — 인스타 프로필에 붙일 본인 고유 링크(사번 대신 HMAC 코드). docs/REFERRAL_CODE.md
+function copyMyReferralLink() {
+    close()
+    callApi('/api/referral/my-link', {}, (r) => {
+        if (!r?.success) return showAppAlert(r?.message || '링크를 불러오지 못했어요')
+        navigator.clipboard?.writeText(r.url).then(() => showToast('내 추천 링크 복사 완료!')).catch(() => {})
+        showAppAlert(`인스타 프로필 링크에 붙여주세요.<br><br><b style="word-break:break-all;">${r.url}</b>`)
+    })
+}
 
 function openPersonalStats() { close(); router.push({ name: 'personalStats' }) }
 
@@ -175,6 +185,7 @@ defineExpose({ open, close })
                 <div class="sidebar-item" @click="openModal('tateamRegister')">🤝 타지역 교사건 등록</div>
                 <div class="sidebar-item" @click="openSemesterCalendar">📅 개강 일정 달력</div>
                 <div class="sidebar-item" @click="openModal('myGoal')">🏆 내 목표 설정</div>
+                <div class="sidebar-item" @click="copyMyReferralLink">🔗 내 추천 링크 복사</div>
                 <div v-if="canViewTeamTemplate" class="sidebar-item" @click="openModal('activityVenue')">📍 활동지 입력</div>
             </div> -->
 
