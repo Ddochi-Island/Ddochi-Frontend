@@ -56,7 +56,7 @@ function load(onDone) {
 onMounted(() => load())
 
 const STAGE_ORDER = ['씨앗', '새싹', '떡잎']
-// 3단계를 다 채워도 떡잎은 반장 이상 재가 후 — '떡잎 재가 대기/완료/반려' 표시용
+// 2단계까지 채워도 떡잎은 반장 이상 재가 후 — '떡잎 재가 대기/완료/반려' 표시용
 const sproutLabel = ref('')
 
 function save() {
@@ -71,7 +71,7 @@ function save() {
         emit('saved')
         load(() => {
             if (r.sproutRequested) {
-                showAppAlert(r.message) // 3단계 완료 → 반장 이상 떡잎 재가 대기
+                showAppAlert(r.message) // 2단계 완료 → 반장 이상 떡잎 재가 대기
             } else if (STAGE_ORDER.indexOf(stage.value) > STAGE_ORDER.indexOf(prevStage)) {
                 showAppAlert(`🎉 ${prevStage}에서 ${stage.value}(으)로 자랐어요!`)
             } else {

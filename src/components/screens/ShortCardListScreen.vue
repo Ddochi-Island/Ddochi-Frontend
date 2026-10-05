@@ -25,7 +25,7 @@ function journalStageDisplay(stage) {
     return stageLabels[stageNameToIndex[stage]] || stage
 }
 
-// 짧카는 재가 없이 바로 밭에 올라감. 재가는 3단계를 다 채운 뒤 떡잎이 될 때만(반장 이상).
+// 짧카는 재가 없이 바로 밭에 올라감. 재가는 2단계까지 채운 뒤 떡잎이 될 때만(반장 이상).
 // 떡잎 재가 탭: 재가 대기 중인 짧카 — 재가할 수 있는 사람에겐 재가/반려 버튼, 작성자에겐 진행 상황.
 const sproutList = computed(() => list.value.filter(c => c.sprout_status === 'pending'))
 const mineList = computed(() => list.value.filter(c => c.member_id === auth.currentSabun))
@@ -68,7 +68,7 @@ onMounted(load)
 function decideSprout(card, statusKo) {
     const msg = statusKo === '재가'
         ? `${card.name} 짧카를 떡잎으로 올릴까요? 🍀`
-        : `${card.name} 짧카의 떡잎 재가를 반려할까요? (인도자가 3단계를 고쳐 다시 저장하면 다시 올라와요)`
+        : `${card.name} 짧카의 떡잎 재가를 반려할까요? (인도자가 2단계까지 고쳐 다시 저장하면 다시 올라와요)`
     showAppConfirm(msg, (ok) => {
         if (!ok) return
         callApi('/api/short-cards/sprout-decide', { shortCardId: card.short_card_id, status: statusKo }, r => {
@@ -133,7 +133,7 @@ function decideSprout(card, statusKo) {
                     </div>
                     <div v-if="c.sprout_status === 'pending' || c.sprout_status === 'rejected'"
                          :class="['sc-sprout-status', 'sc-sprout-' + c.sprout_status]">
-                        {{ c.sprout_status === 'pending' ? '⏳ 떡잎 재가 대기' : '🥀 떡잎 반려 — 3단계를 고쳐 저장하면 다시 올라가요' }}
+                        {{ c.sprout_status === 'pending' ? '⏳ 떡잎 재가 대기' : '🥀 떡잎 반려 — 2단계까지 고쳐 저장하면 다시 올라가요' }}
                     </div>
 
                     <div class="sc-info">
