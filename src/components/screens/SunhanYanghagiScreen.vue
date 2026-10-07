@@ -59,9 +59,16 @@ const myRegions = computed(() => {
 })
 const inMyRegions = (region) => !myRegions.value || myRegions.value.includes(String(region))
 const receivedAfterStart = (p) => !!p.createdTs && new Date(p.createdTs) >= HAPDANG_START
+// 오래 묵었거나(이관받은 날부터 4일 지남) 티엠을 4번 이상 걸어본 건은 다른 지역도 같이 돌릴 수 있게 전 지역 공개
+const OPEN_AFTER_DAYS = 4
+const OPEN_AFTER_CALLS = 4
+const kstDay = (d) => Math.floor((new Date(d).getTime() + 9 * 3600e3) / 86400e3)
+const openToAll = (p) =>
+  kstDay(Date.now()) - kstDay(p.createdTs) >= OPEN_AFTER_DAYS ||
+  (p.tmLogs || []).filter(l => l.source === 'call').length >= OPEN_AFTER_CALLS
 const shedProspects = computed(() => {
   return allShedProspects.value.filter(p =>
-    isHapdang.value ? inMyRegions(p.team) && receivedAfterStart(p)
+    isHapdang.value ? (inMyRegions(p.team) || openToAll(p)) && receivedAfterStart(p)
       : !receivedAfterStart(p) && (isQualityFind.value ? qualityTeams.includes(p.team) : sunhanTeams.includes(p.team))
   )
 })
