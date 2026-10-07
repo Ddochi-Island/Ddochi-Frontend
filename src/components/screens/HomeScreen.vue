@@ -150,6 +150,10 @@ onMounted(() => {
         </div>
 
         <div class="pipeline-section">
+            <div class="pipeline-banner" style="background:#FFFDE7; border: 1px solid #FFE082;" @click="router.push('/hapdang')">
+                <div class="pipeline-info"><span class="pipeline-icon">🤝</span><div><div class="pipeline-title">합당한자</div><div class="pipeline-desc">우리 지역 오프찾 (10/8부터)</div></div></div>
+                <div class="pipeline-arrow">➔</div>
+            </div>
             <div v-if="showSunhan" class="pipeline-banner" style="background:#F1F8E9; border: 1px solid #AED581;" @click="openSunhanYanghagi">
                 <div class="pipeline-info"><span class="pipeline-icon">🐑</span><div><div class="pipeline-title">선한 양치기</div><div class="pipeline-desc">진짜 sheep다 오프찾</div></div></div>
                 <div class="pipeline-arrow">➔</div>

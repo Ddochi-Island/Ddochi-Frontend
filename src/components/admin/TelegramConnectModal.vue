@@ -80,16 +80,26 @@ function isVirtualTeam(team) {
     return !/^\d+$/.test(team)
 }
 
+// 지역 탭에도 사쉐 현황판 3종(2026-10-08 지역별 운영 — 135/246 연합 판과 별개로 그 지역만)
+const REGION_CHANNEL_DEFS = [...CHANNEL_DEFS, ...SHED_CHANNEL_DEFS]
+
 function getChannelDefs(team) {
     if (team === '135 연합' || team === '246 연합') return SHED_CHANNEL_DEFS
     if (team === '수지역') return ALL_REGIONS_CHANNEL_DEFS
-    return CHANNEL_DEFS
+    return REGION_CHANNEL_DEFS
+}
+
+const REGION_JOB_LABELS = {
+    ...JOB_LABELS,
+    sendRegionShedTm:      '🐾📞 Shed TM현황',
+    sendRegionShedUnified: '📢 통합현황판',
+    sendRegionShedSched:   '📅 예약타임테이블',
 }
 
 function getJobLabels(team) {
     if (team === '135 연합') return SHED_JOB_LABELS
     if (team === '246 연합') return SHED246_JOB_LABELS
-    return JOB_LABELS
+    return REGION_JOB_LABELS
 }
 // teamCronJobs[teamId][handler] = boolean (true=ON)
 const teamCronJobs = ref({})

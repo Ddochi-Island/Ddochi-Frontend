@@ -13,6 +13,10 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxeppzAwBF4n0uSXjvaD
 const router = useRouter()
 const route = useRoute()
 const isQualityFind = computed(() => route.name === 'qualityFind')
+// 합당한자 — 135/246 묶음 대신 지역별 운영(2026-10-08). 내 지역(전 지역 직책·관리자는 전체), 이 날 이후 이관받은 건/이관 대기만.
+// 그 전 건은 진행 중이라 선한 양치기·질적 찾기 화면에 그대로 둠.
+const isHapdang = computed(() => route.name === 'hapdang')
+const HAPDANG_START = new Date('2026-10-08T00:00:00+09:00')
 const tm = useTmStore()
 const auth = useAuthStore()
 const { callApiPromise } = useApi()
@@ -44,16 +48,25 @@ const shedDupExistingId = ref(null)
 const allShedProspects = ref([])
 const qualityTeams = ['2', '4', '6']
 const sunhanTeams  = ['1', '3', '5']
+const myRegions = computed(() => {
+  if (auth.isAdmin || ['수지역장', '전도교관', '총무'].includes(auth.currentUserRole)) return null  // 전체
+  const num = auth.currentUserTeam?.match(/(\d+)/)?.[1]
+  return num ? [num] : []
+})
+const inHapdang = (region, createdAt) =>
+  (!myRegions.value || myRegions.value.includes(String(region))) && !!createdAt && new Date(createdAt) >= HAPDANG_START
 const shedProspects = computed(() => {
   return allShedProspects.value.filter(p =>
-    isQualityFind.value ? qualityTeams.includes(p.team) : sunhanTeams.includes(p.team)
+    isHapdang.value ? inHapdang(p.team, p.createdTs)
+      : isQualityFind.value ? qualityTeams.includes(p.team) : sunhanTeams.includes(p.team)
   )
 })
 const asRows = ref([])
 
 const filteredAsRows = computed(() => {
   return asRows.value.filter(r =>
-    isQualityFind.value ? qualityTeams.includes(r.event) : sunhanTeams.includes(r.event)
+    isHapdang.value ? inHapdang(r.introducerRegion || r.event, r.createdAt)
+      : isQualityFind.value ? qualityTeams.includes(r.event) : sunhanTeams.includes(r.event)
   )
 })
 
@@ -1007,7 +1020,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
     <!-- 상단 바 -->
     <div class="sy-topbar">
       <button class="sy-back" @click="router.back()">←</button>
-      <span class="sy-title">{{ isQualityFind ? '🌿 질적 찾기' : '🐑 선한 양치기' }}</span>
+      <span class="sy-title">{{ isHapdang ? '🤝 합당한자' : isQualityFind ? '🌿 질적 찾기' : '🐑 선한 양치기' }}</span>
       <button class="sy-script-reg" @click="openScriptModal('tm')">📝 스크립트 등록</button>
       <button class="sy-refresh" @click="load" :disabled="loading">↻</button>
       <button class="sy-search-btn" @click="showShedSearch = true; nextTick(() => shedSearchInputRef?.focus())">🔍 검색</button>
