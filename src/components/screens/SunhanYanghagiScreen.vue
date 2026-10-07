@@ -53,7 +53,7 @@ const allShedProspects = ref([])
 const qualityTeams = ['2', '4', '6']
 const sunhanTeams  = ['1', '3', '5']
 const myRegions = computed(() => {
-  if (auth.isAdmin || ['수지역장', '전도교관', '총무'].includes(auth.currentUserRole)) return null  // 전체
+  if (auth.isAdmin || ['전도교관', '지역총무'].includes(auth.currentUserRole)) return null  // 전체 — isAdmin = 관리자·수지역장
   const num = auth.currentUserTeam?.match(/(\d+)/)?.[1]
   return num ? [num] : []
 })
