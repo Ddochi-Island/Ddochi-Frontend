@@ -917,11 +917,12 @@ async function doRegister(asRow) {
     ['유입자', asRow.introducer],
     ['조력자', asRow.helperNames],
     ['유입장소', asRow.tmLocation],
+    ['예약 티엠', asRow.tmReservedAt ? formatReservedAt(asRow.tmReservedAt) : ''],
   ].filter(([, v]) => v)
 
   const msg = [
     isDup ? '<div class="confirm-warn">⚠️ 이미 ddochi에 등록된 번호예요.</div>' : '',
-    `<div class="confirm-head">[${escapeHtml(asRow.event)}지역] ${escapeHtml(asRow.name)}${asRow.age ? ` <span class="confirm-age">(${escapeHtml(asRow.age)}세)</span>` : ''}</div>`,
+    `<div class="confirm-head">[${escapeHtml(rowEffTeam(asRow) || '')}] ${escapeHtml(asRow.name)}${asRow.age ? ` <span class="confirm-age">(${escapeHtml(asRow.age)}세)</span>` : ''}</div>`,
     '<div class="confirm-grid">' + fields.map(([k, v]) => `<span class="k">${k}</span><span class="v">${escapeHtml(v)}</span>`).join('') + '</div>',
     `<div class="confirm-q">${isDup ? '그래도 이관받을까요?' : '이관받을까요?'}</div>`,
   ].filter(Boolean).join('')
