@@ -13,8 +13,9 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxeppzAwBF4n0uSXjvaD
 const router = useRouter()
 const route = useRoute()
 const isQualityFind = computed(() => route.name === 'qualityFind')
-// 합당한자 — 135/246 묶음 대신 지역별 운영(2026-10-08). 내 지역(전 지역 직책·관리자는 전체), 이 날 이후 이관받은 건/이관 대기만.
-// 그 전 건은 진행 중이라 선한 양치기·질적 찾기 화면에 그대로 둠.
+// 합당한자 — 135/246 묶음 대신 지역별 운영(2026-10-08). 이관받은 시각(사랑이 CREATED_AT)으로 나눔:
+// 이 날 전에 받은 사랑이는 선한 양치기·질적 찾기(진행 중인 건), 이후 받은 사랑이와 이관 대기(아직 안 받은 건)는 전부
+// 합당한자 — 이관받기는 이제 합당한자에서만. 이관받기 때 큐 시각이 안 남아서 받는 순간 기준이 가장 덜 헷갈림.
 const isHapdang = computed(() => route.name === 'hapdang')
 const HAPDANG_START = new Date('2026-10-08T00:00:00+09:00')
 const tm = useTmStore()
@@ -25,7 +26,10 @@ const { showAppAlert, showAppConfirm, showToast } = usePopup()
 // ── 탭 ──────────────────────────────────────────────────────────────
 // 항상 유입자 팀 기준 — 링크 번호 fallback 없음
 const prospectEffTeam = (p) => p.team ? `${p.team}지역` : undefined
-const rowEffTeam = (r) => r.event ? `${r.event}지역` : undefined
+const rowEffTeam = (r) => {  // 유입자 소속 지역, 없으면 유입 링크 번호
+  const t = r.introducerRegion || r.event
+  return t ? `${t}지역` : undefined
+}
 
 const loading = ref(true)
 const asLoading = ref(false)
@@ -53,21 +57,19 @@ const myRegions = computed(() => {
   const num = auth.currentUserTeam?.match(/(\d+)/)?.[1]
   return num ? [num] : []
 })
-const inHapdang = (region, createdAt) =>
-  (!myRegions.value || myRegions.value.includes(String(region))) && !!createdAt && new Date(createdAt) >= HAPDANG_START
+const inMyRegions = (region) => !myRegions.value || myRegions.value.includes(String(region))
+const receivedAfterStart = (p) => !!p.createdTs && new Date(p.createdTs) >= HAPDANG_START
 const shedProspects = computed(() => {
   return allShedProspects.value.filter(p =>
-    isHapdang.value ? inHapdang(p.team, p.createdTs)
-      : isQualityFind.value ? qualityTeams.includes(p.team) : sunhanTeams.includes(p.team)
+    isHapdang.value ? inMyRegions(p.team) && receivedAfterStart(p)
+      : !receivedAfterStart(p) && (isQualityFind.value ? qualityTeams.includes(p.team) : sunhanTeams.includes(p.team))
   )
 })
 const asRows = ref([])
 
 const filteredAsRows = computed(() => {
-  return asRows.value.filter(r =>
-    isHapdang.value ? inHapdang(r.introducerRegion || r.event, r.createdAt)
-      : isQualityFind.value ? qualityTeams.includes(r.event) : sunhanTeams.includes(r.event)
-  )
+  // 이관 대기는 합당한자에서만 받음(기존 화면엔 안 보임)
+  return isHapdang.value ? asRows.value.filter(r => inMyRegions(r.introducerRegion || r.event)) : []
 })
 
 // ── 통화 상태 ─────────────────────────────────────────────────────────
@@ -380,8 +382,10 @@ const doneList = computed(() => {
 
 const rejRows = ref([])
 const rejectedList = computed(() => {
-  if (activeTab.value === '전체') return rejRows.value
-  return rejRows.value.filter(r => rowEffTeam(r) === activeTab.value)
+  // 반려된 이관(회생하기)도 이관받기처럼 합당한자에서만, 내 지역만
+  const mine = isHapdang.value ? rejRows.value.filter(r => inMyRegions(r.introducerRegion || r.event)) : []
+  if (activeTab.value === '전체') return mine
+  return mine.filter(r => rowEffTeam(r) === activeTab.value)
 })
 
 const tabUnregCount = computed(() => {
