@@ -59,12 +59,14 @@ const myRegions = computed(() => {
 })
 const inMyRegions = (region) => !myRegions.value || myRegions.value.includes(String(region))
 const receivedAfterStart = (p) => !!p.createdTs && new Date(p.createdTs) >= HAPDANG_START
-// 오래 묵었거나(이관받은 날부터 4일 지남) 티엠을 4번 이상 걸어본 건은 다른 지역도 같이 돌릴 수 있게 전 지역 공개
+// 오래 묵었거나(유입날 = shed 신청일부터 4일 지남) 티엠을 4번 이상 걸어본 건은 다른 지역도 같이 돌릴 수 있게 전 지역 공개.
+// 신청일(appliedAt)은 GAS가 보내기 시작한 뒤 건에만 있어서, 없으면 이관받은 날(사랑이)·이관된 날(대기)로 대신함.
 const OPEN_AFTER_DAYS = 4
 const OPEN_AFTER_CALLS = 4
 const kstDay = (d) => Math.floor((new Date(d).getTime() + 9 * 3600e3) / 86400e3)
+const daysOld = (d) => d ? kstDay(Date.now()) - kstDay(d) : 0
 const openToAll = (p) =>
-  kstDay(Date.now()) - kstDay(p.createdTs) >= OPEN_AFTER_DAYS ||
+  daysOld(p.appliedAt || p.createdTs) >= OPEN_AFTER_DAYS ||
   (p.tmLogs || []).filter(l => l.source === 'call').length >= OPEN_AFTER_CALLS
 const shedProspects = computed(() => {
   return allShedProspects.value.filter(p =>
@@ -76,7 +78,9 @@ const asRows = ref([])
 
 const filteredAsRows = computed(() => {
   // 이관 대기는 합당한자에서만 받음(기존 화면엔 안 보임)
-  return isHapdang.value ? asRows.value.filter(r => inMyRegions(r.introducerRegion || r.event)) : []
+  return isHapdang.value
+    ? asRows.value.filter(r => inMyRegions(r.introducerRegion || r.event) || daysOld(r.appliedAt || r.createdAt) >= OPEN_AFTER_DAYS)
+    : []
 })
 
 // ── 통화 상태 ─────────────────────────────────────────────────────────
@@ -483,6 +487,7 @@ async function load() {
       hasHabjaeyang: !!p.habJaeYang,
       createdTs: p.createdAt,
       reservedAt: p.inflowDetails?.tmReservedAt,
+      appliedAt: p.inflowDetails?.appliedAt,
       shedMeta: {
         mbti: p.mbti,
         env: p.inflowDetails?.env,
