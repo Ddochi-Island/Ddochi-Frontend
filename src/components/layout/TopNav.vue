@@ -28,6 +28,7 @@ function goHome() {
     </div>
     <div class="nav-actions">
       <button class="nav-btn" @click="handleSmartBack">뒤로</button>
+      <button class="nav-btn" aria-label="사용 가이드" @click="router.push({ name: 'guide' })">📖 가이드</button>
       <button class="nav-btn" @click="goHome">홈</button>
       <button
         class="nav-btn nav-btn-menu"
