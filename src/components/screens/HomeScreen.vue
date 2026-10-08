@@ -192,6 +192,10 @@ onMounted(() => {
                 <div class="pipeline-info"><span class="pipeline-icon">⏱️</span><div><div class="pipeline-title">15분 피드백</div><div class="pipeline-desc">지역장/전도교관 피드백 신청</div></div></div>
                 <div class="pipeline-arrow">➔</div>
             </div>
+            <div class="pipeline-banner" style="background:#E3F2FD; border: 1px solid #90CAF9;" @click="router.push({ name: 'guide' })">
+                <div class="pipeline-info"><span class="pipeline-icon">📖</span><div><div class="pipeline-title">사용 가이드</div><div class="pipeline-desc">따라 하면 끝나는 단계별 안내</div></div></div>
+                <div class="pipeline-arrow">➔</div>
+            </div>
             <div class="pipeline-banner" style="background:#F3E5F5; border: 1px solid #CE93D8;" @click="openSuggestionModal">
                 <div class="pipeline-info"><span class="pipeline-icon">📬</span><div><div class="pipeline-title">건의하기</div><div class="pipeline-desc">개발자에게 건의사항 전달</div></div></div>
                 <div class="pipeline-arrow">➔</div>
