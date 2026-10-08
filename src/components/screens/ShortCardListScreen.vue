@@ -29,7 +29,15 @@ function journalStageDisplay(stage) {
 // 떡잎 재가 탭: 재가 대기 중인 짧카 — 재가할 수 있는 사람에겐 재가/반려 버튼, 작성자에겐 진행 상황.
 const sproutList = computed(() => list.value.filter(c => c.sprout_status === 'pending'))
 const mineList = computed(() => list.value.filter(c => c.member_id === auth.currentSabun))
-const othersList = computed(() => list.value.filter(c => c.member_id !== auth.currentSabun))
+// 상단 반 칩을 누르면 그 반(작성자 현재 구역이 반에 속한)의 밭만 — 다시 누르면 해제
+const selectedGroup = ref(null)
+const inSelectedGroup = (c) => !selectedGroup.value ||
+    (c.author_region === selectedGroup.value.region && (selectedGroup.value.districts || []).includes(c.author_district))
+function toggleGroup(g) {
+    selectedGroup.value = selectedGroup.value?.groupId === g.groupId ? null : g
+    if (selectedGroup.value && othersLabel.value) activeTab.value = 'others'
+}
+const othersList = computed(() => list.value.filter(c => c.member_id !== auth.currentSabun && inSelectedGroup(c)))
 const sproutDecidable = computed(() => sproutList.value.filter(c => c.can_decide_sprout).length)
 
 const visibleList = computed(() => {
@@ -88,7 +96,9 @@ function decideSprout(card, statusKo) {
             <p class="sc-subtitle">내가 심은 짧카들, 무럭무럭 자라는 중</p>
 
             <div v-if="groupGoals.length" class="sc-goal-row">
-                <div v-for="g in groupGoals" :key="g.groupId" :class="['sc-goal-chip', g.sprouts >= g.goal ? 'sc-goal-done' : '']">
+                <div v-for="g in groupGoals" :key="g.groupId"
+                     :class="['sc-goal-chip', g.sprouts >= g.goal ? 'sc-goal-done' : '', selectedGroup?.groupId === g.groupId ? 'sc-goal-selected' : '']"
+                     role="button" tabindex="0" @click="toggleGroup(g)" @keydown.enter="toggleGroup(g)">
                     <span class="sc-goal-name">{{ g.name }}{{ g.leaderName ? ' · ' + g.leaderName : '' }}</span>
                     <span class="sc-goal-num">🍀 {{ g.sprouts }} / {{ g.goal }}</span>
                 </div>
@@ -118,6 +128,7 @@ function decideSprout(card, statusKo) {
                 <div class="sc-empty-icon">🌾</div>
                 <div v-if="activeTab === 'sprout'">떡잎 재가를 기다리는 짧카가 없어요</div>
                 <div v-else-if="activeTab === 'mine'">아직 심은 짧카가 없어요</div>
+                <div v-else-if="selectedGroup">{{ selectedGroup.name }}의 밭에 아직 없어요</div>
                 <div v-else>{{ othersLabel || '남의 밭' }}에 아직 없어요</div>
             </div>
 
@@ -176,7 +187,7 @@ function decideSprout(card, statusKo) {
                     <span class="sc-tab-icon">🌍</span>
                     <span v-if="othersList.length" class="sc-tab-count">{{ othersList.length }}</span>
                 </span>
-                <span>{{ othersLabel }}</span>
+                <span>{{ selectedGroup ? selectedGroup.name + '의 밭' : othersLabel }}</span>
             </button>
         </div>
 
@@ -228,7 +239,12 @@ function decideSprout(card, statusKo) {
     gap: 6px;
     margin-bottom: 10px;
 }
+.sc-goal-selected {
+    outline: 2px solid #2E7D32;
+    outline-offset: 1px;
+}
 .sc-goal-chip {
+    cursor: pointer;
     display: flex;
     align-items: center;
     gap: 6px;
