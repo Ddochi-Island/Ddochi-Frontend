@@ -255,7 +255,8 @@ onUnmounted(() => {
                         <b>📋 채널 연결 방법</b><br>
                         1. 봇 <b>@logDdochi_Bot</b> 을 연결할 채널/단톡방에 초대해.<br>
                         2. 아래 채널의 <b>"연결"</b> 버튼을 눌러 명령어를 복사해.<br>
-                        3. 그 방에 명령어를 붙여넣으면 자동으로 등록돼!
+                        3. 그 방에 명령어를 붙여넣으면 자동으로 등록돼!<br>
+                        <a href="#/guide?topic=telegram" class="help-guide-link" @click="emit('close')">📖 그림으로 보는 단계별 가이드</a>
                     </div>
 
                     <div v-if="loading" style="text-align:center; padding:20px;">지역 정보 불러오는 중...</div>
@@ -338,6 +339,7 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.help-guide-link { display: inline-block; margin-top: 6px; color: #1565C0; font-weight: bold; }
 .help-banner {
     font-size: 13px;
     color: #555;

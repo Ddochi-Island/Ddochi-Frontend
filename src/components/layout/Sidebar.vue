@@ -189,6 +189,11 @@ defineExpose({ open, close })
             </div> -->
 
             <div class="sidebar-section">
+                <div class="sidebar-title">📖 사용 가이드</div>
+                <div class="sidebar-item" @click="close(); router.push({ name: 'guide', query: { topic: 'telegram' } })">💬 텔레그램 방 연결하기</div>
+            </div>
+
+            <div class="sidebar-section">
                 <div class="sidebar-title">🔗 PIONEER 이벤트</div>
                 <div class="sidebar-item" @click="copyMyReferralLink">🔗 내 추천 링크 복사</div>
             </div>
