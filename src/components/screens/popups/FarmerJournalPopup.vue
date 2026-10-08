@@ -144,7 +144,7 @@ function save() {
                         <button v-if="isEditable" class="btn fj-save-btn" :disabled="saving" @click="save">
                             {{ saving ? '저장 중...' : '저장하기 📨' }}
                         </button>
-                        <p v-else class="fj-readonly-note">👀 인도자 본인만 쓸 수 있어요 — 열람만 가능</p>
+                        <p v-else class="fj-readonly-note">👀 인도자 본인과 담당 구역장만 쓸 수 있어요 — 열람만 가능</p>
                     </div>
                 </template>
             </div>
