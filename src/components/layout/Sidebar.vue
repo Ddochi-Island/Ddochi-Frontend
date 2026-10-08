@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { usePopup } from '@/composables/usePopup'
 import { useApi, tokenStore } from '@/composables/useApi'
 import { useRoles } from '@/composables/useRoles'
+import { useVisibleGuides } from '@/composables/useGuides'
 import MyGoalModal from '@/components/sidebar/MyGoalModal.vue'
 import ActivityVenueModal from '@/components/sidebar/ActivityVenueModal.vue'
 import WeeklyTemplateModal from '@/components/weekly/WeeklyTemplateModal.vue'
@@ -15,6 +16,7 @@ const auth = useAuthStore()
 const { showAppAlert, showAppConfirm, showPopup, closePopup, showPasswordPrompt, showToast } = usePopup()
 const { callApi, callApiPromise } = useApi()
 const { hasRegionRole, hasTeamRole } = useRoles()
+const guides = useVisibleGuides()
 
 // 주간 일정 템플릿 권한 — backend dailyReport.js canAccess*Template 와 동일 룰.
 // hasTeamRole 은 useRoles 에서 이미 region 자동 포함. admin 도 OR.
@@ -188,9 +190,9 @@ defineExpose({ open, close })
                 <div v-if="canViewTeamTemplate" class="sidebar-item" @click="openModal('activityVenue')">📍 활동지 입력</div>
             </div> -->
 
-            <div class="sidebar-section">
+            <div v-if="Object.keys(guides).length" class="sidebar-section">
                 <div class="sidebar-title">📖 사용 가이드</div>
-                <div class="sidebar-item" @click="close(); router.push({ name: 'guide', query: { topic: 'telegram' } })">💬 텔레그램 방 연결하기</div>
+                <div v-for="(g, key) in guides" :key="key" class="sidebar-item" @click="close(); router.push({ name: 'guide', query: { topic: key } })">{{ g.icon }} {{ g.title }}</div>
             </div>
 
             <div class="sidebar-section">

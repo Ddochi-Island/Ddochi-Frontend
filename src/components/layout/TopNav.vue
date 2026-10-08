@@ -2,10 +2,12 @@
 import { inject } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
+import { useVisibleGuides } from "@/composables/useGuides";
 
 const router = useRouter();
 const auth = useAuthStore();
 const openSidebar = inject("openSidebar");
+const guides = useVisibleGuides(); // 볼 수 있는 가이드가 없으면 버튼 숨김
 
 function handleSmartBack() {
   if (window.history.length > 1) {
@@ -28,7 +30,7 @@ function goHome() {
     </div>
     <div class="nav-actions">
       <button class="nav-btn" @click="handleSmartBack">뒤로</button>
-      <button class="nav-btn" aria-label="사용 가이드" @click="router.push({ name: 'guide' })">📖 가이드</button>
+      <button v-if="Object.keys(guides).length" class="nav-btn" aria-label="사용 가이드" @click="router.push({ name: 'guide' })">📖 가이드</button>
       <button class="nav-btn" @click="goHome">홈</button>
       <button
         class="nav-btn nav-btn-menu"
