@@ -321,18 +321,32 @@ function copyPhone(phone) {
 
 const ddochiPhones = computed(() => new Set(shedProspects.value.map(p => normPhone(p.phone))))
 
-// 동적 탭: 모든 카드의 유효팀을 수집해 정렬, 앞에 '전체' 추가
+// 합당한자의 '🌏 전체 공개' 탭 — 다른 지역에도 열린 건(신청 4일 지남 / 티엠 4회 이상)을 따로 모아 봄.
+// 일반 탭(전체·N지역)에는 내 지역 건만 — 다른 지역 공개 건은 이 탭에서만 보여 왜 보이는지 헷갈리지 않게.
+const PUBLIC_TAB = '🌏 전체 공개'
+const isPublicP = (p) => isHapdang.value && openToAll(p)
+const isPublicR = (r) => isHapdang.value && daysOld(r.appliedAt || r.createdAt) >= OPEN_AFTER_DAYS
+// 전체 공개 탭 카드에 붙는 이유 — 티엠 횟수가 기준을 넘었으면 그걸, 아니면 신청(이관)일부터 지난 날
+function publicReason(x) {
+  const calls = (x.tmLogs || []).filter(l => l.source === 'call').length
+  if (calls >= OPEN_AFTER_CALLS) return `티엠 ${calls}회`
+  return `${daysOld(x.appliedAt || x.createdTs || x.createdAt)}일 지남`
+}
+const tabMatchP = (p, tab) => tab === PUBLIC_TAB ? isPublicP(p)
+  : (!isHapdang.value || inMyRegions(p.team)) && (tab === '전체' || prospectEffTeam(p) === tab)
+const tabMatchR = (r, tab) => tab === PUBLIC_TAB ? isPublicR(r)
+  : (!isHapdang.value || inMyRegions(r.introducerRegion || r.event)) && (tab === '전체' || rowEffTeam(r) === tab)
+
+// 동적 탭: 모든 카드의 유효팀을 수집해 정렬, 앞에 '전체' 추가(합당한자는 공개 건이 있으면 끝에 '🌏 전체 공개')
 const TABS = computed(() => {
   const set = new Set()
-  for (const p of shedProspects.value) { const t = prospectEffTeam(p); if (t) set.add(t) }
-  for (const r of filteredAsRows.value) { const t = rowEffTeam(r); if (t) set.add(t) }
-  return ['전체', ...[...set].sort()]
+  for (const p of shedProspects.value) { if (tabMatchP(p, '전체')) { const t = prospectEffTeam(p); if (t) set.add(t) } }
+  for (const r of filteredAsRows.value) { if (tabMatchR(r, '전체')) { const t = rowEffTeam(r); if (t) set.add(t) } }
+  const hasPublic = shedProspects.value.some(isPublicP) || filteredAsRows.value.some(isPublicR)
+  return ['전체', ...[...set].sort(), ...(hasPublic ? [PUBLIC_TAB] : [])]
 })
 
-const ddochiListAll = computed(() => {
-  if (activeTab.value === '전체') return shedProspects.value
-  return shedProspects.value.filter(p => prospectEffTeam(p) === activeTab.value)
-})
+const ddochiListAll = computed(() => shedProspects.value.filter(p => tabMatchP(p, activeTab.value)))
 
 const ddochiList = computed(() => {
   const today = new Date().toISOString().slice(0, 10)
@@ -373,22 +387,19 @@ const callingProspect = computed(() =>
 
 const unregList = computed(() => {
   const list = filteredAsRows.value.filter(r => !ddochiPhones.value.has(normPhone(r.phone)))
-  if (activeTab.value === '전체') return list
-  return list.filter(r => rowEffTeam(r) === activeTab.value)
+  return list.filter(r => tabMatchR(r, activeTab.value))
 })
 
 const hjNeededList = computed(() => {
   // STAGE='만픽'은 만남픽스는 됐는데 합재양은 아직 안 쓴 상태 — 합재양을 쓰는 순간
   // STAGE가 '합재양'으로 넘어가니(submit_result 쪽), 이 조건 하나로 충분함.
   const base = shedProspects.value.filter(p => p.status === '만픽')
-  if (activeTab.value === '전체') return base
-  return base.filter(p => prospectEffTeam(p) === activeTab.value)
+  return base.filter(p => tabMatchP(p, activeTab.value))
 })
 
 const doneList = computed(() => {
   const base = shedProspects.value.filter(p => p.hasHabjaeyang)
-  if (activeTab.value === '전체') return base
-  return base.filter(p => prospectEffTeam(p) === activeTab.value)
+  return base.filter(p => tabMatchP(p, activeTab.value))
 })
 
 const rejRows = ref([])
@@ -404,7 +415,7 @@ const tabUnregCount = computed(() => {
   const unreg = filteredAsRows.value.filter(r => !ddochiPhones.value.has(normPhone(r.phone)))
   for (const tab of TABS.value) {
     if (tab === '전체') continue
-    m[tab] = unreg.filter(r => rowEffTeam(r) === tab).length
+    m[tab] = unreg.filter(r => tabMatchR(r, tab)).length
   }
   return m
 })
@@ -413,7 +424,7 @@ const tabActiveCount = computed(() => {
   const m = {}
   for (const tab of TABS.value) {
     if (tab === '전체') continue
-    m[tab] = shedProspects.value.filter(p => prospectEffTeam(p) === tab && !isFinal(p)).length
+    m[tab] = shedProspects.value.filter(p => tabMatchP(p, tab) && !isFinal(p)).length
   }
   return m
 })
@@ -1131,6 +1142,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span v-if="r.createdAt" class="sy-inflow-ts">{{ fmtInflowTs(r.createdAt) }}</span>
                 <span v-if="r.numberStatus === 'pending_dup'" class="sy-link-badge" style="background:#ff5252;color:#fff;">중복</span>
                 <span class="sy-link-badge sy-intr-badge">{{ rowEffTeam(r) }}</span>
+                <span v-if="activeTab === PUBLIC_TAB" class="sy-link-badge sy-public-badge">🌏 {{ publicReason(r) }}</span>
               </div>
               <div v-if="r.region || r.env || r.reaction || r.introducer || r.tmLocation || r.rest" class="sy-fields">
                 <span v-if="r.region" class="sy-field"><b>지역</b>{{ r.region }}</span>
@@ -1163,6 +1175,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
               <span v-if="p.age" class="sy-age">({{ p.age }}세)</span>
               <span v-if="p.createdTs" class="sy-inflow-ts">{{ fmtInflowTs(p.createdTs) }}</span>
               <span class="sy-link-badge sy-intr-badge">{{ p.team + '지역' }}</span>
+              <span v-if="activeTab === PUBLIC_TAB" class="sy-link-badge sy-public-badge">🌏 {{ publicReason(p) }}</span>
               <span class="sy-tm-badge" style="background:#1565C0">만남픽스✓</span>
             </div>
             <div class="sy-actions" style="margin-top:6px">
@@ -1212,6 +1225,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 </template>
                 <span v-if="p.createdTs" class="sy-inflow-ts">{{ fmtInflowTs(p.createdTs) }}</span>
                 <span class="sy-link-badge sy-intr-badge">{{ p.team + '지역' }}</span>
+                <span v-if="activeTab === PUBLIC_TAB" class="sy-link-badge sy-public-badge">🌏 {{ publicReason(p) }}</span>
                 <span v-if="displayTmStatus(p)" class="sy-tm-badge" :style="{ background: TM_STATUS_COLOR[displayTmStatus(p)] || '#757575' }">
                   {{ TM_STATUS_LABEL[displayTmStatus(p)] || displayTmStatus(p) }}
                 </span>
@@ -1331,6 +1345,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
               <span v-if="p.age" class="sy-age">({{ p.age }}세)</span>
               <span v-if="p.createdTs" class="sy-inflow-ts">{{ fmtInflowTs(p.createdTs) }}</span>
               <span class="sy-link-badge sy-intr-badge">{{ p.team + '지역' }}</span>
+              <span v-if="activeTab === PUBLIC_TAB" class="sy-link-badge sy-public-badge">🌏 {{ publicReason(p) }}</span>
               <span class="sy-done-guide" v-if="p.hasGuide">인도자: {{ p.guideName }}</span>
               <span class="sy-done-noguide" v-else>인도자 미정 🎰</span>
               <span v-if="p.hjCreatedTs" class="sy-done-date">{{ p.hjCreatedTs }}</span>
@@ -1736,6 +1751,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
 .lk3 { background: #6a1b9a; }
 .lk5 { background: #e65100; }
 .sy-intr-badge { background: #00695c; }
+.sy-public-badge { background: #1565C0; }
 .sy-inflow-ts { font-size: 11px; color: #aaa; }
 
 .sy-tm-badge {
