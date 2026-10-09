@@ -42,6 +42,11 @@ function next() {
     if (isLast.value) { emit('finish'); return }
     index.value += 1
 }
+// 동작(API 호출/클릭)으로 넘길 때 — 한 동작에 요청이 여러 번 나가도(예: 부재중 문자 저장 = 요청 2개) 한 단계만 넘어가게,
+// 예약한 시점의 단계일 때만 넘김. 전엔 요청마다 넘겨서 다음 단계를 건너뛰었음(사용자 신고: 8번이 바로 넘어감)
+function advanceFrom(at, delay) {
+    setTimeout(() => { if (index.value === at) next() }, delay)
+}
 function prev() { if (index.value > 0) index.value -= 1 }
 
 // 말풍선 위치 — 대상 아래에 자리가 있으면 아래, 아니면 위, 대상이 없으면 화면 가운데
@@ -59,11 +64,11 @@ let timer = null
 function onDocClick(e) {  // wait: 'click' — 강조한 대상을 실제로 눌렀을 때만 다음으로
     if (step.value?.wait !== 'click') return
     const el = findTarget()
-    if (el && el.contains(e.target)) setTimeout(next, 300)
+    if (el && el.contains(e.target)) advanceFrom(index.value, 300)
 }
 watch(index, focusStep)
 onMounted(() => {
-    off = onPracticeCall((path) => { if (step.value?.wait === path) setTimeout(next, 400) })
+    off = onPracticeCall((path) => { if (step.value?.wait === path) advanceFrom(index.value, 400) })
     timer = setInterval(measure, 400)  // 목록이 다시 그려지거나 펼쳐져도 강조 위치를 따라감
     window.addEventListener('resize', measure)
     window.addEventListener('scroll', measure, true)
