@@ -50,6 +50,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
                 <span>
                     <span class="guide-topic-title">{{ g.title }}</span>
                     <span class="guide-topic-desc">{{ g.summary }}</span>
+                    <span v-if="g.practice" class="guide-practice-tag">🎮 직접 해보기 있음</span>
                 </span>
             </button>
         </template>
@@ -57,6 +58,9 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
         <!-- 단계 카드 -->
         <template v-else>
             <h2 class="guide-h">{{ topic.icon }} {{ topic.title }}</h2>
+            <button v-if="topic.practice" class="guide-practice-btn" @click="router.push({ name: topic.practice })">
+                🎮 연습 화면에서 직접 해보기 <span class="guide-practice-sub">눌러도 저장 안 돼요</span>
+            </button>
             <div class="guide-progress" role="tablist" :aria-label="`${topic.steps.length}단계 중 ${index + 1}단계`">
                 <button v-for="(s, i) in topic.steps" :key="i" role="tab" :aria-selected="i === index"
                         :aria-label="`${i + 1}단계: ${s.title}`"
@@ -128,12 +132,18 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 .guide-h { margin: 4px 0 6px; font-size: 22px; color: var(--text-color); }
 .guide-sub { margin: 0 0 16px; color: #8D6E63; }
 
+.guide-topic + .guide-topic { margin-top: 10px; }
 .guide-topic { display: flex; gap: 12px; align-items: flex-start; width: 100%; text-align: left; background: var(--card-bg);
     border: 1px solid #EFE3D3; border-radius: 14px; padding: 14px; box-shadow: var(--shadow); cursor: pointer; font-family: 'Jua'; color: var(--text-color); }
 .guide-topic-icon { font-size: 28px; line-height: 1; }
 .guide-topic-title { display: block; font-size: 17px; margin-bottom: 4px; }
 .guide-topic-desc { display: block; font-size: 13px; color: #8D6E63; line-height: 1.5; }
 
+.guide-practice-tag { display: inline-block; margin-top: 6px; font-size: 12px; color: #2E7D32; }
+.guide-practice-btn { width: 100%; margin: 4px 0 10px; padding: 12px; border: 2px solid #81C784; border-radius: 12px; background: #E8F5E9;
+    color: #1B5E20; font-family: 'Jua'; font-size: 16px; cursor: pointer; text-align: left; }
+.guide-practice-sub { display: block; font-size: 12px; color: #558B2F; margin-top: 2px; }
+.guide-practice-btn:focus-visible { outline: 3px solid #FFB74D; outline-offset: 2px; }
 .guide-progress { display: flex; gap: 6px; margin: 10px 0 14px; }
 .guide-dot { flex: 1; height: 6px; border: none; border-radius: 3px; background: #EFE3D3; cursor: pointer; padding: 0; }
 .guide-dot.done { background: #C8A97E; }

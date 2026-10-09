@@ -2,6 +2,8 @@
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { useApi } from '@/composables/useApi'
+import { usePracticeApi, resetPractice } from '@/composables/usePracticeApi'
+import TutorialCoach from '@/components/common/TutorialCoach.vue'
 import { usePopup } from '@/composables/usePopup'
 import { useTmStore } from '@/stores/tm'
 import { useAuthStore } from '@/stores/auth'
@@ -17,11 +19,28 @@ const isQualityFind = computed(() => route.name === 'qualityFind')
 // 합당한자 — 135/246 묶음 대신 지역별 운영(2026-10-08). 이관받은 시각(사랑이 CREATED_AT)으로 나눔:
 // 이 날 전에 받은 사랑이는 선한 양치기·질적 찾기(진행 중인 건), 이후 받은 사랑이와 이관 대기(아직 안 받은 건)는 전부
 // 합당한자 — 이관받기는 이제 합당한자에서만. 이관받기 때 큐 시각이 안 남아서 받는 순간 기준이 가장 덜 헷갈림.
-const isHapdang = computed(() => route.name === 'hapdang')
+// 튜토리얼 연습 모드(/hapdang-practice) — 합당한자와 똑같이 그리되 API는 가짜(usePracticeApi), 저장 안 됨
+const isPractice = route.name === 'hapdangPractice'
+const isHapdang = computed(() => route.name === 'hapdang' || isPractice)
+if (isPractice) resetPractice()  // 연습은 매번 같은 예시 데이터로 새로 시작
+// 합당한자 연습 튜토리얼 단계 — wait는 그 (가짜) API가 불리면 다음 단계로
+const PRACTICE_STEPS = [
+  { title: '합당한자 연습이에요', text: '진짜와 똑같이 생긴 연습 화면이에요. 눌러도 실제로 저장되지 않으니 마음껏 눌러 보세요.' },
+  { target: 'unreg', title: 'shed에서 넘어온 사람', text: '여기에 shed에서 넘어온 사람이 보여요. 아직 우리 명단에 받기 전이에요.' },
+  { target: 'register', wait: '/api/shed-register', title: '이관받기', text: '"이관받기"를 누르고, 확인창에서 내용을 본 뒤 "응!"을 눌러 보세요.' },
+  { target: 'tm', title: '우리 명단', text: '받은 사람은 여기 "ddochi TM 관리"로 들어와요. 여기서 티엠을 해요.' },
+  { target: 'welcome', wait: '/api/submit-result', title: '먼저 선문자', text: '전화 전에 "💌 선문자"부터 보내요. 누르면 번호가 복사되고 창이 떠요. 문자를 보낸 뒤 "선문자 발송 완료" → "저장하기"를 눌러 보세요. 그러면 📞 전화걸기 버튼이 생겨요.' },
+  { target: 'call', wait: '/api/shed-call-start', title: '전화걸기', text: '"📞 전화걸기"를 눌러 보세요. 번호가 복사되고, 다른 사람에겐 내가 통화중으로 보여요.' },
+  { target: 'noanswer', wait: '/api/submit-result', title: '통화 결과 남기기', text: '통화가 끝나면 결과를 남겨요. 이번엔 "안받음"을 눌러 보세요. 부재중 문자 창이 뜨면 문자를 보내고 "저장하기", 문자 없이 기록만 하려면 "취소 (안받음만)". 예약·만남픽스·비합도 같은 줄에 있어요.' },
+  { target: 'hangup', wait: '/api/shed-call-end', title: '끊기', text: '다 끝났으면 "끊기"를 눌러요.' },
+  { target: 'tabs', title: '탭으로 나눠 보기', text: '위쪽 탭으로 볼 범위를 골라요. 평소엔 "우리 지역"에서 일해요.' },
+  { target: 'public-tab', wait: 'click', title: '🌏 전체 공개', text: '"🌏 전체 공개"를 눌러 보세요. 신청 4일이 지났거나 티엠을 4번 넘게 건 건이 여기 모여서, 다른 지역도 같이 돌려요.' },
+  { title: '연습 끝! 🎉', text: '이제 실제 합당한자에서 해 보세요. 연습은 가이드에서 언제든 다시 할 수 있어요.' },
+]
 const HAPDANG_START = new Date('2026-10-08T00:00:00+09:00')
 const tm = useTmStore()
 const auth = useAuthStore()
-const { callApiPromise } = useApi()
+const { callApiPromise } = isPractice ? usePracticeApi() : useApi()
 const { showAppAlert, showAppConfirm, showToast } = usePopup()
 
 // ── 탭 ──────────────────────────────────────────────────────────────
@@ -55,6 +74,7 @@ const qualityTeams = ['2', '4', '6']
 const sunhanTeams  = ['1', '3', '5']
 const { hasRegionRole } = useRoles()
 const myRegions = computed(() => {
+  if (isPractice) return ['4']  // 연습에선 4지역 회원처럼 — 🌏 전체 공개 탭도 보이게
   // 전 지역: 관리자·수지역장(isAdmin), 지역 단위 직책(전도교관·지역총무·수서기·지역전도서기), 지역장·전도팀장(2026-10-09).
   // 반장·구역장 이하는 우리 지역만.
   if (auth.isAdmin || hasRegionRole.value || /지역장|전도팀장/.test(auth.currentUserRole || '')) return null
@@ -62,7 +82,7 @@ const myRegions = computed(() => {
   return num ? [num] : []
 })
 const inMyRegions = (region) => !myRegions.value || myRegions.value.includes(String(region))
-const receivedAfterStart = (p) => !!p.createdTs && new Date(p.createdTs) >= HAPDANG_START
+const receivedAfterStart = (p) => isPractice || (!!p.createdTs && new Date(p.createdTs) >= HAPDANG_START)
 // 오래 묵었거나(유입날 = shed 신청일부터 4일 지남) 티엠을 4번 이상 걸어본 건은 다른 지역도 같이 돌릴 수 있게 전 지역 공개.
 // 신청일(appliedAt)은 GAS가 보내기 시작한 뒤 건에만 있어서, 없으면 이관받은 날(사랑이)·이관된 날(대기)로 대신함.
 const OPEN_AFTER_DAYS = 4
@@ -779,6 +799,10 @@ async function doMeetingFix(p) {
 }
 
 function goHabjaeyang(p) {
+  if (isPractice) {  // 연습에선 실제 합재양 화면으로 안 넘어감
+    showAppAlert('연습 끝! 실제 화면에서는 여기서 합재양 작성 화면으로 넘어가요.')
+    return
+  }
   // 번호찾 때 이미 파악된 정보 중 합재양 폼과 겹치는 것만 넘김 — 환경/일정/반응처럼
   // 개념이 애매하게 겹치는 건 자동 이관하면 오히려 혼동돼서 제외. 거주지 근처 역은
   // 현재 수집 경로가 없어 항상 비어있으므로 이관 대상에서 제외.
@@ -1057,7 +1081,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
     <!-- 상단 바 -->
     <div class="sy-topbar">
       <button class="sy-back" @click="router.back()">←</button>
-      <span class="sy-title">{{ isHapdang ? '🤝 합당한자' : isQualityFind ? '🌿 질적 찾기' : '🐑 선한 양치기' }}</span>
+      <span class="sy-title">{{ isPractice ? '🎮 합당한자 연습' : isHapdang ? '🤝 합당한자' : isQualityFind ? '🌿 질적 찾기' : '🐑 선한 양치기' }}</span>
       <button class="sy-script-reg" @click="openScriptModal('tm')">📝 스크립트 등록</button>
       <button class="sy-refresh" @click="load" :disabled="loading">↻</button>
       <button class="sy-search-btn" @click="showShedSearch = true; nextTick(() => shedSearchInputRef?.focus())">🔍 검색</button>
@@ -1079,10 +1103,10 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
     </div>
 
     <!-- 탭 -->
-    <div class="sy-tabs">
+    <div class="sy-tabs" data-tour="tabs">
       <button
         v-for="t in TABS" :key="t"
-        class="sy-tab" :class="{ on: activeTab === t }"
+        class="sy-tab" :class="{ on: activeTab === t }" :data-tour="t === PUBLIC_TAB ? 'public-tab' : null"
         @click="activeTab = t"
       >
         {{ t === '전체' && isHapdang && myRegions ? '우리 지역' : t }}
@@ -1144,7 +1168,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
         <template v-else>
           <div v-if="asLoading" class="sy-as-loading-row">불러오는 중...</div>
           <div v-else-if="unregList.length" class="sy-cards">
-            <div v-for="(r, i) in unregList" :key="i" class="sy-card unreg">
+            <div v-for="(r, i) in unregList" :key="i" class="sy-card unreg" data-tour="unreg">
               <div class="sy-card-header">
                 <span class="sy-name">{{ r.name }}</span>
                 <span v-if="r.age" class="sy-age">({{ r.age }}세)</span>
@@ -1163,7 +1187,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span v-if="r.tmLocation" class="sy-field"><b>유입장소</b>{{ r.tmLocation }}</span>
               </div>
               <div class="sy-actions" style="margin-top:6px;">
-                <button class="ab reg" @click="doRegister(r)" :disabled="saving">이관받기</button>
+                <button class="ab reg" data-tour="register" @click="doRegister(r)" :disabled="saving">이관받기</button>
                 <button class="ab cancel" @click="doReject(r)" :disabled="saving">반려하기</button>
               </div>
             </div>
@@ -1198,7 +1222,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
       <!-- ── Section A: ddochi TM 관리 ── -->
       <template v-if="ddochiListAll.length">
         <div class="sy-section-label sy-section-label-row" style="margin-top:16px">
-          <span>🗂️ ddochi TM 관리 ({{ ddochiList.length }}명)</span>
+          <span data-tour="tm">🗂️ ddochi TM 관리 ({{ ddochiList.length }}명)</span>
           <button class="sy-endtoggle" :class="{ on: showEnded }" @click="showEnded = !showEnded">
             {{ showEnded ? '종료' : '진행' }}
           </button>
@@ -1224,11 +1248,11 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <template v-if="!isFinal(p)">
                   <span v-if="isOtherCalling(p)" class="sy-calling-badge">🔴 통화중 ({{ callerOf(p) }})</span>
                   <span v-else-if="isMyCalling(p) && isDesktop" class="sy-calling-mine-badge">🟢 통화중</span>
-                  <button v-else-if="!isMyCalling(p) && !hasWelcomeMsg(p)" class="sy-call-btn sy-call-btn-sm sy-welcome-btn" @click="openWelcomeMsg(p)">💌 선문자</button>
-                  <button v-else-if="!isMyCalling(p)" class="sy-call-btn sy-call-btn-sm" @click="startCall(p)">📞 전화걸기</button>
+                  <button v-else-if="!isMyCalling(p) && !hasWelcomeMsg(p)" class="sy-call-btn sy-call-btn-sm sy-welcome-btn" data-tour="welcome" @click="openWelcomeMsg(p)">💌 선문자</button>
+                  <button v-else-if="!isMyCalling(p)" class="sy-call-btn sy-call-btn-sm" data-tour="call" @click="startCall(p)">📞 전화걸기</button>
                   <template v-else>
                     <span class="sy-phone-num" style="cursor:pointer;" @click="copyPhone(p.phone)">📞 {{ p.phone }}</span>
-                    <button class="ab cancel hangup" @click="endCall">끊기</button>
+                    <button class="ab cancel hangup" data-tour="hangup" @click="endCall">끊기</button>
                     <button class="sy-script-toggle" :class="{ on: scriptOpen[p.docId] }" @click="toggleScript(p.docId)">📝 스크립트</button>
                   </template>
                 </template>
@@ -1266,7 +1290,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
 
                 <!-- 기본 버튼들 -->
                 <template v-if="!actionTarget || actionTarget.docId !== p.docId">
-                  <button class="ab na" @click="doNoAnswer(p)" :disabled="saving">안받음</button>
+                  <button class="ab na" data-tour="noanswer" @click="doNoAnswer(p)" :disabled="saving">안받음</button>
                   <button class="ab re" @click="openAction(p.docId, 'reserve')" :disabled="saving">예약</button>
                   <button class="ab mp" @click="doMeetingFix(p)" :disabled="saving">만남픽스</button>
                   <button class="ab bh" @click="openAction(p.docId, 'bihap')" :disabled="saving">비합</button>
@@ -1382,7 +1406,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span class="sy-name">{{ callingProspect.name }}</span>
                 <span v-if="callingProspect.age" class="sy-age">({{ callingProspect.age }}세)</span>
                 <span class="sy-phone-num" style="cursor:pointer;" @click="copyPhone(callingProspect.phone)">📞 {{ callingProspect.phone }}</span>
-                <button class="ab cancel hangup" @click="endCall">끊기</button>
+                <button class="ab cancel hangup" data-tour="hangup" @click="endCall">끊기</button>
                 <button class="sy-script-toggle" :class="{ on: scriptOpen[callingProspect.docId] }" @click="toggleScript(callingProspect.docId)">📝 스크립트</button>
                 <span class="sy-link-badge sy-intr-badge">{{ callingProspect.team + '지역' }}</span>
               </div>
@@ -1405,7 +1429,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
               </div>
               <div v-if="!isFinal(callingProspect)" class="sy-actions">
                 <template v-if="!actionTarget || actionTarget.docId !== callingProspect.docId">
-                  <button class="ab na" @click="doNoAnswer(callingProspect)" :disabled="saving">안받음</button>
+                  <button class="ab na" data-tour="noanswer" @click="doNoAnswer(callingProspect)" :disabled="saving">안받음</button>
                   <button class="ab re" @click="openAction(callingProspect.docId, 'reserve')" :disabled="saving">예약</button>
                   <button class="ab mp" @click="doMeetingFix(callingProspect)" :disabled="saving">만남픽스</button>
                   <button class="ab bh" @click="openAction(callingProspect.docId, 'bihap')" :disabled="saving">비합</button>
@@ -1609,7 +1633,9 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
         </div>
       </div>
     </div>
-  </div>
+    <TutorialCoach v-if="isPractice" :steps="PRACTICE_STEPS"
+    @finish="router.replace({ name: 'hapdang' })" @exit="router.replace({ name: 'guide', query: { topic: 'hapdang' } })" />
+</div>
 </template>
 
 <style scoped>
