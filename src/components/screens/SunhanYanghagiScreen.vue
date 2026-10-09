@@ -790,6 +790,7 @@ function goHabjaeyang(p) {
     mbti: p.mbti,
     introducer: p.shedMeta?.introducer,
     memo: noteText[p.docId] || p.tmNote?.text || '',
+    returnTo: route.name,  // 합재양 저장 뒤 돌아올 화면(합당한자/선한 양치기/질적 찾기)
   }
   router.push({ name: 'habjaeyang' })
 }
@@ -857,6 +858,10 @@ async function doRegacha(p) {
   })
   cancelling.value = false
   if (!r?.success) { showAppAlert(r?.message || '가챠 오류'); return }
+  if (r.roulette === false) {  // 1·5지역 외에는 룰렛 없이 유입자가 인도자
+    showAppAlert(`인도자: ${r.winnerName} (유입자)`, () => onRegachaDone())
+    return
+  }
   regachaResult.value = r
   regachaVisible.value = true
 }

@@ -293,12 +293,13 @@ function finishAndGoHome(message) {
     ui.setProcessing(false)
     clearDraft()
     const fromShed = !!tm.shedContext
+    const backTo = tm.shedContext?.returnTo || 'sunhanYanghagi'
     showAppAlert(message, () => {
         currentDocId.value = null
         tm.currentTmIndex = null
         if (fromShed) {
             tm.shedContext = null
-            router.push({ name: 'sunhanYanghagi' })
+            router.push({ name: backTo })
         } else {
             router.push({ name: 'home' })
         }
@@ -321,6 +322,10 @@ function doActualSubmit(submitData) {
         ui.setProcessing(false)
         clearDraft()
         if (!r?.success) { showAppAlert(r?.message || '가챠 오류'); return }
+        if (r.roulette === false) {  // 1·5지역 외에는 룰렛 없이 유입자가 인도자
+            showAppAlert(`합재양 제출 완료!<br>인도자: ${r.winnerName} (유입자)`, () => onGachaDone())
+            return
+        }
         gachaResult.value = r
         gachaVisible.value = true
     }
@@ -356,13 +361,14 @@ function doActualSubmit(submitData) {
 }
 
 async function onGachaDone() {
+    const backTo = tm.shedContext?.returnTo || 'sunhanYanghagi'
     gachaVisible.value = false
     gachaResult.value = null
     currentDocId.value = null
     tm.currentTmIndex = null
     tm.shedContext = null
     await nextTick()
-    router.replace({ name: 'sunhanYanghagi' })
+    router.replace({ name: backTo })
 }
 
 // 중복섭외 팝업 세 갈래 — 저장은 이미 끝나있고(IS_DROPPED=1/중복섭외), 여기선 최종 처리만 결정.
