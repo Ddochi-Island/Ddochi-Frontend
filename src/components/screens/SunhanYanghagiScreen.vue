@@ -5,6 +5,7 @@ import { useApi } from '@/composables/useApi'
 import { usePopup } from '@/composables/usePopup'
 import { useTmStore } from '@/stores/tm'
 import { useAuthStore } from '@/stores/auth'
+import { useRoles } from '@/composables/useRoles'
 import GachaSlotOverlay from '@/components/screens/GachaSlotOverlay.vue'
 import DuplicateHistoryPopup from '@/components/screens/popups/DuplicateHistoryPopup.vue'
 
@@ -52,8 +53,11 @@ const shedDupExistingId = ref(null)
 const allShedProspects = ref([])
 const qualityTeams = ['2', '4', '6']
 const sunhanTeams  = ['1', '3', '5']
+const { hasRegionRole } = useRoles()
 const myRegions = computed(() => {
-  if (auth.isAdmin || ['전도교관', '지역총무'].includes(auth.currentUserRole)) return null  // 전체 — isAdmin = 관리자·수지역장
+  // 전 지역: 관리자·수지역장(isAdmin), 지역 단위 직책(전도교관·지역총무·수서기·지역전도서기), 지역장·전도팀장(2026-10-09).
+  // 반장·구역장 이하는 우리 지역만.
+  if (auth.isAdmin || hasRegionRole.value || /지역장|전도팀장/.test(auth.currentUserRole || '')) return null
   const num = auth.currentUserTeam?.match(/(\d+)/)?.[1]
   return num ? [num] : []
 })
@@ -1076,7 +1080,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
         class="sy-tab" :class="{ on: activeTab === t }"
         @click="activeTab = t"
       >
-        {{ t }}
+        {{ t === '전체' && isHapdang && myRegions ? '우리 지역' : t }}
         <span v-if="t !== '전체' && tabUnregCount[t]" class="sy-tab-badge sy-tab-badge-unreg">{{ tabUnregCount[t] }}</span>
         <span v-else-if="t !== '전체' && tabActiveCount[t]" class="sy-tab-badge sy-tab-badge-active">{{ tabActiveCount[t] }}</span>
       </button>
