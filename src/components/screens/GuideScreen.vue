@@ -73,7 +73,15 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 
                 <!-- 실제 화면 모양(작은 그림) -->
                 <div v-if="step.mock" class="guide-mock" aria-hidden="true">
-                    <template v-if="step.mock === 'bot'">
+                    <!-- 데이터로 그리는 그림: [{ t, kind: hl|ok|muted|head|me|bot|wide, btn: [..] }] -->
+                    <template v-if="Array.isArray(step.mock)">
+                        <div v-for="(r, i) in step.mock" :key="i"
+                             :class="r.kind === 'me' || r.kind === 'bot' ? ['mk-bubble', r.kind] : r.kind === 'wide' ? 'mk-btn-wide' : r.kind === 'muted' ? 'mk-muted' : ['mk-row', r.kind ? 'mk-' + r.kind : '']">
+                            <span>{{ r.t }}</span>
+                            <span v-for="b in (r.btn || [])" :key="b" class="mk-btn">{{ b }}</span>
+                        </div>
+                    </template>
+                    <template v-else-if="step.mock === 'bot'">
                         <div class="mk-search">🔍 <b>@logDdochi_Bot</b></div>
                         <div class="mk-row"><span class="mk-avatar">🤖</span> 기록이 <span class="mk-muted">@logDdochi_Bot</span> <span class="mk-btn">초대</span></div>
                     </template>
