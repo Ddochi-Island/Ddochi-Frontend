@@ -322,8 +322,8 @@ function doActualSubmit(submitData) {
         ui.setProcessing(false)
         clearDraft()
         if (!r?.success) { showAppAlert(r?.message || '가챠 오류'); return }
-        if (r.roulette === false) {  // 1·5지역 외에는 룰렛 없이 유입자가 인도자
-            showAppAlert(`합재양 제출 완료!<br>인도자: ${r.winnerName} (유입자)`, () => onGachaDone())
+        if (r.roulette === false) {  // 룰렛 없이 정해짐 — 🌏 전체 공개 건은 티엠자, 1·5지역 외에는 유입자
+            showAppAlert(`합재양 제출 완료!<br>인도자: ${r.winnerName} (${r.public ? '티엠자 · 🌏 전체 공개 건' : '유입자'})`, () => onGachaDone())
             return
         }
         gachaResult.value = r

@@ -883,8 +883,8 @@ async function doRegacha(p) {
   })
   cancelling.value = false
   if (!r?.success) { showAppAlert(r?.message || '가챠 오류'); return }
-  if (r.roulette === false) {  // 1·5지역 외에는 룰렛 없이 유입자가 인도자
-    showAppAlert(`인도자: ${r.winnerName} (유입자)`, () => onRegachaDone())
+  if (r.roulette === false) {  // 룰렛 없이 정해짐 — 🌏 전체 공개 건은 티엠자, 1·5지역 외에는 유입자
+    showAppAlert(`인도자: ${r.winnerName} (${r.public ? '티엠자 · 🌏 전체 공개 건' : '유입자'})`, () => onRegachaDone())
     return
   }
   regachaResult.value = r
