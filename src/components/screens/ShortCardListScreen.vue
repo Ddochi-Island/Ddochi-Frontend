@@ -68,6 +68,9 @@ function load() {
             list.value = r.list || []
             othersLabel.value = r.othersLabel || null
             groupGoals.value = r.groupGoals || []
+        } else {
+            // 실패하면 빈 밭처럼 보여서 반·반의 밭이 "없는" 걸로 오해됨 — 실패를 알림
+            showAppAlert(`밭을 불러오지 못했어요. 잠시 후 다시 열어 주세요.${r?.message ? '<br>(' + r.message + ')' : ''}`)
         }
     })
 }
