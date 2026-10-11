@@ -29,6 +29,7 @@ const routes = [
     { path: '/online-intake', name: 'onlineIntake', component: () => import('@/components/screens/OnlineIntakeScreen.vue'), meta: { requiresAuth: true, fullScreen: true } },
     { path: '/sunhan-yanghagi', name: 'sunhanYanghagi', component: () => import('@/components/screens/SunhanYanghagiScreen.vue'), meta: { requiresAuth: true, fullScreen: true } },
     { path: '/quality-find', name: 'qualityFind', component: () => import('@/components/screens/SunhanYanghagiScreen.vue'), meta: { requiresAuth: true, fullScreen: true } },
+    { path: '/erp', name: 'erp', component: () => import('@/components/screens/ErpScreen.vue'), meta: { requiresAuth: true } },
     { path: '/guide', name: 'guide', component: () => import('@/components/screens/GuideScreen.vue'), meta: { requiresAuth: true } },
     { path: '/hapdang-practice', name: 'hapdangPractice', component: () => import('@/components/screens/SunhanYanghagiScreen.vue'), meta: { requiresAuth: true, fullScreen: true } },
     { path: '/hapdang', name: 'hapdang', component: () => import('@/components/screens/SunhanYanghagiScreen.vue'), meta: { requiresAuth: true, fullScreen: true } },

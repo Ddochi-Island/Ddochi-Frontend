@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { useApi } from '@/composables/useApi'
+import { useApi, tokenStore } from '@/composables/useApi'
 import { usePopup } from '@/composables/usePopup'
 
 const router = useRouter()
@@ -71,7 +71,8 @@ async function openErp() {
         if (!ok) return
         const r = await callApiPromise('/api/admin-unlock', { password })
         if (!r.success) return showAppAlert(r.message || '비밀번호가 틀렸어!')
-        window.open('https://erp.ddochi.cloud', '_blank')
+        tokenStore.setTokens({ accessToken: r.accessToken, refreshToken: r.refreshToken })  // adminUnlocked 토큰 — /api/erp/* 권한
+        router.push({ name: 'erp' })
     })
 }
 
