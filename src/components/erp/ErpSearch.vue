@@ -1,6 +1,6 @@
 <script setup>
-// ERP 섭외이력 조회 — 이름/전화번호로 사랑이를 찾고, 누르면 유입부터 매칭까지 전체 이력(타임라인)을 보여줌
-import { ref } from 'vue'
+// ERP 섭외 조회(OR001) — 이름/전화번호로 사랑이를 찾고, 누르면 유입부터 매칭까지 전체 이력을 보여줌 (구 ERP 섭외이력 조회 화면 모양)
+import { ref, computed } from 'vue'
 import { useErpLoad, regionLabel, districtLabel, fmtDate, fmtDateTime } from './erpUtil'
 
 const q = ref('')
@@ -18,67 +18,73 @@ function open(id) {
     detail.data.value = null
     detail.load({ sarangId: id })
 }
-const KIND_ICON = { inflow: '🌱', call: '📞', activity: '📝', match: '🤝' }
+const info = computed(() => detail.data.value?.info)
+const meetings = computed(() => (detail.data.value?.timeline || []).filter((t) => t.kind === 'match'))
+const history = computed(() => (detail.data.value?.timeline || []).filter((t) => t.kind !== 'match'))
+const join = (...xs) => xs.filter(Boolean).join(' · ') || '—'
 </script>
 
 <template>
     <section>
         <!-- 상세 -->
         <template v-if="openId">
-            <button class="erp-link" @click="openId = null">← 검색 결과로</button>
-            <p v-if="detail.loading.value" class="erp-empty">불러오는 중…</p>
+            <button class="erp-link" style="margin-bottom: 12px" @click="openId = null">← 검색 결과로</button>
+            <p v-if="detail.loading.value" class="erp-empty">이력 불러오는 중…</p>
             <p v-else-if="detail.error.value" class="erp-error">{{ detail.error.value }}</p>
-            <template v-else-if="detail.data.value">
-                <div class="erp-card">
-                    <h3 class="erp-h3">{{ detail.data.value.info.name }} <span class="erp-stage">{{ detail.data.value.info.stage }}</span></h3>
-                    <dl class="erp-dl">
-                        <dt>연락처</dt><dd>{{ detail.data.value.info.phone }}</dd>
-                        <dt>나이·성별</dt><dd>{{ [detail.data.value.info.age, detail.data.value.info.gender, detail.data.value.info.mbti].filter(Boolean).join(' · ') || '–' }}</dd>
-                        <dt>지역</dt><dd>{{ regionLabel(detail.data.value.info.region_code) }} {{ districtLabel(detail.data.value.info.district_code) }}</dd>
-                        <dt>유입</dt><dd>{{ fmtDate(detail.data.value.info.inflow_date) }} · {{ detail.data.value.info.introducer_name }} · {{ detail.data.value.info.recruitment_type === 'ONLINE' ? '온라인' : '오프라인' }}</dd>
-                        <template v-if="detail.data.value.info.location || detail.data.value.info.reaction">
-                            <dt>유입 장소·반응</dt><dd>{{ [detail.data.value.info.location, detail.data.value.info.reaction].filter(Boolean).join(' · ') }}</dd>
-                        </template>
-                        <template v-if="detail.data.value.info.guide_name">
-                            <dt>인도자·티엠자</dt><dd>{{ detail.data.value.info.guide_name }} · {{ detail.data.value.info.caller_name || '–' }}</dd>
-                            <dt>교사</dt><dd>{{ detail.data.value.info.teacher_name || '미배정' }}</dd>
-                            <dt>경로·도구</dt><dd>{{ [detail.data.value.info.route, detail.data.value.info.tool].filter(Boolean).join(' · ') || '–' }}</dd>
-                        </template>
-                    </dl>
+            <div v-else-if="info" class="erp-detail">
+                <div class="erp-detail-name">{{ info.name }} <span class="erp-stage">{{ info.stage }}</span></div>
+                <div class="erp-detail-meta">
+                    연락처: <b>{{ info.phone }}</b> · 나이/성별: <b>{{ join(info.age, info.gender, info.mbti) }}</b><br>
+                    지역: <b>{{ regionLabel(info.region_code) }} {{ districtLabel(info.district_code) }}</b> · 유입자: <b>{{ info.introducer_name || '—' }}</b>
+                    · 유입일: <b>{{ fmtDate(info.inflow_date) }}</b> · <b>{{ info.recruitment_type === 'ONLINE' ? '온라인' : '오프라인' }}</b><br>
+                    인도자: <b>{{ info.guide_name || '—' }}</b> · 티엠자: <b>{{ info.caller_name || '—' }}</b> · 교사: <b>{{ info.teacher_name || '—' }}</b><br>
+                    경로/도구: <b>{{ join(info.route, info.tool) }}</b>
+                    <template v-if="info.location || info.reaction"><br>유입 장소/반응: <b>{{ join(info.location, info.reaction) }}</b></template>
                 </div>
-                <h3 class="erp-h3">이력 <span class="erp-sub">최신순</span></h3>
-                <ol class="erp-timeline">
-                    <li v-for="(t, i) in detail.data.value.timeline" :key="i" :class="'k-' + t.kind">
-                        <span class="erp-tl-icon" aria-hidden="true">{{ KIND_ICON[t.kind] }}</span>
-                        <div>
-                            <div class="erp-tl-label">{{ t.label }}<span v-if="t.detail" class="erp-sub"> · {{ t.detail }}</span></div>
-                            <div class="erp-sub">{{ fmtDateTime(t.at) }}<template v-if="t.actor"> · {{ t.actor }}</template></div>
+
+                <div class="erp-sec">만남 기록 ({{ meetings.length }}건)</div>
+                <div v-for="(m, i) in meetings" :key="i" class="erp-meet">
+                    <div class="erp-meet-title">{{ fmtDateTime(m.at) }} · {{ m.label }}</div>
+                    <div class="erp-meet-sub">교사 {{ m.actor || '미정' }}<template v-if="m.detail"> · {{ m.detail }}</template></div>
+                </div>
+                <div v-if="!meetings.length" class="erp-sub">만남 기록 없음</div>
+
+                <div class="erp-sec">이력 ({{ history.length }}건)</div>
+                <ol class="erp-tl">
+                    <li v-for="(h, i) in history" :key="i">
+                        <div class="erp-tl-date">{{ fmtDateTime(h.at) }}</div>
+                        <div class="erp-tl-body">
+                            {{ h.label }}<template v-if="h.detail"> · {{ h.detail }}</template>
+                            <div class="erp-tl-who">{{ h.actor }}</div>
                         </div>
                     </li>
                 </ol>
-            </template>
+            </div>
         </template>
 
         <!-- 검색 -->
         <template v-else>
             <form class="erp-bar" @submit.prevent="run">
-                <input v-model="q" class="erp-input" type="search" placeholder="이름 또는 전화번호 4자리 이상" aria-label="이름 또는 전화번호">
+                <label class="erp-label" for="erp-q">이름 또는 전화번호</label>
+                <input id="erp-q" v-model="q" class="erp-input" type="search" placeholder="예: 홍길동 · 01012345678">
                 <button class="erp-btn" type="submit" :disabled="search.loading.value">검색</button>
             </form>
-            <p v-if="search.loading.value" class="erp-empty">찾는 중…</p>
+            <p v-if="search.loading.value" class="erp-empty">검색 중…</p>
             <p v-else-if="search.error.value" class="erp-error">{{ search.error.value }}</p>
             <template v-else-if="search.data.value">
-                <p v-if="!search.data.value.list.length" class="erp-empty">"{{ q }}"(으)로 찾은 사람이 없어요. 이름 일부나 전화번호 뒷자리로 다시 찾아보세요.</p>
-                <p v-else class="erp-sub">{{ search.data.value.list.length }}명{{ search.data.value.list.length >= 100 ? ' (최대 100명까지 보여요)' : '' }}</p>
+                <p v-if="!search.data.value.list.length" class="erp-empty">검색 결과가 없습니다. 이름 일부나 전화번호 뒷자리로 다시 찾아보세요.</p>
                 <button v-for="p in search.data.value.list" :key="p.sarang_id" class="erp-row-btn" @click="open(p.sarang_id)">
                     <span>
-                        <b>{{ p.name }}</b> <span class="erp-sub">{{ p.phone }}</span><br>
-                        <span class="erp-sub">{{ regionLabel(p.region_code) }} {{ districtLabel(p.district_code) }} · 유입 {{ p.introducer_name }}<template v-if="p.guide_name"> · 인도 {{ p.guide_name }}</template> · {{ fmtDate(p.inflow_date) }}</span>
+                        <span class="erp-row-name">{{ p.name }}</span>
+                        <span class="erp-row-meta" style="display: block">
+                            {{ p.guide_name || p.introducer_name || '—' }} {{ p.guide_name ? '인도' : '유입' }} · {{ regionLabel(p.region_code) }} {{ districtLabel(p.district_code) }} · {{ fmtDate(p.inflow_date) }}
+                        </span>
                     </span>
                     <span class="erp-stage">{{ p.stage }}</span>
                 </button>
+                <p v-if="search.data.value.list.length >= 100" class="erp-sub">최대 100명까지 보여요. 더 좁혀서 찾아보세요.</p>
             </template>
-            <p v-else class="erp-empty">이름이나 전화번호로 찾으면 유입부터 매칭까지 전체 이력을 볼 수 있어요.</p>
+            <p v-else class="erp-empty">이름 또는 전화번호로 검색하세요.</p>
         </template>
     </section>
 </template>

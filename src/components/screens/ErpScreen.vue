@@ -1,6 +1,6 @@
 <script setup>
-// ERP(관리자 분석) — 구 erp.ddochi.cloud를 앱 안으로 옮긴 화면. 탭: 섭외이력 조회 / TM 결과 집계 / 전환 퍼널 / 주간 보고서.
-// 데이터는 /api/erp/*(관리자 전용). 탭별 화면은 components/erp/, 공통 스타일(.erp-*)은 이 파일 아래 비scoped 스타일에.
+// ERP(관리자 분석) — 구 erp.ddochi.cloud를 앱 안으로 옮긴 화면. 구 ERP처럼 왼쪽 메뉴 + 오른쪽 업무 화면(토스 스타일), 앱 상단바 위를 덮는 전체 화면.
+// 데이터는 /api/erp/*(관리자 전용). 메뉴별 화면은 components/erp/, 공통 스타일(.erp-*)은 이 파일 아래 비scoped 스타일에.
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import ErpSearch from '@/components/erp/ErpSearch.vue'
@@ -11,109 +11,174 @@ import ErpWeekly from '@/components/erp/ErpWeekly.vue'
 const router = useRouter()
 const route = useRoute()
 
-const TABS = [
-    { key: 'search', label: '🔎 섭외이력', comp: ErpSearch },
-    { key: 'weekly', label: '📅 주간 보고서', comp: ErpWeekly },
-    { key: 'tm', label: '📞 TM 집계', comp: ErpTmStats },
-    { key: 'funnel', label: '🔻 전환 퍼널', comp: ErpFunnel },
+// 코드는 구 ERP 메뉴 코드 그대로
+const MENU = [
+    { key: 'search', code: 'OR001', label: '섭외 조회', comp: ErpSearch },
+    { key: 'weekly', code: 'ST006', label: '주간 보고서', comp: ErpWeekly },
+    { key: 'tm', code: 'ST002', label: 'TM 결과 집계', comp: ErpTmStats },
+    { key: 'funnel', code: 'ST004', label: '전환 퍼널 분석', comp: ErpFunnel },
 ]
-const active = computed(() => TABS.find((t) => t.key === route.query.tab) || TABS[0])
+const active = computed(() => MENU.find((t) => t.key === route.query.tab) || MENU[0])
 const setTab = (key) => router.replace({ query: { ...route.query, tab: key } })
+const exit = () => router.push({ name: 'home' })
 </script>
 
 <template>
-    <div class="screen erp">
-        <div class="erp-top">
-            <button class="erp-link" @click="router.back()">← 뒤로</button>
-            <h2 class="erp-title">🗂️ ERP</h2>
-        </div>
-        <div class="erp-tabs" role="tablist" aria-label="ERP 메뉴">
-            <button v-for="t in TABS" :key="t.key" role="tab" :aria-selected="t.key === active.key"
-                    :class="['erp-tab', { on: t.key === active.key }]" @click="setTab(t.key)">{{ t.label }}</button>
-        </div>
-        <!-- KeepAlive: 탭을 오가도 집계 결과/검색어가 남아 있게 -->
-        <KeepAlive>
-            <component :is="active.comp" :key="active.key" role="tabpanel" />
-        </KeepAlive>
+    <div class="erp">
+        <nav class="erp-nav" aria-label="ERP 메뉴">
+            <div class="erp-brand">또치섬 ERP</div>
+            <div class="erp-divider"></div>
+            <ul class="erp-menu">
+                <li v-for="t in MENU" :key="t.key">
+                    <button :class="['erp-menu-item', { active: t.key === active.key }]" :aria-current="t.key === active.key ? 'page' : null"
+                            @click="setTab(t.key)">{{ t.label }}</button>
+                </li>
+            </ul>
+            <button class="erp-exit" @click="exit">← 또치섬으로</button>
+        </nav>
+        <main class="erp-work">
+            <h1 class="erp-doc-title"><span class="code">{{ active.code }}</span>{{ active.label }}</h1>
+            <!-- KeepAlive: 메뉴를 오가도 집계 결과/검색어가 남아 있게 -->
+            <KeepAlive>
+                <component :is="active.comp" :key="active.key" />
+            </KeepAlive>
+        </main>
     </div>
 </template>
 
 <style>
-.erp { max-width: 1100px; margin: 0 auto; padding: 16px; color: var(--text-color); }
-.erp-top { display: flex; align-items: center; gap: 12px; }
-.erp-title { margin: 0; font-size: 22px; }
-.erp-tabs { display: flex; gap: 6px; margin: 12px 0 14px; overflow-x: auto; padding-bottom: 2px; }
-.erp-tab { flex: none; border: 1px solid #E5D5C3; background: var(--card-bg); color: var(--btn-color); border-radius: 999px;
-    padding: 8px 14px; font-family: 'Jua'; font-size: 15px; cursor: pointer; }
-.erp-tab.on { background: var(--btn-color); border-color: var(--btn-color); color: #fff; }
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
 
-.erp-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+/* 구 ERP "Toss UI Override" 팔레트 */
+.erp {
+    --e-bg: #F2F4F6; --e-card: #fff; --e-line: #E5E8EB; --e-head: #F8F9FA; --e-text: #191F28; --e-sub: #6B7684; --e-faint: #8B95A1;
+    --e-blue: #3182F6; --e-blue-dark: #1B64DA; --e-blue-soft: #EBF3FF; --e-up: #1F7A38; --e-down: #D62828;
+    position: fixed; inset: 0; z-index: 950; display: grid; grid-template-columns: 200px 1fr;
+    background: var(--e-bg); color: var(--e-text); font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px;
+}
+.erp button, .erp input, .erp select { font-family: inherit; }
+
+.erp-nav { background: var(--e-card); border-right: 1px solid var(--e-line); padding: 0 8px 12px; display: flex; flex-direction: column; overflow-y: auto; }
+.erp-brand { padding: 20px 8px 10px; font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+.erp-divider { height: 1px; background: var(--e-line); margin: 8px 0; }
+.erp-menu { list-style: none; margin: 0; padding: 0; }
+.erp-menu-item { display: block; width: 100%; text-align: left; border: none; background: none; padding: 10px 14px; margin-bottom: 2px; border-radius: 8px;
+    font-size: 13px; font-weight: 500; color: var(--e-sub); cursor: pointer; }
+.erp-menu-item:hover { background: var(--e-bg); color: var(--e-text); }
+.erp-menu-item.active { background: var(--e-blue-soft); color: var(--e-blue); font-weight: 700; }
+.erp-exit { margin-top: auto; border: none; background: none; padding: 10px 14px; text-align: left; font-size: 13px; color: var(--e-faint); cursor: pointer; border-radius: 8px; }
+.erp-exit:hover { background: var(--e-bg); color: var(--e-text); }
+
+.erp-work { overflow: auto; padding: 20px 24px 40px; }
+.erp-doc-title { display: flex; align-items: center; gap: 8px; margin: 0 0 16px; color: var(--e-text); font-size: 18px; font-weight: 700; }
+.erp-doc-title .code { background: var(--e-blue-soft); color: var(--e-blue); font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+
+/* 조회 조건 바 */
+.erp-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; background: var(--e-card); border: 1px solid var(--e-line); border-radius: 12px;
+    padding: 12px 16px; margin-bottom: 12px; }
+.erp-bar.plain { background: none; border: none; padding: 0; }
+.erp-label { font-size: 13px; font-weight: 600; color: var(--e-text); }
 .erp-range { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .erp-quick, .erp-dates { display: flex; align-items: center; gap: 4px; }
-.erp-range input[type="date"], .erp-input { font: inherit; font-size: 14px; padding: 7px 8px; border: 1px solid #D7C4AE; border-radius: 8px;
-    background: #fff; color: var(--text-color); min-width: 0; }
-.erp-range input:disabled { background: #F5EFE8; }
-.erp-bar form, form.erp-bar .erp-input { flex: 1; }
+.erp-range input[type="date"], .erp-input { font-size: 13px; padding: 6px 10px; border: 1px solid var(--e-line); border-radius: 8px; background: #fff; color: var(--e-text); min-width: 0; }
+.erp-range input:disabled { background: var(--e-head); color: var(--e-sub); }
+form.erp-bar .erp-input { flex: 1; }
 .erp-select { flex: none; width: auto; }
-.erp-chip { border: 1px solid #E5D5C3; background: #FBF6EF; color: var(--btn-color); border-radius: 8px; padding: 6px 10px;
-    font-family: 'Jua'; font-size: 13px; cursor: pointer; }
-.erp-btn { border: none; background: var(--btn-color); color: #fff; border-radius: 8px; padding: 8px 18px; font-family: 'Jua'; font-size: 15px; cursor: pointer; }
+.erp-chip, .erp-btn { border: 1px solid var(--e-line); background: #fff; color: var(--e-text); border-radius: 8px; padding: 6px 14px; font-size: 13px; cursor: pointer; }
+.erp-chip:hover { border-color: #B0C4DE; }
+.erp-btn { background: var(--e-blue); border-color: var(--e-blue); color: #fff; font-weight: 600; }
+.erp-btn:hover { background: var(--e-blue-dark); }
 .erp-btn:disabled { opacity: .5; cursor: default; }
-.erp-link { background: none; border: none; padding: 4px 0; color: var(--btn-color); font: inherit; font-family: 'Jua'; cursor: pointer; text-align: left; }
-.erp-link:disabled { color: var(--text-color); cursor: default; }
-.erp-seg { display: inline-flex; border: 1px solid #D7C4AE; border-radius: 8px; overflow: hidden; }
-.erp-seg button { border: none; background: #fff; color: var(--btn-color); padding: 7px 12px; font-family: 'Jua'; font-size: 14px; cursor: pointer; }
-.erp-seg button.on { background: var(--btn-color); color: #fff; }
+.erp-link { background: none; border: none; padding: 2px 0; color: var(--e-blue); font-size: 13px; font-weight: 500; cursor: pointer; text-align: left; }
+.erp-link:hover { text-decoration: underline; }
+.erp-link:disabled { color: var(--e-text); cursor: default; text-decoration: none; }
 
-.erp-note { margin: 0 0 10px; font-size: 13px; color: #8D6E63; line-height: 1.5; }
-.erp-empty { padding: 28px 12px; text-align: center; color: #8D6E63; }
-.erp-error { padding: 12px; border-radius: 8px; background: #FDECEA; color: #B71C1C; }
-.erp-sub { font-size: 12px; color: #A1887F; font-weight: normal; }
-.erp-h3 { margin: 4px 0 8px; font-size: 17px; }
-.erp-block { margin-bottom: 18px; }
-details.erp-block > summary { cursor: pointer; }
-.erp-crumbs { margin-bottom: 8px; font-size: 14px; }
+/* 보기 탭 (구 fn-view-tabs) */
+.erp-seg { display: flex; border-bottom: 1px solid var(--e-line); margin: 0 0 8px; }
+.erp-seg button { border: 1px solid var(--e-line); border-bottom: none; background: var(--e-bg); color: var(--e-sub); padding: 6px 16px; margin-right: 2px;
+    border-radius: 8px 8px 0 0; font-size: 13px; font-weight: 500; cursor: pointer; }
+.erp-seg button.on { background: #fff; color: var(--e-blue); font-weight: 700; margin-bottom: -1px; }
 
-.erp-table-wrap { overflow-x: auto; background: var(--card-bg); border-radius: 12px; box-shadow: var(--shadow); }
-.erp-table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
-.erp-table th, .erp-table td { padding: 8px 10px; border-bottom: 1px solid #F1E6D8; white-space: nowrap; }
-.erp-table thead th { background: #FBF6EF; font-weight: normal; color: #8D6E63; font-size: 13px; position: sticky; top: 0; }
+.erp-note { font-size: 12px; color: var(--e-sub); background: var(--e-head); border: 1px solid var(--e-line); border-radius: 8px; padding: 6px 10px; margin: 0 0 12px; line-height: 1.6; }
+.erp-range-info { display: inline-block; font-size: 12px; color: var(--e-blue); background: var(--e-blue-soft); border: 1px solid #C8DEFF; border-radius: 20px; padding: 3px 12px; margin: 0 0 10px; }
+.erp-empty { padding: 40px; text-align: center; color: #B0B8C1; font-size: 13px; }
+.erp-error { padding: 12px 16px; border-radius: 12px; background: #FDE8E8; color: var(--e-down); font-size: 13px; }
+.erp-sub { font-size: 12px; color: var(--e-faint); font-weight: normal; }
+.erp-crumbs { margin-bottom: 8px; font-size: 13px; color: var(--e-sub); }
+
+/* 섹션 카드 (구 wk-section / pa-section) */
+.erp-section { background: var(--e-card); border: 1px solid var(--e-line); border-radius: 12px; padding: 16px 20px; margin-bottom: 12px; }
+.erp-h3 { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: var(--e-text); border-left: 3px solid var(--e-blue); padding-left: 6px; }
+details.erp-section > summary { cursor: pointer; }
+details.erp-section > summary .erp-h3 { display: inline-block; margin: 0; }
+details[open].erp-section > summary { margin-bottom: 10px; }
+
+/* 그리드 (구 table.grid) */
+.erp-table-wrap { overflow: auto; border: 1px solid var(--e-line); border-radius: 12px; background: #fff; }
+.erp-table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.erp-table th, .erp-table td { border: 1px solid var(--e-line); padding: 6px 10px; white-space: nowrap; }
+.erp-table tr > :first-child { border-left: none; }
+.erp-table tr > :last-child { border-right: none; }
+.erp-table thead tr:first-child > * { border-top: none; }
+.erp-table thead th { background: var(--e-head); color: var(--e-sub); font-weight: 600; text-align: center; position: sticky; top: 0; z-index: 1; }
 .erp-table td { text-align: right; }
 .erp-table-left td { text-align: left; }
-.erp-table tbody th, .erp-table tfoot th { text-align: left; font-weight: normal; }
-.erp-table tfoot td, .erp-table tfoot th { background: #FBF6EF; font-weight: bold; border-bottom: none; }
-.erp-table tr.erp-click { cursor: pointer; }
-.erp-table tr.erp-click:hover { background: #FFF8E1; }
-.erp-zero { color: #C9B8A6; }
-.erp-delta { font-size: 11px; color: #A1887F; }
-.erp-delta.up { color: #2E7D32; }
-.erp-delta.down { color: #C62828; }
+.erp-table tbody th { text-align: left; font-weight: 600; background: #FAFBFC; }
+.erp-table tbody tr:nth-child(even) td { background: #FAFBFC; }
+.erp-table tbody tr:hover td, .erp-table tbody tr:hover th { background: var(--e-blue-soft); }
+.erp-table tfoot th, .erp-table tfoot td { background: var(--e-head); font-weight: 700; }
+.erp-table tfoot th { text-align: left; }
+.erp-zero { color: #C4CAD1; }
+.erp-delta { font-size: 11px; font-weight: 600; margin-left: 2px; color: var(--e-faint); }
+.erp-delta.up { color: var(--e-up); }
+.erp-delta.down { color: var(--e-down); }
 
-.erp-row-btn { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; text-align: left;
-    background: var(--card-bg); border: 1px solid #F1E6D8; border-radius: 12px; padding: 10px 12px; margin-bottom: 6px;
-    font: inherit; color: var(--text-color); cursor: pointer; line-height: 1.6; }
-.erp-row-btn:hover { border-color: #D7C4AE; }
-.erp-stage { flex: none; font-size: 12px; background: #EFE3D3; color: var(--btn-color); border-radius: 999px; padding: 2px 9px; vertical-align: middle; }
-.erp-card { background: var(--card-bg); border-radius: 12px; box-shadow: var(--shadow); padding: 14px 16px; margin: 8px 0 16px; }
-.erp-dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; font-size: 14px; }
-.erp-dl dt { color: #8D6E63; }
-.erp-dl dd { margin: 0; }
-.erp-timeline { list-style: none; margin: 0; padding: 0; }
-.erp-timeline li { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid #F1E6D8; font-size: 14px; line-height: 1.5; }
-.erp-tl-icon { flex: none; width: 24px; text-align: center; }
-.erp-timeline li.k-match .erp-tl-label { font-weight: bold; }
+/* 섭외 조회 (구 ph-*) */
+.erp-row-btn { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; text-align: left; background: #fff;
+    border: 1px solid var(--e-line); border-radius: 12px; padding: 14px 18px; margin-bottom: 8px; cursor: pointer; color: var(--e-text); }
+.erp-row-btn:hover { box-shadow: 0 2px 12px rgba(0, 0, 0, .08); border-color: #B0C4DE; }
+.erp-row-name { font-size: 14px; font-weight: 600; }
+.erp-row-meta { font-size: 12px; color: var(--e-faint); margin-top: 2px; }
+.erp-stage { flex: none; font-size: 11px; font-weight: 500; color: var(--e-blue); background: var(--e-blue-soft); padding: 2px 10px; border-radius: 20px; white-space: nowrap; }
+.erp-detail { background: #fff; border: 1px solid var(--e-line); border-radius: 12px; padding: 20px 24px; }
+.erp-detail-name { font-size: 20px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.erp-detail-meta { font-size: 13px; color: var(--e-sub); line-height: 1.9; }
+.erp-detail-meta b { color: var(--e-text); font-weight: 600; }
+.erp-sec { font-size: 13px; font-weight: 700; margin: 20px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--e-bg); }
+.erp-tl { display: flex; flex-direction: column; gap: 10px; list-style: none; margin: 0; padding: 0; }
+.erp-tl li { display: flex; gap: 14px; font-size: 12px; }
+.erp-tl-date { color: var(--e-faint); white-space: nowrap; min-width: 92px; padding-top: 2px; }
+.erp-tl-body { flex: 1; line-height: 1.6; word-break: break-all; }
+.erp-tl-who { color: #B0B8C1; font-size: 11px; margin-top: 2px; }
+.erp-meet { background: var(--e-head); border-radius: 8px; padding: 10px 14px; margin-bottom: 6px; font-size: 12px; }
+.erp-meet-title { font-weight: 600; margin-bottom: 2px; }
+.erp-meet-sub { color: var(--e-sub); }
 
-.erp-funnel { list-style: none; margin: 0 0 16px; padding: 14px 16px; background: var(--card-bg); border-radius: 12px; box-shadow: var(--shadow); }
-.erp-funnel li { display: grid; grid-template-columns: 84px 1fr 48px 110px; align-items: center; gap: 8px; padding: 5px 0; font-size: 14px; }
-.erp-funnel-track { height: 18px; background: #F5EFE8; border-radius: 4px; overflow: hidden; }
-.erp-funnel-bar { display: block; height: 100%; background: var(--accent-color); border-radius: 4px; }
-.erp-funnel-n { text-align: right; font-variant-numeric: tabular-nums; font-weight: bold; }
-.erp-funnel-step { font-size: 12px; color: #8D6E63; }
+/* 스텝 깔때기 (구 fn-step) */
+.erp-funnel { background: #fff; border: 1px solid var(--e-line); border-radius: 12px; padding: 12px 14px 16px; margin-bottom: 12px; }
+.erp-step-row { display: flex; justify-content: center; margin: 1px 0; }
+.erp-step { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-width: 220px; max-width: 100%; padding: 9px 18px;
+    border-radius: 12px; color: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .08); }
+.erp-step .name { font-weight: 700; font-size: 13px; flex: none; }
+.erp-step .count { font-size: 22px; font-weight: 700; line-height: 1; flex: none; }
+.erp-step .pct { font-size: 11px; opacity: .92; flex: 1; text-align: right; }
+.erp-drop-ind { display: table; margin: 4px auto; padding: 3px 12px; background: #FDE8E8; color: var(--e-down); font-size: 11px; font-weight: 700;
+    border: 1px dashed var(--e-down); border-radius: 20px; }
+.erp-drop-ind.hold { background: #E6F5EA; color: var(--e-up); border-color: var(--e-up); }
+.erp-drop-ind .pct { font-weight: 400; opacity: .9; margin-left: 4px; }
 
-.erp button:focus-visible, .erp select:focus-visible, .erp input:focus-visible, .erp summary:focus-visible { outline: 3px solid var(--accent-color); outline-offset: 2px; }
-@media (max-width: 520px) {
-    .erp { padding: 12px 16px; }
-    .erp-funnel li { grid-template-columns: 70px 1fr 40px; }
-    .erp-funnel-step { grid-column: 2 / 4; }
+.erp :focus-visible { outline: 2px solid var(--e-blue); outline-offset: 2px; }
+
+/* 휴대폰 — 왼쪽 메뉴를 위쪽 가로줄로 */
+@media (max-width: 760px) {
+    .erp { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    .erp-nav { flex-direction: row; align-items: center; gap: 4px; padding: 8px 16px; border-right: none; border-bottom: 1px solid var(--e-line); overflow-x: auto; }
+    .erp-brand, .erp-divider { display: none; }
+    .erp-menu { display: flex; gap: 4px; }
+    .erp-menu-item { white-space: nowrap; margin: 0; padding: 8px 12px; }
+    .erp-exit { order: -1; margin: 0; padding: 8px 10px; white-space: nowrap; }
+    .erp-work { padding: 16px 16px 32px; }
+    .erp-detail { padding: 16px; }
+    .erp-step { min-width: 0; width: 100% !important; padding: 9px 12px; }
 }
 </style>

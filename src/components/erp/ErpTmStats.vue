@@ -40,8 +40,9 @@ function drill(r) {
 <template>
     <section>
         <div class="erp-bar">
+            <span class="erp-label">기간</span>
             <ErpRangePicker v-model="range" />
-            <button class="erp-btn" :disabled="loading" @click="run">집계</button>
+            <button class="erp-btn" :disabled="loading" @click="run">🔍 집계</button>
         </div>
         <p class="erp-note">만픽률 = 만픽 ÷ 통화. 재가는 그 사람의 마지막 만남픽스를 잡은 티엠자에게 셉니다.</p>
 
@@ -83,6 +84,6 @@ function drill(r) {
                 </table>
             </div>
         </template>
-        <p v-else class="erp-empty">기간을 고르고 집계를 누르세요.</p>
+        <p v-else class="erp-empty">기간 선택 후 🔍 집계를 누르세요.</p>
     </section>
 </template>

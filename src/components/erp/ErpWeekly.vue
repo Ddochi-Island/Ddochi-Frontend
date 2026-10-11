@@ -44,23 +44,25 @@ function delta(c = 0, p = 0) {
 <template>
     <section>
         <div class="erp-bar">
+            <span class="erp-label">주차 (일~토)</span>
             <ErpRangePicker v-model="range" week />
-            <button class="erp-btn" :disabled="loading" @click="load(range)">집계</button>
+            <template v-if="data">
+                <span class="erp-label">지역</span>
+                <select v-model="region" class="erp-input erp-select" aria-label="지역">
+                    <option value="">전체 지역</option>
+                    <option v-for="r in regions" :key="r" :value="r">{{ regionLabel(r) }}</option>
+                </select>
+            </template>
+            <button class="erp-btn" :disabled="loading" @click="load(range)">🔍 집계</button>
         </div>
 
         <p v-if="loading" class="erp-empty">집계 중…</p>
         <p v-else-if="error" class="erp-error">{{ error }}</p>
         <template v-else-if="data">
-            <div class="erp-bar">
-                <select v-model="region" class="erp-input erp-select" aria-label="지역">
-                    <option value="">전체 지역</option>
-                    <option v-for="r in regions" :key="r" :value="r">{{ regionLabel(r) }}</option>
-                </select>
-                <span class="erp-note">{{ data.range.from }} ~ {{ data.range.to }} · ▲▼는 전주({{ data.prevRange.from }} ~ {{ data.prevRange.to }}) 대비</span>
-            </div>
+            <p><span class="erp-range-info">{{ data.range.from }} ~ {{ data.range.to }} · ▲▼는 전주({{ data.prevRange.from }} ~ {{ data.prevRange.to }}) 대비</span></p>
 
-            <div v-for="sec in SECTIONS" :key="sec.title" class="erp-block">
-                <h3 class="erp-h3">{{ sec.title }} <span class="erp-sub">{{ sec.note }}</span></h3>
+            <div v-for="(sec, si) in SECTIONS" :key="sec.title" class="erp-section">
+                <h3 class="erp-h3">{{ '①②③'[si] }} {{ sec.title }} <span class="erp-sub">{{ sec.note }}</span></h3>
                 <div class="erp-table-wrap">
                     <table class="erp-table">
                         <thead>
@@ -86,8 +88,8 @@ function delta(c = 0, p = 0) {
                 </div>
             </div>
 
-            <details class="erp-block">
-                <summary class="erp-h3">재가 명단 <span class="erp-sub">{{ jaegaList.length }}명</span></summary>
+            <details class="erp-section">
+                <summary><h3 class="erp-h3">재가 명단 <span class="erp-sub">{{ jaegaList.length }}명</span></h3></summary>
                 <div class="erp-table-wrap">
                     <table class="erp-table erp-table-left">
                         <thead><tr><th scope="col">날짜</th><th scope="col">이름</th><th scope="col">유입자</th><th scope="col">인도자</th><th scope="col">소속</th></tr></thead>
@@ -100,8 +102,8 @@ function delta(c = 0, p = 0) {
                     </table>
                 </div>
             </details>
-            <details class="erp-block">
-                <summary class="erp-h3">매칭 명단 <span class="erp-sub">{{ matchList.length }}건</span></summary>
+            <details class="erp-section">
+                <summary><h3 class="erp-h3">매칭 명단 <span class="erp-sub">{{ matchList.length }}건</span></h3></summary>
                 <div class="erp-table-wrap">
                     <table class="erp-table erp-table-left">
                         <thead><tr><th scope="col">만남</th><th scope="col">이름</th><th scope="col">인도자</th><th scope="col">교사</th><th scope="col">도구</th><th scope="col">결과</th><th scope="col">소속</th></tr></thead>
@@ -116,6 +118,6 @@ function delta(c = 0, p = 0) {
                 </div>
             </details>
         </template>
-        <p v-else class="erp-empty">주를 고르고 집계를 누르세요.</p>
+        <p v-else class="erp-empty">주차 선택 후 🔍 집계를 누르세요.</p>
     </section>
 </template>
