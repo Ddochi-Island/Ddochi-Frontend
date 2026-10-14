@@ -19,9 +19,24 @@ function open(id) {
     detail.load({ sarangId: id })
 }
 const info = computed(() => detail.data.value?.info)
-const meetings = computed(() => (detail.data.value?.timeline || []).filter((t) => t.kind === 'match'))
-const history = computed(() => (detail.data.value?.timeline || []).filter((t) => t.kind !== 'match'))
 const join = (...xs) => xs.filter(Boolean).join(' · ') || '—'
+
+// 진행 단계 표시줄 — SARANG.STAGE 순서. 성홀 이후(성따/복방/센)는 상따 다음 칸 하나로 묶음
+const STEPS = ['유입', '티엠', '만픽', '합재양', '재가', '매칭', '상따', '성홀+']
+const stepIndex = computed(() => {
+    const i = STEPS.indexOf(info.value?.stage)
+    return i >= 0 ? i : STEPS.length - 1
+})
+
+// 이력 + 만남 기록을 한 타임라인으로, 유입부터 시간 순서대로(위 → 아래)
+const TONE = { 재가처리: 'key', 합재양작성: 'key', 반려처리: 'bad', '만남 픽스': 'key', 비합: 'bad', 거절: 'bad', 무효: 'bad' }
+const timeline = computed(() =>
+    [...(detail.data.value?.timeline || [])].reverse().map((t) => ({
+        ...t,
+        tone: t.kind === 'inflow' ? 'start' : t.kind === 'match' ? 'match' : TONE[t.label] || '',
+        sub: t.kind === 'match' ? join(t.actor ? `교사 ${t.actor}` : '교사 미정', ...(t.detail || '').split(' / '))
+            : join(t.detail, t.actor),
+    })))
 </script>
 
 <template>
@@ -33,29 +48,33 @@ const join = (...xs) => xs.filter(Boolean).join(' · ') || '—'
             <p v-else-if="detail.error.value" class="erp-error">{{ detail.error.value }}</p>
             <div v-else-if="info" class="erp-detail">
                 <div class="erp-detail-name">{{ info.name }} <span class="erp-stage">{{ info.stage }}</span></div>
-                <div class="erp-detail-meta">
-                    연락처: <b>{{ info.phone }}</b> · 나이/성별: <b>{{ join(info.age, info.gender, info.mbti) }}</b><br>
-                    지역: <b>{{ regionLabel(info.region_code) }} {{ districtLabel(info.district_code) }}</b> · 유입자: <b>{{ info.introducer_name || '—' }}</b>
-                    · 유입일: <b>{{ fmtDate(info.inflow_date) }}</b> · <b>{{ info.recruitment_type === 'ONLINE' ? '온라인' : '오프라인' }}</b><br>
-                    인도자: <b>{{ info.guide_name || '—' }}</b> · 티엠자: <b>{{ info.caller_name || '—' }}</b> · 교사: <b>{{ info.teacher_name || '—' }}</b><br>
-                    경로/도구: <b>{{ join(info.route, info.tool) }}</b>
-                    <template v-if="info.location || info.reaction"><br>유입 장소/반응: <b>{{ join(info.location, info.reaction) }}</b></template>
-                </div>
 
-                <div class="erp-sec">만남 기록 ({{ meetings.length }}건)</div>
-                <div v-for="(m, i) in meetings" :key="i" class="erp-meet">
-                    <div class="erp-meet-title">{{ fmtDateTime(m.at) }} · {{ m.label }}</div>
-                    <div class="erp-meet-sub">교사 {{ m.actor || '미정' }}<template v-if="m.detail"> · {{ m.detail }}</template></div>
-                </div>
-                <div v-if="!meetings.length" class="erp-sub">만남 기록 없음</div>
+                <ol class="erp-steps" :aria-label="`진행 단계: ${info.stage}`">
+                    <li v-for="(st, i) in STEPS" :key="st" :class="{ done: i < stepIndex, now: i === stepIndex }">{{ st }}</li>
+                </ol>
 
-                <div class="erp-sec">이력 ({{ history.length }}건)</div>
+                <dl class="erp-info">
+                    <div><dt>연락처</dt><dd>{{ info.phone }}</dd></div>
+                    <div><dt>나이·성별</dt><dd>{{ join(info.age, info.gender, info.mbti) }}</dd></div>
+                    <div><dt>지역</dt><dd>{{ regionLabel(info.region_code) }} {{ districtLabel(info.district_code) }}</dd></div>
+                    <div><dt>유입</dt><dd>{{ fmtDate(info.inflow_date) }} · {{ info.recruitment_type === 'ONLINE' ? '온라인' : '오프라인' }}</dd></div>
+                    <div><dt>유입자</dt><dd>{{ info.introducer_name || '—' }}</dd></div>
+                    <div><dt>인도자</dt><dd>{{ info.guide_name || '—' }}</dd></div>
+                    <div><dt>티엠자</dt><dd>{{ info.caller_name || '—' }}</dd></div>
+                    <div><dt>교사</dt><dd>{{ info.teacher_name || '—' }}</dd></div>
+                    <div><dt>경로·도구</dt><dd>{{ join(info.route, info.tool) }}</dd></div>
+                    <div v-if="info.location"><dt>유입 장소</dt><dd>{{ info.location }}</dd></div>
+                    <div v-if="info.reaction" class="wide"><dt>반응</dt><dd>{{ info.reaction }}</dd></div>
+                </dl>
+
+                <div class="erp-sec">전체 이력 <span class="erp-sub">유입부터 시간 순서 · {{ timeline.length }}건</span></div>
                 <ol class="erp-tl">
-                    <li v-for="(h, i) in history" :key="i">
-                        <div class="erp-tl-date">{{ fmtDateTime(h.at) }}</div>
+                    <li v-for="(t, i) in timeline" :key="i" :class="'tone-' + (t.tone || 'plain')">
+                        <div class="erp-tl-date">{{ fmtDateTime(t.at) }}</div>
+                        <span class="erp-tl-dot" aria-hidden="true"></span>
                         <div class="erp-tl-body">
-                            {{ h.label }}<template v-if="h.detail"> · {{ h.detail }}</template>
-                            <div class="erp-tl-who">{{ h.actor }}</div>
+                            <div class="erp-tl-title">{{ t.label }}</div>
+                            <div class="erp-tl-who">{{ t.sub }}</div>
                         </div>
                     </li>
                 </ol>

@@ -142,17 +142,39 @@ details[open].erp-section > summary { margin-bottom: 10px; }
 .erp-stage { flex: none; font-size: 11px; font-weight: 500; color: var(--e-blue); background: var(--e-blue-soft); padding: 2px 10px; border-radius: 20px; white-space: nowrap; }
 .erp-detail { background: #fff; border: 1px solid var(--e-line); border-radius: 12px; padding: 20px 24px; }
 .erp-detail-name { font-size: 20px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-.erp-detail-meta { font-size: 13px; color: var(--e-sub); line-height: 1.9; }
-.erp-detail-meta b { color: var(--e-text); font-weight: 600; }
 .erp-sec { font-size: 13px; font-weight: 700; margin: 20px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--e-bg); }
-.erp-tl { display: flex; flex-direction: column; gap: 10px; list-style: none; margin: 0; padding: 0; }
-.erp-tl li { display: flex; gap: 14px; font-size: 12px; }
-.erp-tl-date { color: var(--e-faint); white-space: nowrap; min-width: 92px; padding-top: 2px; }
-.erp-tl-body { flex: 1; line-height: 1.6; word-break: break-all; }
-.erp-tl-who { color: #B0B8C1; font-size: 11px; margin-top: 2px; }
-.erp-meet { background: var(--e-head); border-radius: 8px; padding: 10px 14px; margin-bottom: 6px; font-size: 12px; }
-.erp-meet-title { font-weight: 600; margin-bottom: 2px; }
-.erp-meet-sub { color: var(--e-sub); }
+/* 진행 단계 표시줄 */
+.erp-steps { display: flex; list-style: none; margin: 14px 0 18px; padding: 0; gap: 3px; }
+.erp-steps li { flex: 1; text-align: center; font-size: 11px; color: var(--e-faint); padding-top: 9px; position: relative; white-space: nowrap; }
+.erp-steps li::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px; border-radius: 3px; background: var(--e-line); }
+.erp-steps li.done::before { background: #A9C9FB; }
+.erp-steps li.done { color: var(--e-sub); }
+.erp-steps li.now::before { background: var(--e-blue); }
+.erp-steps li.now { color: var(--e-blue); font-weight: 700; }
+
+/* 인적사항 — 항목명 / 값 두 칸씩 */
+.erp-info { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px; margin: 0; }
+.erp-info > div { display: grid; grid-template-columns: 76px 1fr; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--e-bg); font-size: 13px; }
+.erp-info > div.wide { grid-column: 1 / -1; }
+.erp-info dt { color: var(--e-faint); }
+.erp-info dd { margin: 0; font-weight: 600; word-break: keep-all; }
+
+/* 전체 이력 — 세로선 + 종류별 점 */
+.erp-tl { list-style: none; margin: 0; padding: 0; position: relative; }
+.erp-tl li { display: grid; grid-template-columns: 96px 14px 1fr; gap: 10px; padding: 0 0 14px; font-size: 13px; position: relative; }
+.erp-tl li:not(:last-child)::after { content: ''; position: absolute; left: 112px; top: 14px; bottom: -2px; width: 2px; background: var(--e-line); }
+.erp-tl-date { color: var(--e-faint); font-size: 12px; white-space: nowrap; padding-top: 1px; font-variant-numeric: tabular-nums; }
+.erp-tl-dot { width: 10px; height: 10px; margin: 4px 2px 0; border-radius: 50%; background: #C4CAD1; position: relative; z-index: 1; }
+.erp-tl-body { min-width: 0; }
+.erp-tl-title { font-weight: 600; line-height: 1.5; }
+.erp-tl-who { color: var(--e-faint); font-size: 12px; margin-top: 1px; word-break: keep-all; }
+.erp-tl li.tone-start .erp-tl-dot { background: #22A45D; }
+.erp-tl li.tone-key .erp-tl-dot { background: var(--e-blue); }
+.erp-tl li.tone-key .erp-tl-title { color: var(--e-blue); }
+.erp-tl li.tone-bad .erp-tl-dot { background: var(--e-down); }
+.erp-tl li.tone-bad .erp-tl-title { color: var(--e-down); }
+.erp-tl li.tone-match .erp-tl-dot { background: #7B5CF5; box-shadow: 0 0 0 3px #EEE9FE; }
+.erp-tl li.tone-match .erp-tl-body { background: #F7F5FF; border-radius: 8px; padding: 8px 12px; margin-top: -6px; }
 
 /* 스텝 깔때기 (구 fn-step) */
 .erp-funnel { background: #fff; border: 1px solid var(--e-line); border-radius: 12px; padding: 12px 14px 16px; margin-bottom: 12px; }
@@ -179,6 +201,10 @@ details[open].erp-section > summary { margin-bottom: 10px; }
     .erp-exit { order: -1; margin: 0; padding: 8px 10px; white-space: nowrap; }
     .erp-work { padding: 16px 16px 32px; }
     .erp-detail { padding: 16px; }
+    .erp-info { grid-template-columns: 1fr; }
+    .erp-steps li { font-size: 10px; }
+    .erp-tl li { grid-template-columns: 72px 14px 1fr; gap: 8px; }
+    .erp-tl li:not(:last-child)::after { left: 86px; }
     .erp-step { min-width: 0; width: 100% !important; padding: 9px 12px; }
 }
 </style>
