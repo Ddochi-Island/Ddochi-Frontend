@@ -182,7 +182,7 @@ onMounted(() => {
             </div>
 
             <div class="pipeline-banner" style="background:#FCE4EC; border: 1px solid #F48FB1;" @click="openOnlineIntake">
-                <div class="pipeline-info"><span class="pipeline-icon">🌐</span><div><div class="pipeline-title">온라인 유입확인</div><div class="pipeline-desc">유입시트 자동연동 현황</div></div></div>
+                <div class="pipeline-info"><span class="pipeline-icon">🌐</span><div><div class="pipeline-title">온라인 찾기 확인</div><div class="pipeline-desc">유입시트 자동연동 현황</div></div></div>
                 <div class="pipeline-arrow">➔</div>
             </div>
             <div class="pipeline-banner" style="background:#E3F2FD; border: 1px solid #90CAF9;" @click="openErp">

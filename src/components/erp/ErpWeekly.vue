@@ -9,9 +9,9 @@ const { loading, error, data, load } = useErpLoad('/api/erp/weekly')
 const region = ref('')
 
 const SECTIONS = [
-    { title: '일일보고', note: '제출 당시 소속 기준', cols: [['reports', '보고'], ['talk', '말걸기'], ['dm', 'DM'], ['qr', 'QR'], ['online_intake', '온라인 유입']] },
-    { title: '섭외', note: '유입자 지역 기준', cols: [['inflowOff', '오프 유입'], ['inflowOn', '온 유입'], ['meetFix', '만픽'], ['hjy', '합재양'], ['jaega', '재가']] },
-    { title: '매칭 결과', note: '인도자 지역 · 만남 예정일 기준', cols: [['met', '만남'], ['match_CONSULT_WIN', '상따'], ['match_SECOND_MEET', '2차'], ['match_DROPOUT', '탈락'], ['match_UNFIT', '비합'], ['match_CANCEL', '취소'], ['match_DELAY', '밀림'], ['match_PENDING', '진행 예정']] },
+    { title: '일일보고', note: '제출 당시 소속 기준', cols: [['reports', '보고'], ['talk', '말걸기'], ['dm', 'DM'], ['qr', 'QR'], ['online_intake', '온라인 찾기']] },
+    { title: '섭외', note: '유입자 지역 기준', cols: [['inflowOff', '오프 찾기'], ['inflowOn', '온 찾기'], ['meetFix', '만픽'], ['hjy', '합재양'], ['jaega', '재가']] },
+    { title: '매칭 결과', note: '인도자 지역 · 만남 예정일 기준', cols: [['met', '만남'], ['match_CONSULT_WIN', '상연'], ['match_SECOND_MEET', '2차'], ['match_DROPOUT', '탈락'], ['match_UNFIT', '비합'], ['match_CANCEL', '취소'], ['match_DELAY', '밀림'], ['match_PENDING', '진행 예정']] },
 ]
 
 const inRegion = (r) => !region.value || r.region === region.value

@@ -239,7 +239,7 @@ const methodText = computed(() => reportState.method || '방식')
                 <span class="modal-close" @click="backToMain">&times;</span>
                 <div class="modal-title">회차를 선택해줘</div>
                 <div class="btn-group" style="margin-top:0; display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-                    <button class="btn-pos" style="background:#9C27B0;" @click="setRound('상따')">상따</button>
+                    <button class="btn-pos" style="background:#9C27B0;" @click="setRound('상따')">상연</button>
                     <button class="btn-pos" style="background:#795548;" @click="setRound('성흘')">성흘</button>
                     <button class="btn-pos" style="background:#1A237E;" @click="setRound('성따')">성따</button>
                     <button class="btn-pos" style="background:#4CAF50;" @click="setRound('다지기')">다지기</button>

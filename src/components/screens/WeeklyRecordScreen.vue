@@ -84,7 +84,7 @@ load()
                         </thead>
                         <tbody>
                             <tr>
-                                <td class="stat-label" style="background:#E3F2FD; color:#1565C0;">온라인 유입</td>
+                                <td class="stat-label" style="background:#E3F2FD; color:#1565C0;">온라인 찾기</td>
                                 <td v-for="area in teamAreas" :key="area">
                                     {{ statsMap[date][area]?.online_intake || 0 }}
                                 </td>

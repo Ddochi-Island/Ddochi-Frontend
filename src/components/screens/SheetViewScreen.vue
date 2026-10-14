@@ -21,7 +21,7 @@ const COLS = [
   { label: "번호",      di: 9,  sticky: true, sw: 110 },
   { label: "경로",      di: 4                         },
   { label: "환경/정보", di: 10                        },
-  { label: "유입",      di: 5                         },
+  { label: "찾기",      di: 5                         },
   { label: "티엠",      di: 11, sticky: true          },
   { label: "횟수",      di: 12                        },
   { label: "날짜",      di: 13                        },

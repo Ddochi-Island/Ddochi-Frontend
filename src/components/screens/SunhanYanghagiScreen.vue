@@ -860,7 +860,7 @@ async function deleteLog(p, log) {
 }
 
 async function cancelHabjaeyang(p) {
-  showAppConfirm(`${p.name}님의 합재양 제출을 취소할까요?\n만남픽스 로그도 함께 삭제되고 찾기현황판에서도 제거됩니다.`, async (ok) => {
+  showAppConfirm(`${p.name}님의 합재양 제출을 취소할까요?\n만남픽스 로그도 함께 삭제되고 합당한 자 현황판에서도 제거됩니다.`, async (ok) => {
     if (!ok) return
     cancelling.value = true
     const r = await callApiPromise('/api/cancel-shed-habjaeyang', { docId: p.docId })
@@ -961,7 +961,7 @@ async function doRegister(asRow) {
     ['반응', asRow.reaction],
     ['유입자', asRow.introducer],
     ['조력자', asRow.helperNames],
-    ['유입장소', asRow.tmLocation],
+    ['찾기장소', asRow.tmLocation],
     ['예약 티엠', asRow.tmReservedAt ? formatReservedAt(asRow.tmReservedAt) : ''],
   ].filter(([, v]) => v)
 
@@ -1156,7 +1156,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span v-if="r.reaction" class="sy-field"><b>반응</b>{{ r.reaction }}</span>
                 <span v-if="r.introducer" class="sy-field"><b>유입</b>{{ r.introducer }}</span>
                 <span v-if="r.helperNames" class="sy-field"><b>조력자</b>{{ r.helperNames }}</span>
-                <span v-if="r.tmLocation" class="sy-field"><b>유입장소</b>{{ r.tmLocation }}</span>
+                <span v-if="r.tmLocation" class="sy-field"><b>찾기장소</b>{{ r.tmLocation }}</span>
               </div>
               <div class="sy-actions" style="margin-top:6px;">
                 <button class="ab reg" @click="doRevive(r)" :disabled="saving">회생하기</button>
@@ -1185,7 +1185,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span v-if="r.reaction" class="sy-field"><b>반응</b>{{ r.reaction }}</span>
                 <span v-if="r.introducer" class="sy-field"><b>유입</b>{{ r.introducer }}</span>
                 <span v-if="r.helperNames" class="sy-field"><b>조력자</b>{{ r.helperNames }}</span>
-                <span v-if="r.tmLocation" class="sy-field"><b>유입장소</b>{{ r.tmLocation }}</span>
+                <span v-if="r.tmLocation" class="sy-field"><b>찾기장소</b>{{ r.tmLocation }}</span>
               </div>
               <div class="sy-actions" style="margin-top:6px;">
                 <button class="ab reg" data-tour="register" @click="doRegister(r)" :disabled="saving">이관받기</button>
@@ -1274,7 +1274,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span v-if="p.shedMeta?.reaction" class="sy-field"><b>반응</b>{{ p.shedMeta.reaction }}</span>
                 <span v-if="p.shedMeta?.introducer" class="sy-field"><b>유입</b>{{ p.shedMeta.introducer }}</span>
                 <span v-if="p.shedMeta?.helperNames" class="sy-field"><b>조력자</b>{{ p.shedMeta.helperNames }}</span>
-                <span v-if="p.shedMeta?.tmLocation" class="sy-field"><b>유입장소</b>{{ p.shedMeta.tmLocation }}</span>
+                <span v-if="p.shedMeta?.tmLocation" class="sy-field"><b>찾기장소</b>{{ p.shedMeta.tmLocation }}</span>
               </div>
 
               <!-- TM 로그 — 데스크탑은 우측 패널에 전체가 이미 보이니 왼쪽 카드는 항상 최근
@@ -1420,7 +1420,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span v-if="callingProspect.shedMeta?.reaction" class="sy-field"><b>반응</b>{{ callingProspect.shedMeta.reaction }}</span>
                 <span v-if="callingProspect.shedMeta?.introducer" class="sy-field"><b>유입</b>{{ callingProspect.shedMeta.introducer }}</span>
                 <span v-if="callingProspect.shedMeta?.helperNames" class="sy-field"><b>조력자</b>{{ callingProspect.shedMeta.helperNames }}</span>
-                <span v-if="callingProspect.shedMeta?.tmLocation" class="sy-field"><b>유입장소</b>{{ callingProspect.shedMeta.tmLocation }}</span>
+                <span v-if="callingProspect.shedMeta?.tmLocation" class="sy-field"><b>찾기장소</b>{{ callingProspect.shedMeta.tmLocation }}</span>
               </div>
               <div v-if="callingProspect.tmLogs?.length" class="sy-logs expanded">
                 <div v-for="log in orderedLogs(callingProspect.tmLogs)" :key="log.id" class="sy-log-row">

@@ -830,7 +830,7 @@ onUnmounted(() => {
 <template>
   <div class="sv-screen">
     <div class="sv-topbar">
-      <span class="sv-title">온라인 유입확인</span>
+      <span class="sv-title">온라인 찾기 확인</span>
       <span v-if="hasAnyFilter && !loading" class="sv-filter-count">{{ filteredRows.length }}건</span>
       <button v-if="hasAnyFilter && !loading" class="sv-filter-clear" @click="clearAllFilters">✕ 필터해제</button>
       <span v-if="saving" class="sv-saving">저장 중...</span>
@@ -898,7 +898,7 @@ onUnmounted(() => {
             <td class="sv-td sv-td-del" @click.stop="confirmDeleteRow(row._origIdx)">✕</td>
           </tr>
           <tr v-if="!rows.length">
-            <td :colspan="HEADERS.length + 1" class="sv-empty-row">유입 동기화 후 데이터가 나타나요!</td>
+            <td :colspan="HEADERS.length + 1" class="sv-empty-row">찾기 동기화 후 데이터가 나타나요!</td>
           </tr>
           <tr v-else-if="!filteredRows.length">
             <td :colspan="HEADERS.length + 1" class="sv-empty-row">필터 조건에 맞는 행이 없어.</td>

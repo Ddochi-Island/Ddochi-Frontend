@@ -567,7 +567,7 @@ function inputMatchResult(idx) {
     if (!tm.tmDataList[idx]) return
     const item = tm.tmDataList[idx]
     const resDisp = getResDisplay(item)
-    const hasResult = resDisp.includes('⭕️') || resDisp.includes('❌') || resDisp.includes('상담따기') || resDisp.includes('안만남')
+    const hasResult = resDisp.includes('⭕️') || resDisp.includes('❌') || resDisp.includes('상담연결') || resDisp.includes('상담따기') || resDisp.includes('안만남')
     if (hasResult) {
         showAppConfirm(`이미 "${resDisp}" 결과가 있어!\n덮어쓸거야?`, (yes) => {
             if (yes) matchResultIdx.value = idx
@@ -974,7 +974,7 @@ onUnmounted(() => {
             @fieldSaved="loadMatchingData"
         />
 
-        <!-- 결과 입력 6 옵션 (취소/밀림/비합/탈락/2차/상담따기) -->
+        <!-- 결과 입력 6 옵션 (취소/밀림/비합/탈락/2차/상담연결) -->
         <MatchResultPopup
             v-if="matchResultIdx !== null"
             @pick="handleMatchResultPick"

@@ -1,5 +1,5 @@
 <script setup>
-// 유입시트 자동연동 위저드
+// 찾기시트 자동연동 위저드
 // URL 붙여넣기 → 시트 렌더링 → 시작행 클릭 → 열 매핑 → 경로/도구 → 저장
 import { ref, computed, onMounted } from 'vue'
 import { useApi } from '@/composables/useApi'
@@ -103,7 +103,7 @@ const EXTRA_LABELS = [
 const STEP_GUIDE = {
   'url': '구글 시트 URL을 붙여넣기 하세요.',
   'start-row': '데이터가 시작되는 행을 클릭하세요.',
-  'col-intake-date': '📅 유입일이 있는 열을 클릭하세요.',
+  'col-intake-date': '📅 찾기일이 있는 열을 클릭하세요.',
   'col-phone': '📞 전화번호가 있는 열을 클릭하세요.',
   'col-name': '👤 이름이 있는 열을 클릭하세요.',
   'ask-age': '나이(연령) 열이 있나요?',
@@ -114,8 +114,8 @@ const STEP_GUIDE = {
   'col-extra': '저장할 열을 클릭하세요.',
   'ask-more-extra': '또 저장할 열이 있나요?',
   'path': '섭외 경로를 선택하세요.',
-  'tool': '도구(유입 경로)를 선택하세요.',
-  'team': '🏷️ 이 시트가 어느 지역 유입인지 선택하세요.',
+  'tool': '도구(찾기 경로)를 선택하세요.',
+  'team': '🏷️ 이 시트가 어느 지역 찾기인지 선택하세요.',
   'cfg-name': '이 연동 설정의 이름을 입력하세요.',
   'review': '설정을 확인하고 저장하세요.',
 }
@@ -376,7 +376,7 @@ const stepIndicator = computed(() => {
       val: startRow.value !== null ? `${startRow.value + 1}행` : '',
     },
     {
-      id: 'col-intake-date', label: '📅 유입일',
+      id: 'col-intake-date', label: '📅 찾기일',
       state: cur > 1 ? 'done' : cur === 1 ? 'active' : 'pending',
       val: colDate.value !== null ? L[colDate.value] : '',
     },
@@ -432,7 +432,7 @@ onMounted(loadConfigs)
       <!-- 헤더 -->
       <div class="modal-header">
         <span style="font-size:20px;">📥</span>
-        <h3>유입시트 자동연동</h3>
+        <h3>찾기시트 자동연동</h3>
         <button class="close-btn" @click="emit('close')">✕</button>
       </div>
 
@@ -624,7 +624,7 @@ onMounted(loadConfigs)
         <!-- 도구 선택 -->
         <div v-if="step === 'tool'" class="step-form">
           <div class="guide-box">
-            <p class="guide-text">🛠️ 도구(유입 루트)를 선택하세요.</p>
+            <p class="guide-text">🛠️ 도구(찾기 루트)를 선택하세요.</p>
             <select v-model="selectedTool" class="form-select">
               <option value="">-- 선택 안 함 --</option>
               <option v-for="t in toolOptions" :key="t" :value="t">{{ t }}</option>
@@ -639,7 +639,7 @@ onMounted(loadConfigs)
         <!-- 팀 선택 -->
         <div v-if="step === 'team'" class="step-form">
           <div class="guide-box">
-            <p class="guide-text">🏷️ 이 시트가 어느 지역 유입인지 선택하세요.</p>
+            <p class="guide-text">🏷️ 이 시트가 어느 지역 찾기인지 선택하세요.</p>
             <select v-model="selectedTeamId" class="form-select">
               <option value="">-- 선택 --</option>
               <option v-for="t in teamOptions" :key="t.id" :value="t.id">{{ t.name }}</option>
@@ -652,8 +652,8 @@ onMounted(loadConfigs)
         <!-- 설정 이름 -->
         <div v-if="step === 'cfg-name'" class="step-form">
           <div class="guide-box">
-            <p class="guide-text">📝 이 연동 설정의 이름을 입력하세요.<br><span style="font-size:12px;opacity:.75;">온라인 유입확인 화면에서 탭 이름으로 표시돼요.</span></p>
-            <input v-model="cfgName" placeholder="예: 스모어 주일 유입" class="form-input" @keyup.enter="confirmCfgName" />
+            <p class="guide-text">📝 이 연동 설정의 이름을 입력하세요.<br><span style="font-size:12px;opacity:.75;">온라인 찾기 확인 화면에서 탭 이름으로 표시돼요.</span></p>
+            <input v-model="cfgName" placeholder="예: 스모어 주일 찾기" class="form-input" @keyup.enter="confirmCfgName" />
             <button class="btn-primary" @click="confirmCfgName">다음 →</button>
           </div>
           <button class="btn-back" @click="step = 'team'">← 이전</button>
@@ -668,7 +668,7 @@ onMounted(loadConfigs)
               <tr><th>지역</th><td>{{ selectedTeamName }}</td></tr>
               <tr><th>탭</th><td>{{ activeTab }}</td></tr>
               <tr><th>시작 행</th><td>{{ (startRow ?? 0) + 1 }}행</td></tr>
-              <tr><th>유입일 열</th><td>{{ colDate !== null ? colLabels[colDate] : '미설정' }}</td></tr>
+              <tr><th>찾기일 열</th><td>{{ colDate !== null ? colLabels[colDate] : '미설정' }}</td></tr>
               <tr><th>전화번호 열</th><td>{{ colPhone !== null ? colLabels[colPhone] : '미설정' }}</td></tr>
               <tr><th>이름 열</th><td>{{ colName !== null ? colLabels[colName] : '미설정' }}</td></tr>
               <tr v-if="colAge !== null"><th>나이 열</th><td>{{ colLabels[colAge] }}</td></tr>

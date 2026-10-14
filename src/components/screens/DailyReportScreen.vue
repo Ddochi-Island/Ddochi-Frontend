@@ -726,7 +726,7 @@ onMounted(async () => {
             </div>
         </div>
 
-        <label>🌐 온유입</label>
+        <label>🌐 온찾기</label>
         <div>
             <div v-for="(row, idx) in onlineIntakeRows" :key="idx" class="univ-row">
                 <div class="univ-input-group" style="flex:0.6;">

@@ -32,7 +32,7 @@ function handleCopy() {
     const d = item.ttagiReport || {}
     const teacher = (item.teacher || '').replace('(타지역)', '')
     const pathDisplay = pathMap[item.path] || item.path || '-'
-    const header = `${item.name}(${pathDisplay})/${item.manager}/${teacher} 상담따기 만남`
+    const header = `${item.name}(${pathDisplay})/${item.manager}/${teacher} 상담연결 만남`
     const content = `\n■ 고정 요일, 시간 : ${d.fixDay || '-'}\n\n■ 따기 포인트\n${d.point || '-'}\n\n■ 따기 포인트의 원인(가정사, 인간관계)\n${d.pointCause || '-'}\n\n■ 결핍\n${d.lack || '-'}\n\n■ 따포의 원인으로 생겨난 사고회로\n${d.thought || '-'}\n\n■ 사용한 따기멘트\n${d.ment || '-'}\n\n■ 입막음에 대한 반응\n${d.reaction || '-'}\n\n■ 비합요소\n${d.bihap || '-'}\n\n■ 추가 파악해야할 내용(피드백받고 작성)\n${d.check || '-'}`
     navigator.clipboard.writeText(header + content).then(() => showToast('복사 완료!'))
 }

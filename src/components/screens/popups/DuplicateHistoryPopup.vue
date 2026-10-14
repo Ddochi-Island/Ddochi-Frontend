@@ -19,7 +19,8 @@ const { showToast } = usePopup()
 const viewIdx = ref(null)
 
 const RESULT_ICON = [
-    { m: '상담따기', icon: '🟣' },
+    { m: '상담연결', icon: '🟣' },
+    { m: '상담따기', icon: '🟣' },  // 옛 이름으로 남은 이력
     { m: '2차', icon: '🔵' },
     { m: '밀림', icon: '🟠' },
     { m: '비합', icon: '⚫' },

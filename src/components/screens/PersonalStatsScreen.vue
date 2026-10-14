@@ -52,7 +52,7 @@ function getTeacherFunnels() {
     const tea = statsData.value[currentPeriod.value].teacher
     return [
         drawFunnel('진행된 매칭 (배당 건수)', tea.matched, null, ''),
-        drawFunnel('상담따기 성공', tea.ttagi, tea.matched, '상담 성공률', '', true),
+        drawFunnel('상담연결 성공', tea.ttagi, tea.matched, '상담 성공률', '', true),
     ]
 }
 

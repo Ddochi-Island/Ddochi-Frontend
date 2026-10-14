@@ -13,7 +13,7 @@ const OPTIONS = [
     { label: '비합처리', cls: 'res-btn-bi' },
     { label: '탈락처리', cls: 'res-btn-drop' },
     { label: '2차만남', cls: 'res-btn-2nd' },
-    { label: '상담따기', cls: 'res-btn-consult' },
+    { label: '상담연결', cls: 'res-btn-consult' },
 ]
 </script>
 

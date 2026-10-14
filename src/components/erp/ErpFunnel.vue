@@ -1,5 +1,5 @@
 <script setup>
-// ERP 전환 퍼널 분석(ST004) — 번호찾 → 만남픽스 → 합재양 → 재가 → 매칭(만남) → 상담따기. 구 ERP 스텝 깔때기 모양
+// ERP 전환 퍼널 분석(ST004) — 찾기 → 만남픽스 → 합재양 → 재가 → 매칭(만남) → 상담연결. 구 ERP 스텝 깔때기 모양
 // 유입 코호트: 기간 안에 유입된 사람이 지금까지 어디까지 갔나 / 기간 내 발생: 기간 안에 단계별로 몇 건 일어났나
 import { ref, computed } from 'vue'
 import ErpRangePicker from './ErpRangePicker.vue'
@@ -13,12 +13,12 @@ const district = ref('')
 
 // 색은 구 ERP 깔때기(진한 남색 → 옅은 파랑)
 const STAGES = [
-    { label: '번호찾', cohort: 'reg', event: (r) => (r.inflowOn || 0) + (r.inflowOff || 0), c: ['#1e4080', '#2a5599'] },
+    { label: '찾기', cohort: 'reg', event: (r) => (r.inflowOn || 0) + (r.inflowOff || 0), c: ['#1e4080', '#2a5599'] },
     { label: '만남픽스', cohort: 'meet_fix', event: (r) => r.meetFix || 0, c: ['#2a5599', '#4e6ea8'] },
     { label: '합재양', cohort: 'hjy', event: (r) => r.hjy || 0, c: ['#3d5f9c', '#5e81b6'] },
     { label: '재가', cohort: 'jaega', event: (r) => r.jaega || 0, c: ['#4e6ea8', '#7aa4d6'] },
     { label: '매칭(만남)', cohort: 'met', event: (r) => r.met || 0, c: ['#5e81b6', '#8fb0d9'] },
-    { label: '상담따기', cohort: 'consult', event: (r) => r.match_CONSULT_WIN || 0, c: ['#7aa4d6', '#aac4e5'] },
+    { label: '상담연결', cohort: 'consult', event: (r) => r.match_CONSULT_WIN || 0, c: ['#7aa4d6', '#aac4e5'] },
 ]
 
 const inScope = (r) => (!region.value || r.region === region.value) && (!district.value || r.district === district.value)
@@ -78,11 +78,11 @@ const scopeLabel = computed(() => (region.value ? regionLabel(region.value) + (d
         <template v-else-if="data">
             <p><span class="erp-range-info">{{ range.from }} ~ {{ range.to }} · {{ scopeLabel }}</span></p>
             <div class="erp-seg" role="group" aria-label="보기">
-                <button :class="{ on: view === 'cohort' }" :aria-pressed="view === 'cohort'" @click="view = 'cohort'">유입 코호트</button>
+                <button :class="{ on: view === 'cohort' }" :aria-pressed="view === 'cohort'" @click="view = 'cohort'">찾기 코호트</button>
                 <button :class="{ on: view === 'event' }" :aria-pressed="view === 'event'" @click="view = 'event'">기간 내 발생</button>
             </div>
             <p class="erp-note">
-                <template v-if="view === 'cohort'">기간 안에 유입된 사람들이 오늘까지 도달한 단계예요.</template>
+                <template v-if="view === 'cohort'">기간 안에 찾은 사람들이 오늘까지 도달한 단계예요.</template>
                 <template v-else>기간 안에 각 단계가 일어난 건수예요. 단계끼리 다른 사람이라 비율은 참고만 하세요.</template>
             </p>
 
@@ -91,7 +91,7 @@ const scopeLabel = computed(() => (region.value ? regionLabel(region.value) + (d
                     <div v-if="i > 0" :class="['erp-drop-ind', { hold: s.drop <= 0 }]">
                         <template v-if="s.drop > 0">⬇ {{ s.drop }}건 이탈<span class="pct">({{ s.dropPct }}%)</span></template>
                         <template v-else-if="s.drop === 0">— 유지</template>
-                        <template v-else>▲ 순유입 +{{ -s.drop }}건</template>
+                        <template v-else>▲ 순증가 +{{ -s.drop }}건</template>
                     </div>
                     <div class="erp-step-row">
                         <div class="erp-step" :style="{ width: s.width + '%', background: `linear-gradient(to right, ${s.c[0]}, ${s.c[1]})` }">
@@ -104,11 +104,11 @@ const scopeLabel = computed(() => (region.value ? regionLabel(region.value) + (d
             </div>
 
             <div v-if="byType.length" class="erp-section">
-                <h3 class="erp-h3">유입 유형별</h3>
+                <h3 class="erp-h3">찾기 유형별</h3>
                 <div class="erp-table-wrap">
                     <table class="erp-table">
                         <thead>
-                            <tr><th scope="col">유입 유형</th><th v-for="s in STAGES" :key="s.label" scope="col">{{ s.label }}</th></tr>
+                            <tr><th scope="col">찾기 유형</th><th v-for="s in STAGES" :key="s.label" scope="col">{{ s.label }}</th></tr>
                         </thead>
                         <tbody>
                             <tr v-for="t in byType" :key="t.label">

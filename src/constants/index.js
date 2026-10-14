@@ -148,7 +148,7 @@ export const adminMenuItems = [
   { label: '💬 텔레그램 연결', color: '#1976D2', action: 'telegramConnect' },
   { label: '🛠️ 도구 등록', color: '#9C27B0', action: 'toolManagement' },
   { label: '🛤️ 섭외 경로 설정', color: '#E91E63', action: 'pathManagement' },
-  { label: '📥 유입시트 자동연동', color: '#2E7D32', action: 'intakeSync' },
+  { label: '📥 찾기시트 자동연동', color: '#2E7D32', action: 'intakeSync' },
   { label: '💭 느낀점 열람하기', color: '#00897B', action: 'reflectionViewer' },
 ]
 

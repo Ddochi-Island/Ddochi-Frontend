@@ -191,7 +191,7 @@ onMounted(load)
                     <span class="ws-today-item">말걸기 {{ myArea.today.talkCount }}</span>
                     <span class="ws-today-item">번호찾 {{ myArea.today.regCount }}</span>
                     <span class="ws-today-item">디엠 {{ myArea.today.dmCount }}</span>
-                    <span class="ws-today-item">유입 {{ myArea.today.onlineIntakeCount }}</span>
+                    <span class="ws-today-item">찾기 {{ myArea.today.onlineIntakeCount }}</span>
                     <span v-if="myArea.today.promoCount > 0" class="ws-today-item">홍보 {{ myArea.today.promoCount }}</span>
                     <span class="ws-today-green">{{ myArea.today.greenPt.toFixed(1) }}pt</span>
                 </div>

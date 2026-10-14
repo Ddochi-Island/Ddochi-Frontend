@@ -47,7 +47,7 @@ const JOB_LABELS = {
     sendMorningBriefing:   '📋 아침 브리핑',
     sendStats:             '📊 지역 통계',
     sendMatchingDashboard: '🛡️ 매칭 현황판',
-    sendProspectDashboard: '🔎 찾기 현황판',
+    sendProspectDashboard: '🔎 합당한 자 현황판',
     sendFeedbackDashboard: '💬 매칭 피드백',
     sendCheckin:           '✅ 점호 DM',
     sendPrayer:            '🙏 기도문',

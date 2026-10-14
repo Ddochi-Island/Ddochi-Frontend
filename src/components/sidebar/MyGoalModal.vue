@@ -37,11 +37,11 @@ const INDUCER_ROWS = [
     { key: 'nf', label: '📝 번호찾 (건)' },
     { key: 'mh', label: '🤝 만남픽스 (건)' },
     { key: 'ec', label: '🛡️ 만남성사 (건)' },
-    { key: 'sc', label: '🌾 상담따기 (건)' }
+    { key: 'sc', label: '🌾 상담연결 (건)' }
 ]
 const TEACHER_ROWS = [
     { key: 'tec', label: '🛡️ 교사 매칭성사 (건)' },
-    { key: 'tsc', label: '🌾 교사 상담따기 (건)' }
+    { key: 'tsc', label: '🌾 교사 상담연결 (건)' }
 ]
 
 function progressPct(cur, goal) {

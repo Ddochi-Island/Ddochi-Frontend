@@ -191,7 +191,7 @@ function getMergedLogs(item) {
                 break
             }
         }
-        mergedLogs.push({ type: 'ttagi', dateStr: ttagiDate, data: { round: '상따', title: '상담따기', method: '대면' } })
+        mergedLogs.push({ type: 'ttagi', dateStr: ttagiDate, data: { round: '상따', title: '상담연결', method: '대면' } })
     }
     mergedLogs.sort((a, b) => a.dateStr.localeCompare(b.dateStr))
     return mergedLogs
