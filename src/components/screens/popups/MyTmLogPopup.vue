@@ -8,10 +8,8 @@ const emit = defineEmits(['close'])
 const { callApiPromise } = useApi()
 const { showToast } = usePopup()
 
-const pad = (n) => String(n).padStart(2, '0')
-const today = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }
-
-const date = ref(today())
+const date = ref('')  // 비우고 부르면 서버가 가장 최근에 티엠 돌린 날로 채움
+const days = ref([])  // 드롭다운 — 티엠 돌린 날만 [{ date, count }], 최근 90일
 const list = ref([])
 const loading = ref(false)
 const error = ref('')
@@ -22,6 +20,8 @@ async function load() {
     const r = await callApiPromise('/api/shed/my-tm-log', { date: date.value })
     loading.value = false
     if (!r?.success) { error.value = r?.message || '불러오지 못했어요. 잠시 뒤 다시 열어 주세요.'; list.value = []; return }
+    days.value = r.days || []
+    date.value = r.date
     list.value = r.list || []
     picked.value = new Set(list.value.map((_, i) => i))  // 새로 불러오면 전부 선택
 }
@@ -38,6 +38,11 @@ function toggleAll() { picked.value = allPicked.value ? new Set() : new Set(list
 function resultText(x) {
     const extra = x.reservedAt || x.subReason || (x.noAnswerMsg ? '부재중 문자 발송' : '')
     return extra ? `${x.result}(${extra})` : x.result
+}
+const WEEK = ['일', '월', '화', '수', '목', '금', '토']
+function dayLabel(ymd) {
+    const [y, m, d] = ymd.split('-').map(Number)
+    return `${m}/${d}(${WEEK[new Date(y, m - 1, d).getDay()]})`
 }
 const timeOf = (iso) => new Date(iso).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false })
 const rows = computed(() => list.value.map((x) => ({ time: timeOf(x.at), name: x.name, type: x.type, result: resultText(x), kind: x.result })))
@@ -67,12 +72,14 @@ onMounted(load)
             <span class="modal-close" @click="emit('close')">&times;</span>
             <div class="modal-title">📋 내 티엠 내역</div>
             <div class="tl-bar">
-                <input v-model="date" type="date" class="tl-date" aria-label="날짜" @change="load">
+                <select v-model="date" class="tl-date" aria-label="티엠 돌린 날" :disabled="!days.length" @change="load">
+                    <option v-for="d in days" :key="d.date" :value="d.date">{{ dayLabel(d.date) }} - 티엠수 {{ d.count }}건</option>
+                </select>
                 <button class="tl-copy" :disabled="loading || !picked.size" @click="copy">{{ picked.size }}건 복사</button>
             </div>
             <p v-if="loading" class="tl-empty">불러오는 중…</p>
             <p v-else-if="error" class="tl-error">{{ error }}</p>
-            <p v-else-if="!list.length" class="tl-empty">이 날은 돌린 티엠이 없어요.</p>
+            <p v-else-if="!list.length" class="tl-empty">최근 90일 동안 돌린 티엠이 없어요.</p>
             <template v-else>
                 <div class="tl-count">티엠수 <b>{{ rows.length }}</b>건 · 복사할 줄을 체크하세요</div>
                 <div class="tl-log">
@@ -94,7 +101,7 @@ onMounted(load)
 <style scoped>
 .tl-modal { max-width: 420px; }
 .tl-bar { display: flex; gap: 8px; margin: 8px 0 10px; }
-.tl-date { flex: 1; padding: 7px 10px; border: 1px solid #c5e1a5; border-radius: 8px; font: inherit; }
+.tl-date { flex: 1; min-width: 0; padding: 7px 10px; border: 1px solid #c5e1a5; border-radius: 8px; font: inherit; background: #fff; color: #33691e; }
 .tl-copy { padding: 7px 16px; border: none; border-radius: 8px; background: #558b2f; color: #fff; font-family: "Jua", sans-serif; cursor: pointer; }
 .tl-copy:disabled { opacity: .4; cursor: default; }
 .tl-count { font-size: 13px; color: #558b2f; margin-bottom: 6px; text-align: left; }
