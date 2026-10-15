@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useRoles } from '@/composables/useRoles'
 import GachaSlotOverlay from '@/components/screens/GachaSlotOverlay.vue'
 import DuplicateHistoryPopup from '@/components/screens/popups/DuplicateHistoryPopup.vue'
+import MyTmLogPopup from '@/components/screens/popups/MyTmLogPopup.vue'
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxeppzAwBF4n0uSXjvaD7lZBLfdoA3kX_V4VXcb6cuX7ckOXZ6WLTIPqFbeuqraDVMLTw/exec'
 
@@ -300,6 +301,7 @@ const scriptTab = ref('tm')   // 'tm' | 'welcome' | 'noAnswer'
 const scriptModes = reactive({ tm: 'default', welcome: 'default', noAnswer: 'default' })
 const personalScripts = reactive({ tm: '', welcome: '', noAnswer: '' })
 const scriptDrafts = reactive({ tm: '', welcome: '', noAnswer: '' })
+const tmLogOpen = ref(false)               // 내 티엠 내역 팝업
 const scriptOpen = reactive({})           // { [docId]: boolean } — 카드별 스크립트 펼침
 
 const activeScriptText = computed(() => {
@@ -1083,7 +1085,8 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
     <div class="sy-topbar">
       <button class="sy-back" @click="router.back()">←</button>
       <span class="sy-title">{{ isPractice ? '🎮 합당한자 연습' : isHapdang ? '🤝 합당한자' : isQualityFind ? '🌿 질적 찾기' : '🐑 선한 양치기' }}</span>
-      <button class="sy-script-reg" @click="openScriptModal('tm')">📝 스크립트 등록</button>
+      <button v-if="!isPractice" class="sy-script-reg" @click="tmLogOpen = true">내 티엠</button>
+      <button class="sy-script-reg" @click="openScriptModal('tm')">📝 스크립트</button>
       <button class="sy-refresh" @click="load" :disabled="loading">↻</button>
       <button class="sy-search-btn" @click="showShedSearch = true; nextTick(() => shedSearchInputRef?.focus())">🔍 검색</button>
     </div>
@@ -1634,6 +1637,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
         </div>
       </div>
     </div>
+    <MyTmLogPopup v-if="tmLogOpen" @close="tmLogOpen = false" />
     <TutorialCoach v-if="isPractice" :steps="PRACTICE_STEPS"
     @finish="router.replace({ name: 'hapdang' })" @exit="router.replace({ name: 'guide', query: { topic: 'hapdang' } })" />
 </div>
@@ -1657,13 +1661,17 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
   color: #558b2f; cursor: pointer;
 }
 .sy-refresh:disabled { opacity: .4; }
-.sy-title { flex: 1; font-size: 16px; font-weight: bold; color: #33691e; }
+.sy-title { flex: 1; min-width: 0; font-size: 16px; font-weight: bold; color: #33691e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sy-script-reg {
   font-size: 11px; padding: 5px 10px; border-radius: 8px;
   border: 1px solid #c5e1a5; background: #f1f8e9; color: #558b2f;
   font-family: "Jua", sans-serif; cursor: pointer; white-space: nowrap;
 }
 .sy-script-reg:hover { background: #dcedc8; }
+@media (max-width: 420px) {  /* 휴대폰 — 상단 버튼이 많아 제목이 잘리지 않게 간격·여백만 줄임 */
+  .sy-topbar { gap: 4px; }
+  .sy-script-reg { padding: 5px 7px; }
+}
 
 .sy-presence {
   display: flex; align-items: center; gap: 8px; padding: 6px 14px;
