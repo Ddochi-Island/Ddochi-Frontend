@@ -30,7 +30,11 @@ function resultText(x) {
     const extra = x.reservedAt || x.subReason || (x.noAnswerMsg ? '부재중 문자 발송' : '')
     return extra ? `${x.result}(${extra})` : x.result
 }
-const text = computed(() => [`티엠수 ${list.value.length}건`, ...list.value.map((x) => `${x.name}/${x.type}/${resultText(x)}`)].join('\n'))
+const timeOf = (iso) => new Date(iso).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false })
+const rows = computed(() => list.value.map((x) => ({ time: timeOf(x.at), name: x.name, type: x.type, result: resultText(x), kind: x.result })))
+// 복사용 — 표와 같은 순서로 "시간 섭외자/섭외유형/티엠결과"
+const text = computed(() => [`티엠수 ${rows.value.length}건`, ...rows.value.map((r) => `${r.time} ${r.name}/${r.type}/${r.result}`)].join('\n'))
+const KIND = { '부재중': 'na', '예약 티엠': 'rsv', '만남 픽스': 'fix', '거절': 'bad', '비합': 'bad', '무효': 'bad' }
 
 function copy() {
     navigator.clipboard.writeText(text.value).catch(() => {})
@@ -51,7 +55,19 @@ onMounted(load)
             <p v-if="loading" class="tl-empty">불러오는 중…</p>
             <p v-else-if="error" class="tl-error">{{ error }}</p>
             <p v-else-if="!list.length" class="tl-empty">이 날은 돌린 티엠이 없어요.</p>
-            <pre v-else class="tl-text">{{ text }}</pre>
+            <template v-else>
+                <div class="tl-count">티엠수 <b>{{ rows.length }}</b>건</div>
+                <div class="tl-log">
+                    <table class="tl-table">
+                        <thead><tr><th scope="col">시간</th><th scope="col">섭외자</th><th scope="col">유형</th><th scope="col">티엠결과</th></tr></thead>
+                        <tbody>
+                            <tr v-for="(r, i) in rows" :key="i" :class="'k-' + (KIND[r.kind] || 'etc')">
+                                <td class="t">{{ r.time }}</td><td>{{ r.name }}</td><td>{{ r.type }}</td><td class="res">{{ r.result }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </template>
         </div>
     </div>
 </template>
@@ -62,8 +78,19 @@ onMounted(load)
 .tl-date { flex: 1; padding: 7px 10px; border: 1px solid #c5e1a5; border-radius: 8px; font: inherit; }
 .tl-copy { padding: 7px 16px; border: none; border-radius: 8px; background: #558b2f; color: #fff; font-family: "Jua", sans-serif; cursor: pointer; }
 .tl-copy:disabled { opacity: .4; cursor: default; }
-.tl-text { margin: 0; padding: 12px; text-align: left; background: #f1f8e9; border-radius: 10px; white-space: pre-wrap; word-break: keep-all;
-    font-family: inherit; font-size: 14px; line-height: 1.7; max-height: 60vh; overflow: auto; color: #33691e; }
+.tl-count { font-size: 13px; color: #558b2f; margin-bottom: 6px; text-align: left; }
+.tl-log { max-height: 60vh; overflow: auto; border: 1px solid #dcedc8; border-radius: 10px; background: #fbfdf7; }
+.tl-table { width: 100%; border-collapse: collapse; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
+    text-align: left; color: #33691e; font-variant-numeric: tabular-nums; }
+.tl-table th { position: sticky; top: 0; background: #f1f8e9; color: #689f38; font-weight: 600; padding: 7px 8px; border-bottom: 1px solid #dcedc8; white-space: nowrap; }
+.tl-table td { padding: 6px 8px; border-bottom: 1px dashed #e6efd9; vertical-align: top; }
+.tl-table tr:last-child td { border-bottom: none; }
+.tl-table td.t { color: #9e9e9e; white-space: nowrap; }
+.tl-table td:nth-child(2), .tl-table td:nth-child(3) { white-space: nowrap; }
+.tl-table .k-na .res { color: #8d6e63; }
+.tl-table .k-rsv .res { color: #1565c0; }
+.tl-table .k-fix .res { color: #2e7d32; font-weight: 700; }
+.tl-table .k-bad .res { color: #c62828; }
 .tl-empty { padding: 24px 0; text-align: center; color: #8d6e63; }
 .tl-error { padding: 10px 12px; border-radius: 8px; background: #fdecea; color: #b71c1c; }
 .tl-copy:focus-visible, .tl-date:focus-visible { outline: 3px solid #aed581; outline-offset: 2px; }
