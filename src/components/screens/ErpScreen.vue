@@ -86,10 +86,6 @@ form.erp-bar .erp-input { flex: 1; }
 .erp-select { flex: none; width: auto; }
 .erp-chip, .erp-btn { border: 1px solid var(--e-line); background: #fff; color: var(--e-text); border-radius: 8px; padding: 6px 14px; font-size: 13px; cursor: pointer; }
 .erp-chip:hover { border-color: #B0C4DE; }
-.erp-chip.on { background: var(--e-blue-soft); border-color: #C8DEFF; color: var(--e-blue); font-weight: 600; }
-.erp-filter { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; }
-.erp-filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.erp-filter-row .erp-label { min-width: 36px; }
 .erp-btn { background: var(--e-blue); border-color: var(--e-blue); color: #fff; font-weight: 600; }
 .erp-btn:hover { background: var(--e-blue-dark); }
 .erp-btn:disabled { opacity: .5; cursor: default; }
