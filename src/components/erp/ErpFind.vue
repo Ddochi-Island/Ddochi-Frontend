@@ -3,11 +3,15 @@
 // 오프라인 = shed 도구 노방 등). 만픽 이후 단계는 전환 퍼널에서 봄 (2026-10-16 사용자 결정)
 import { ref, computed } from 'vue'
 import ErpRangePicker from './ErpRangePicker.vue'
+import ErpFindTrend from './ErpFindTrend.vue'
 import { useErpLoad, monthOf, total, natCmp, regionLabel, districtLabel } from './erpUtil'
 
 const range = ref(monthOf())
 const { loading, error, data, load } = useErpLoad('/api/erp/find')
+const loaded = ref(null)  // 실제로 조회한 기간 — 그래프 가로축(조회 뒤 날짜만 바꿔도 안 틀어지게)
+async function run() { const r = { ...range.value }; if (await load(r)) loaded.value = r }
 const region = ref('')  // '' = 지역별, 고르면 그 지역의 구역별
+const trendDistrict = ref('')  // 선 그래프만 좁히는 구역 ('' = 지역 전체)
 
 const OFFLINE_ROUTES = new Set(['도구노방', '생노', '바따장', '노방', '오프찾'])
 // 칸 정의 — [key, 라벨, 묶음]. 활동량·온라인 찾기는 일일보고, 오프라인 찾기는 사람 단위(shed 유입·합재양 경로)
@@ -65,7 +69,15 @@ function pickRow(k) {
     s.has(k) ? s.delete(k) : s.add(k)
     openDistricts.value = s
 }
-function pickRegion(r) { region.value = r; openDistricts.value = new Set() }
+function pickRegion(r) { region.value = r; openDistricts.value = new Set(); trendDistrict.value = '' }
+
+// 날짜별 찾기 선 그래프 — 전체면 수지역, 지역이면 그 지역, 구역 칩까지 고르면 그 구역
+const districtsOfRegion = computed(() => (region.value
+    ? [...new Set([...people.value, ...daily.value].map((r) => r.district).filter(Boolean))].sort(natCmp) : []))
+const trendPoints = computed(() => (data.value?.timeline || [])
+    .filter((p) => (!region.value || p.region === region.value) && (!trendDistrict.value || p.district === trendDistrict.value)))
+const trendTitle = computed(() => '날짜별 찾기 수 — ' + (!region.value ? '수지역 전체'
+    : regionLabel(region.value) + (trendDistrict.value ? ' ' + districtLabel(trendDistrict.value) : ' 전체')))
 
 // ── 그래프 — 찾기 구성(온라인 찾기 / 도구 노방 / 기타 오프) 가로 누적 막대, 줄은 표와 같음 ──
 // 색: 검증된 기본 범주 팔레트 앞 3칸(흰 배경 all-pairs 통과). 청록은 대비 2.8:1이라 합계·범례·위 표로 보완
@@ -89,7 +101,7 @@ const membersOf = (dk) => (data.value?.members || [])
         <div class="erp-bar">
             <span class="erp-label">기간</span>
             <ErpRangePicker v-model="range" />
-            <button class="erp-btn" :disabled="loading" @click="load(range)">🔍 조회</button>
+            <button class="erp-btn" :disabled="loading" @click="run">🔍 조회</button>
         </div>
 
         <p v-if="loading" class="erp-empty">조회 중…</p>
@@ -153,6 +165,14 @@ const membersOf = (dk) => (data.value?.members || [])
                         </tfoot>
                     </table>
                 </div>
+                <div v-if="region" class="erp-find-chips erp-find-chips-sub" role="group" aria-label="그래프 구역">
+                    <span class="erp-label">그래프 구역</span>
+                    <button :class="['erp-chip', { on: !trendDistrict }]" :aria-pressed="!trendDistrict" @click="trendDistrict = ''">{{ regionLabel(region) }} 전체</button>
+                    <button v-for="d in districtsOfRegion" :key="d" :class="['erp-chip', { on: trendDistrict === d }]" :aria-pressed="trendDistrict === d"
+                            @click="trendDistrict = d">{{ districtLabel(d) }}</button>
+                </div>
+                <ErpFindTrend v-if="loaded" :points="trendPoints" :from="loaded.from" :to="loaded.to" :title="trendTitle" />
+
                 <figure class="erp-chart" @mouseleave="tip = null">
                     <figcaption class="erp-chart-head">
                         <span class="erp-chart-title">찾기 구성</span>
