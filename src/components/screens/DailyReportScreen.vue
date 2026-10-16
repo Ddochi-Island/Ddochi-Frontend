@@ -171,6 +171,14 @@ function isOwnTeamOrPublic(o) {
     const team = (o.team || '').trim()
     return !team || team === '전체' || team === auth.currentUserTeam
 }
+// 홍보 학교 자동완성 — 많이 쓴 표준 학교 이름(ERP '이름 정리' 기준). 같은 학교를 여러 표기로 적지 않게
+const promoSchools = ref([])
+async function loadPromoSchools() {
+    try {
+        const r = await callApiPromise('/api/daily-report/promo-schools', {})
+        if (r?.success) promoSchools.value = r.schools || []
+    } catch (_) { /* 못 불러오면 자동완성 없이 그냥 입력 */ }
+}
 async function loadPromoOptions() {
     try {
         const [pathRes, toolRes] = await Promise.all([
@@ -576,6 +584,7 @@ onMounted(async () => {
     loadDraft()
     loadMissedExecutions()
     loadPromoOptions()
+    loadPromoSchools()
     await loadReportNameOptions()
 
     const now = getClientKstNow()
@@ -751,10 +760,11 @@ onMounted(async () => {
         </div>
 
         <label>🏫 홍보 학교</label>
+        <datalist id="promo-school-list"><option v-for="s in promoSchools" :key="s" :value="s" /></datalist>
         <div>
             <div v-for="(row, idx) in univRows" :key="idx" class="univ-row">
                 <div class="univ-input-group" style="flex:1.4;">
-                    <input class="univ-name" v-model="row.name" placeholder="학교명" @input="saveDraft">
+                    <input class="univ-name" v-model="row.name" placeholder="학교명" list="promo-school-list" autocomplete="off" @input="saveDraft">
                 </div>
                 <div class="univ-input-group">
                     <select v-model="row.path" style="font-family:'Jua';" @change="saveDraft">
