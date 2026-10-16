@@ -154,6 +154,11 @@ details[open].erp-section > summary { margin-bottom: 10px; }
 .erp-trend-grid line { stroke: var(--e-line); stroke-width: 1; }
 .erp-trend-grid text { font-size: 11px; fill: var(--e-faint); font-variant-numeric: tabular-nums; }
 .erp-trend-cross { stroke: #B0B8C1; stroke-width: 1; stroke-dasharray: 3 3; }
+.erp-find .eff, .erp-table.erp-find tbody tr td.eff { background: #F3F0FF; }
+.erp-find thead .eff { color: #6250D6; }
+.erp-where { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+.erp-where-more { margin-top: 6px; }
+@media (max-width: 900px) { .erp-where { grid-template-columns: 1fr; } }
 .erp-chart-tip { position: absolute; z-index: 2; pointer-events: none; background: #fff; border: 1px solid var(--e-line); border-radius: 8px;
     box-shadow: 0 4px 14px rgba(0, 0, 0, .1); padding: 8px 10px; font-size: 12px; color: var(--e-text); line-height: 1.7; white-space: nowrap; }
 .erp-find-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }

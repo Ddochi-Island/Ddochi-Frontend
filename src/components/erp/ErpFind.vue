@@ -4,6 +4,7 @@
 import { ref, computed } from 'vue'
 import ErpRangePicker from './ErpRangePicker.vue'
 import ErpFindTrend from './ErpFindTrend.vue'
+import ErpFindWhere from './ErpFindWhere.vue'
 import { useErpLoad, monthOf, total, natCmp, regionLabel, districtLabel } from './erpUtil'
 
 const range = ref(monthOf())
@@ -19,7 +20,19 @@ const BASE_COLS = [
     ['talk', '말걸기', 'act'], ['dm', 'DM 보냄', 'act'], ['qr', 'QR 붙임', 'act'], ['promo', '홍보(학교)', 'act'],
     ['onlineFound', '온라인 찾기', 'find'], ['toolStreet', '도구 노방', 'find'], ['offEtc', '기타 오프', 'find'],
     ['found', '찾기 합계', 'sum'],
+    // 효율 — 활동 100번당 찾은 수. 온라인 찾기는 DM 말고 광고·홍보로 찾은 것도 섞여 있어 참고용
+    ['effDm', 'DM 100건당 온라인 찾기', 'eff'], ['effTalk', '말걸기 100번당 도구 노방', 'eff'],
 ]
+function val(c, o) {
+    if (c[0] === 'effDm') return o.dm ? (o.onlineFound / o.dm) * 100 : null
+    if (c[0] === 'effTalk') return o.talk ? (o.toolStreet / o.talk) * 100 : null
+    return o[c[0]] || 0
+}
+function show(c, o) {
+    const v = val(c, o)
+    if (v == null) return '–'
+    return c[2] === 'eff' ? v.toFixed(1) : v.toLocaleString()
+}
 // '기타 오프' 머리를 누르면 그 안의 경로(생노 등)별 칸을 바로 옆에 펼침 — 이번 기간 데이터에 있는 경로만
 const etcOpen = ref(false)
 const etcRoutes = computed(() => [...new Set((data.value?.rows || [])
@@ -76,6 +89,11 @@ const districtsOfRegion = computed(() => (region.value
     ? [...new Set([...people.value, ...daily.value].map((r) => r.district).filter(Boolean))].sort(natCmp) : []))
 const trendPoints = computed(() => (data.value?.timeline || [])
     .filter((p) => (!region.value || p.region === region.value) && (!trendDistrict.value || p.district === trendDistrict.value)))
+// 장소·학교 표도 그래프와 같은 범위(지역 + 구역 칩)
+const inTrendScope = (p) => (!region.value || p.region === region.value) && (!trendDistrict.value || p.district === trendDistrict.value)
+const wherePlaces = computed(() => (data.value?.places || []).filter(inTrendScope))
+const whereSchools = computed(() => (data.value?.schools || []).filter(inTrendScope))
+const scopeName = computed(() => (!region.value ? '수지역 전체' : regionLabel(region.value) + (trendDistrict.value ? ' ' + districtLabel(trendDistrict.value) : ' 전체')))
 const trendTitle = computed(() => '날짜별 찾기 수 — ' + (!region.value ? '수지역 전체'
     : regionLabel(region.value) + (trendDistrict.value ? ' ' + districtLabel(trendDistrict.value) : ' 전체')))
 
@@ -115,9 +133,10 @@ const membersOf = (dk) => (data.value?.members || [])
                                 <th scope="colgroup" colspan="4" class="erp-grp act">활동량</th>
                                 <th scope="colgroup" :colspan="findSpan" class="erp-grp find">찾기</th>
                                 <th scope="col" rowspan="2">찾기 합계</th>
+                                <th scope="colgroup" colspan="2" class="erp-grp eff">효율</th>
                             </tr>
                             <tr>
-                                <th v-for="c in COLS.slice(0, -1)" :key="c[0]" scope="col" :class="c[2]">
+                                <th v-for="c in COLS.filter((x) => x[2] !== 'sum')" :key="c[0]" scope="col" :class="c[2]">
                                     <button v-if="c[0] === 'offEtc' && etcRoutes.length" class="erp-col-toggle" :aria-expanded="etcOpen" @click="etcOpen = !etcOpen">
                                         {{ c[1] }} <span aria-hidden="true">{{ etcOpen ? '◂' : '▸' }}</span>
                                     </button>
@@ -134,14 +153,14 @@ const membersOf = (dk) => (data.value?.members || [])
                                             <template v-else>{{ row.label }} <span aria-hidden="true">›</span></template>
                                         </button>
                                     </th>
-                                    <td v-for="c in COLS" :key="c[0]" :class="[c[2], { 'erp-zero': !row.cells[c[0]] }]">
-                                        <b v-if="c[2] === 'sum'">{{ row.cells[c[0]] }}</b><template v-else>{{ (row.cells[c[0]] || 0).toLocaleString() }}</template>
+                                    <td v-for="c in COLS" :key="c[0]" :class="[c[2], { 'erp-zero': !val(c, row.cells) }]">
+                                        <b v-if="c[2] === 'sum'">{{ row.cells[c[0]] }}</b><template v-else>{{ show(c, row.cells) }}</template>
                                     </td>
                                 </tr>
                                 <template v-if="region && openDistricts.has(row.key)">
                                     <tr v-for="m in membersOf(row.key)" :key="m.memberId" class="erp-find-person">
                                         <th scope="row">{{ m.name }}</th>
-                                        <td v-for="c in COLS" :key="c[0]" :class="[c[2], { 'erp-zero': !m[c[0]] }]">{{ (m[c[0]] || 0).toLocaleString() }}</td>
+                                        <td v-for="c in COLS" :key="c[0]" :class="[c[2], { 'erp-zero': !val(c, m) }]">{{ show(c, m) }}</td>
                                     </tr>
                                     <tr v-if="!membersOf(row.key).length" class="erp-find-person"><th scope="row" :colspan="COLS.length + 1">이 기간에 활동하거나 찾은 사람이 없어요</th></tr>
                                 </template>
@@ -150,18 +169,19 @@ const membersOf = (dk) => (data.value?.members || [])
                         <tfoot>
                             <tr>
                                 <th scope="row">{{ region ? regionLabel(region) + ' 합계' : '전체' }}</th>
-                                <td v-for="c in COLS" :key="c[0]" :class="c[2]">{{ (sum[c[0]] || 0).toLocaleString() }}</td>
+                                <td v-for="c in COLS" :key="c[0]" :class="c[2]">{{ show(c, sum) }}</td>
                             </tr>
                         </tfoot>
                     </table>
                 </div>
-                <div v-if="region" class="erp-find-chips erp-find-chips-sub" role="group" aria-label="그래프 구역">
-                    <span class="erp-label">그래프 구역</span>
+                <div v-if="region" class="erp-find-chips erp-find-chips-sub" role="group" aria-label="아래 그래프·표 구역">
+                    <span class="erp-label">아래 그래프·표 구역</span>
                     <button :class="['erp-chip', { on: !trendDistrict }]" :aria-pressed="!trendDistrict" @click="trendDistrict = ''">{{ regionLabel(region) }} 전체</button>
                     <button v-for="d in districtsOfRegion" :key="d" :class="['erp-chip', { on: trendDistrict === d }]" :aria-pressed="trendDistrict === d"
                             @click="trendDistrict = d">{{ districtLabel(d) }}</button>
                 </div>
                 <ErpFindTrend v-if="loaded" :points="trendPoints" :from="loaded.from" :to="loaded.to" :title="trendTitle" />
+                <ErpFindWhere :places="wherePlaces" :schools="whereSchools" :scope="scopeName" />
 
                 <p class="erp-note" style="margin: 10px 0 0">
                     홍보(학교) = 일일보고에 적은 홍보 학교 수 · 인스타 광고는 일일보고에 칸이 없어 활동량이 없어요 ·
