@@ -143,19 +143,11 @@ details[open].erp-section > summary { margin-bottom: 10px; }
 .erp-col-toggle { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: inherit; cursor: pointer; white-space: nowrap; }
 .erp-col-toggle:hover { text-decoration: underline; }
 .erp-find .sub, .erp-table.erp-find tbody tr td.sub { background: #E6F0FD; font-size: 12px; }
-/* 찾기 구성 그래프 — 가로 누적 막대(얇게, 조각 사이 2px, 데이터 끝만 둥글게) */
+/* 찾기 분석 그래프 카드 */
 .erp-chart { position: relative; margin: 16px 0 0; padding: 14px 16px 12px; border: 1px solid var(--e-line); border-radius: 12px; background: #fff; }
 .erp-chart-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 .erp-chart-title { font-size: 13px; font-weight: 700; color: var(--e-text); }
 .erp-chart-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--e-sub); }
-.erp-chart-legend i, .erp-chart-tip i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
-.erp-chart-row { display: grid; grid-template-columns: 64px 1fr; align-items: center; gap: 10px; padding: 4px 0; }
-.erp-chart-label { font-size: 12px; color: var(--e-sub); text-align: right; white-space: nowrap; }
-.erp-chart-track { display: flex; align-items: center; gap: 6px; min-height: 18px; cursor: default; }
-.erp-chart-bar { display: flex; flex: none; gap: 2px; height: 14px; }  /* 너비 = (칸 - 합계 숫자 자리) × 비율 */
-.erp-chart-seg { display: block; min-width: 2px; height: 100%; }
-.erp-chart-seg:last-child { border-radius: 0 4px 4px 0; }
-.erp-chart-total { font-size: 12px; font-weight: 600; color: var(--e-text); font-variant-numeric: tabular-nums; }
 .erp-find-chips-sub { margin: 16px 0 0; align-items: center; }
 .erp-trend-wrap { position: relative; overflow: hidden; }
 .erp-trend svg { display: block; }
