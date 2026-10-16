@@ -8,6 +8,7 @@ import ErpTmStats from '@/components/erp/ErpTmStats.vue'
 import ErpFunnel from '@/components/erp/ErpFunnel.vue'
 import ErpWeekly from '@/components/erp/ErpWeekly.vue'
 import ErpFind from '@/components/erp/ErpFind.vue'
+import ErpNames from '@/components/erp/ErpNames.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -19,6 +20,7 @@ const MENU = [
     { key: 'weekly', code: 'ST006', label: '주간 보고서', comp: ErpWeekly },
     { key: 'tm', code: 'ST002', label: 'TM 결과 집계', comp: ErpTmStats },
     { key: 'funnel', code: 'ST004', label: '전환 퍼널 분석', comp: ErpFunnel },
+    { key: 'names', code: 'SY003', label: '이름 정리', comp: ErpNames },
 ]
 const active = computed(() => MENU.find((t) => t.key === route.query.tab) || MENU[0])
 const setTab = (key) => router.replace({ query: { ...route.query, tab: key } })
@@ -88,6 +90,17 @@ form.erp-bar .erp-input { flex: 1; }
 .erp-select { flex: none; width: auto; }
 .erp-chip, .erp-btn { border: 1px solid var(--e-line); background: #fff; color: var(--e-text); border-radius: 8px; padding: 6px 14px; font-size: 13px; cursor: pointer; }
 .erp-chip:hover { border-color: #B0C4DE; }
+.erp-chip:disabled { opacity: .5; cursor: default; }
+/* 이름 정리 */
+.erp-names-sugg { list-style: none; margin: 0; padding: 0; }
+.erp-names-sugg li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--e-bg); font-size: 13px; }
+.erp-names-actions { display: flex; gap: 6px; }
+.erp-names-group { padding: 12px 16px; }
+.erp-names-group .erp-h3 { margin-bottom: 8px; }
+.erp-names-table { font-size: 13px; }
+.erp-names-table td:nth-child(2) { text-align: right; width: 60px; }
+.erp-names-edit { display: flex; gap: 6px; align-items: center; }
+.erp-names-edit .erp-input { width: 160px; }
 .erp-chip.on { background: var(--e-blue-soft); border-color: #C8DEFF; color: var(--e-blue); font-weight: 600; }
 .erp-btn { background: var(--e-blue); border-color: var(--e-blue); color: #fff; font-weight: 600; }
 .erp-btn:hover { background: var(--e-blue-dark); }
