@@ -1,6 +1,6 @@
 <script setup>
-// ERP 찾기 분석 — 기간 안에 찾은 사람을 온/오프 → 찾기 활동(인스타 디엠·큐알·인스타 광고·홍보·도구 노방 …) → 도구별로 나누고,
-// 그 뒤 만픽·합재양·재가·만남·상연까지 간 수. 활동은 합재양의 경로(합재양 전 shed 유입은 도구노방·사쉐)로 정함
+// ERP 찾기 분석 — 기간 안에 찾은 사람을 지역 → 구역별 × 찾기 활동(인스타 디엠·큐알·인스타 광고·홍보·도구 노방)으로 먼저 보고(메인),
+// 고른 지역·구역의 활동 → 도구별 상세와 그 뒤 만픽·합재양·재가·만남·상연까지 간 수를 아래에. 활동은 합재양의 경로(합재양 전 shed 유입은 도구노방·사쉐)
 import { ref, computed } from 'vue'
 import ErpRangePicker from './ErpRangePicker.vue'
 import { useErpLoad, monthOf, sumBy, total, pct, natCmp, regionLabel, districtLabel } from './erpUtil'
@@ -21,7 +21,6 @@ const activityOf = (route) => (route ? ACTIVITY[route] || route : '미기록')
 const sideOf = (route) => (route && OFFLINE_ROUTES.has(route) ? '오프라인' : '온라인')
 
 const regions = computed(() => [...new Set((data.value?.rows || []).map((r) => r.region).filter(Boolean))].sort(natCmp))
-const districts = computed(() => [...new Set((data.value?.rows || []).filter((r) => r.region === region.value).map((r) => r.district).filter(Boolean))].sort(natCmp))
 const scoped = computed(() => (data.value?.rows || [])
     .filter((r) => (!region.value || r.region === region.value) && (!district.value || r.district === district.value))
     .map((r) => ({ ...r, side: sideOf(r.route), activity: activityOf(r.route),
@@ -53,16 +52,21 @@ function cellsOf(rows) {
     for (const r of rows) { c[colOf(r)] += r[metric.value] || 0; c.합계 += r[metric.value] || 0 }
     return c
 }
-const matrix = computed(() => {
-    const regionKeys = [...new Set(scoped.value.map((r) => r.region))].sort(natCmp)
-    return regionKeys.map((rk) => {
-        const rows = scoped.value.filter((r) => r.region === rk)
-        const dks = [...new Set(rows.map((r) => r.district))].sort(natCmp)
-        return { key: rk, label: regionLabel(rk), cells: cellsOf(rows),
-            districts: dks.map((dk) => ({ key: dk, label: districtLabel(dk), cells: cellsOf(rows.filter((r) => r.district === dk)) })) }
-    })
+// 메인 표 — 지역을 안 골랐으면 지역별, 골랐으면 그 지역의 구역별 (구역 선택과 무관하게 그 지역 전체를 보여줌)
+const tagged = computed(() => (data.value?.rows || []).map((r) => ({ ...r, activity: activityOf(r.route) })))
+const matrixRows = computed(() => {
+    const base = tagged.value.filter((r) => !region.value || r.region === region.value)
+    const keyOf = (r) => (region.value ? r.district : r.region)
+    return [...new Set(base.map(keyOf))].sort(natCmp).map((k) => ({
+        key: k, label: region.value ? districtLabel(k) : regionLabel(k), cells: cellsOf(base.filter((r) => keyOf(r) === k)),
+    }))
 })
-const matrixTotal = computed(() => cellsOf(scoped.value))
+const matrixTotal = computed(() => cellsOf(tagged.value.filter((r) => !region.value || r.region === region.value)))
+function pickRow(k) {
+    if (!region.value) { region.value = k; district.value = '' }
+    else district.value = district.value === k ? '' : k
+}
+function pickRegion(r) { region.value = r; district.value = '' }
 
 function toggle(key) {
     const s = new Set(open.value)
@@ -77,102 +81,91 @@ const scopeLabel = computed(() => (region.value ? regionLabel(region.value) + (d
         <div class="erp-bar">
             <span class="erp-label">기간</span>
             <ErpRangePicker v-model="range" />
-            <template v-if="data">
-                <span class="erp-label">범위</span>
-                <select v-model="region" class="erp-input erp-select" aria-label="지역" @change="district = ''">
-                    <option value="">전체 지역</option>
-                    <option v-for="r in regions" :key="r" :value="r">{{ regionLabel(r) }}</option>
-                </select>
-                <select v-if="region" v-model="district" class="erp-input erp-select" aria-label="구역">
-                    <option value="">전체 구역</option>
-                    <option v-for="d in districts" :key="d" :value="d">{{ districtLabel(d) }}</option>
-                </select>
-            </template>
             <button class="erp-btn" :disabled="loading" @click="load(range)">🔍 조회</button>
         </div>
 
         <p v-if="loading" class="erp-empty">조회 중…</p>
         <p v-else-if="error" class="erp-error">{{ error }}</p>
         <template v-else-if="data">
-            <p><span class="erp-range-info">{{ range.from }} ~ {{ range.to }}에 찾은 사람 · {{ scopeLabel }} · 뒤 단계는 오늘까지 도달한 수</span></p>
-            <p class="erp-note">찾기 활동은 합재양에 적은 경로로 나눠요. 홍보 = 소모임 + 온라인폼. 합재양 전인 shed 유입은 도구 노방(사쉐)으로 셉니다. 활동을 누르면 도구별로 펼쳐져요.</p>
+            <p><span class="erp-range-info">{{ range.from }} ~ {{ range.to }}에 찾은 사람 · 유입자 지역 기준 · 뒤 단계는 오늘까지 도달한 수</span></p>
 
-            <div class="erp-table-wrap">
-                <table class="erp-table erp-find">
-                    <thead>
-                        <tr><th scope="col">찾기 활동</th><th v-for="[k, l] in COLS" :key="k" scope="col">{{ l }}</th><th scope="col">찾기→재가</th></tr>
-                    </thead>
-                    <tbody v-for="g in groups" :key="g.side">
-                        <tr class="erp-find-side">
-                            <th scope="rowgroup">{{ g.side }}</th>
-                            <td v-for="[k] in COLS" :key="k">{{ g.sum[k] || 0 }}</td>
-                            <td>{{ pct(g.sum.jaega || 0, g.sum.reg || 0) }}</td>
-                        </tr>
-                        <template v-for="a in g.activities" :key="g.side + a.name">
-                            <tr :class="{ 'erp-zero-row': !a.sum.reg }">
-                                <th scope="row">
-                                    <button v-if="a.tools.length" class="erp-find-toggle" :aria-expanded="open.has(g.side + a.name)" @click="toggle(g.side + a.name)">
-                                        <span aria-hidden="true">{{ open.has(g.side + a.name) ? '▾' : '▸' }}</span> {{ a.name }}
-                                    </button>
-                                    <span v-else class="erp-find-name">{{ a.name }}</span>
-                                </th>
-                                <td v-for="[k] in COLS" :key="k" :class="{ 'erp-zero': !a.sum[k] }">{{ a.sum[k] || 0 }}</td>
-                                <td>{{ pct(a.sum.jaega || 0, a.sum.reg || 0) }}</td>
-                            </tr>
-                            <template v-if="open.has(g.side + a.name)">
-                                <tr v-for="t in a.tools" :key="t.key" class="erp-find-tool">
-                                    <th scope="row">{{ t.key }}</th>
-                                    <td v-for="[k] in COLS" :key="k" :class="{ 'erp-zero': !t[k] }">{{ t[k] || 0 }}</td>
-                                    <td>{{ pct(t.jaega || 0, t.reg || 0) }}</td>
-                                </tr>
-                            </template>
-                        </template>
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <th scope="row">전체</th>
-                            <td v-for="[k] in COLS" :key="k">{{ grand[k] || 0 }}</td>
-                            <td>{{ pct(grand.jaega || 0, grand.reg || 0) }}</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-
-            <div class="erp-section" style="margin-top: 12px">
-                <h3 class="erp-h3">지역 · 구역별 <span class="erp-sub">유입자 지역 기준 · 지역을 누르면 구역별로 펼쳐져요</span></h3>
+            <!-- 메인: 지역 → 구역 -->
+            <div class="erp-section">
+                <div class="erp-find-chips" role="group" aria-label="지역">
+                    <button :class="['erp-chip', { on: !region }]" :aria-pressed="!region" @click="pickRegion('')">전체</button>
+                    <button v-for="r in regions" :key="r" :class="['erp-chip', { on: region === r }]" :aria-pressed="region === r" @click="pickRegion(r)">{{ regionLabel(r) }}</button>
+                </div>
+                <h3 class="erp-h3">
+                    {{ region ? `${regionLabel(region)} 구역별` : '지역별' }} 찾기
+                    <span class="erp-sub">{{ region ? '구역을 누르면 아래 상세가 그 구역으로 바뀌어요' : '지역을 누르면 구역별로 들어가요' }}</span>
+                </h3>
                 <div class="erp-seg" role="group" aria-label="숫자 종류">
                     <button v-for="[k, l] in COLS" :key="k" :class="{ on: metric === k }" :aria-pressed="metric === k" @click="metric = k">{{ l }}</button>
                 </div>
                 <div class="erp-table-wrap">
                     <table class="erp-table erp-find">
                         <thead>
-                            <tr><th scope="col">지역 · 구역</th><th v-for="c in MATRIX_COLS" :key="c" scope="col">{{ c }}</th><th scope="col">기타</th><th scope="col">합계</th></tr>
+                            <tr><th scope="col">{{ region ? '구역' : '지역' }}</th><th v-for="c in MATRIX_COLS" :key="c" scope="col">{{ c }}</th><th scope="col">기타</th><th scope="col">합계</th></tr>
                         </thead>
                         <tbody>
-                            <template v-for="rg in matrix" :key="rg.key">
-                                <tr>
+                            <tr v-for="row in matrixRows" :key="row.key ?? 'none'" :class="['erp-find-pick', { on: region && district === row.key }]" @click="pickRow(row.key)">
+                                <th scope="row">
+                                    <button class="erp-find-toggle" :aria-pressed="region ? district === row.key : null" @click.stop="pickRow(row.key)">{{ row.label }} <span aria-hidden="true">›</span></button>
+                                </th>
+                                <td v-for="c in [...MATRIX_COLS, '기타']" :key="c" :class="{ 'erp-zero': !row.cells[c] }">{{ row.cells[c] }}</td>
+                                <td><b>{{ row.cells.합계 }}</b></td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th scope="row">{{ region ? regionLabel(region) + ' 합계' : '전체' }}</th>
+                                <td v-for="c in [...MATRIX_COLS, '기타']" :key="c">{{ matrixTotal[c] }}</td>
+                                <td>{{ matrixTotal.합계 }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 상세: 고른 범위의 활동 → 도구, 단계별 -->
+            <div class="erp-section">
+                <h3 class="erp-h3">{{ scopeLabel }} · 찾기 활동 → 도구별 <span class="erp-sub">활동을 누르면 도구가 펼쳐져요 · 홍보 = 소모임 + 온라인폼 · 합재양 전 shed 유입은 도구 노방(사쉐)</span></h3>
+                <div class="erp-table-wrap">
+                    <table class="erp-table erp-find">
+                        <thead>
+                            <tr><th scope="col">찾기 활동</th><th v-for="[k, l] in COLS" :key="k" scope="col">{{ l }}</th><th scope="col">찾기→재가</th></tr>
+                        </thead>
+                        <tbody v-for="g in groups" :key="g.side">
+                            <tr class="erp-find-side">
+                                <th scope="rowgroup">{{ g.side }}</th>
+                                <td v-for="[k] in COLS" :key="k">{{ g.sum[k] || 0 }}</td>
+                                <td>{{ pct(g.sum.jaega || 0, g.sum.reg || 0) }}</td>
+                            </tr>
+                            <template v-for="a in g.activities" :key="g.side + a.name">
+                                <tr :class="{ 'erp-zero-row': !a.sum.reg }">
                                     <th scope="row">
-                                        <button class="erp-find-toggle" :aria-expanded="open.has('r' + rg.key)" @click="toggle('r' + rg.key)">
-                                            <span aria-hidden="true">{{ open.has('r' + rg.key) ? '▾' : '▸' }}</span> {{ rg.label }}
+                                        <button v-if="a.tools.length" class="erp-find-toggle" :aria-expanded="open.has(g.side + a.name)" @click="toggle(g.side + a.name)">
+                                            <span aria-hidden="true">{{ open.has(g.side + a.name) ? '▾' : '▸' }}</span> {{ a.name }}
                                         </button>
+                                        <span v-else class="erp-find-name">{{ a.name }}</span>
                                     </th>
-                                    <td v-for="c in [...MATRIX_COLS, '기타']" :key="c" :class="{ 'erp-zero': !rg.cells[c] }">{{ rg.cells[c] }}</td>
-                                    <td><b>{{ rg.cells.합계 }}</b></td>
+                                    <td v-for="[k] in COLS" :key="k" :class="{ 'erp-zero': !a.sum[k] }">{{ a.sum[k] || 0 }}</td>
+                                    <td>{{ pct(a.sum.jaega || 0, a.sum.reg || 0) }}</td>
                                 </tr>
-                                <template v-if="open.has('r' + rg.key)">
-                                    <tr v-for="d in rg.districts" :key="d.key" class="erp-find-tool">
-                                        <th scope="row">{{ d.label }}</th>
-                                        <td v-for="c in [...MATRIX_COLS, '기타']" :key="c" :class="{ 'erp-zero': !d.cells[c] }">{{ d.cells[c] }}</td>
-                                        <td>{{ d.cells.합계 }}</td>
+                                <template v-if="open.has(g.side + a.name)">
+                                    <tr v-for="t in a.tools" :key="t.key" class="erp-find-tool">
+                                        <th scope="row">{{ t.key }}</th>
+                                        <td v-for="[k] in COLS" :key="k" :class="{ 'erp-zero': !t[k] }">{{ t[k] || 0 }}</td>
+                                        <td>{{ pct(t.jaega || 0, t.reg || 0) }}</td>
                                     </tr>
                                 </template>
                             </template>
                         </tbody>
                         <tfoot>
                             <tr>
-                                <th scope="row">전체</th>
-                                <td v-for="c in [...MATRIX_COLS, '기타']" :key="c">{{ matrixTotal[c] }}</td>
-                                <td>{{ matrixTotal.합계 }}</td>
+                                <th scope="row">합계</th>
+                                <td v-for="[k] in COLS" :key="k">{{ grand[k] || 0 }}</td>
+                                <td>{{ pct(grand.jaega || 0, grand.reg || 0) }}</td>
                             </tr>
                         </tfoot>
                     </table>

@@ -88,6 +88,7 @@ form.erp-bar .erp-input { flex: 1; }
 .erp-select { flex: none; width: auto; }
 .erp-chip, .erp-btn { border: 1px solid var(--e-line); background: #fff; color: var(--e-text); border-radius: 8px; padding: 6px 14px; font-size: 13px; cursor: pointer; }
 .erp-chip:hover { border-color: #B0C4DE; }
+.erp-chip.on { background: var(--e-blue-soft); border-color: #C8DEFF; color: var(--e-blue); font-weight: 600; }
 .erp-btn { background: var(--e-blue); border-color: var(--e-blue); color: #fff; font-weight: 600; }
 .erp-btn:hover { background: var(--e-blue-dark); }
 .erp-btn:disabled { opacity: .5; cursor: default; }
@@ -138,6 +139,10 @@ details[open].erp-section > summary { margin-bottom: 10px; }
 .erp-find tr.erp-find-tool th { padding-left: 46px; font-weight: 400; color: var(--e-sub); }
 .erp-find tr.erp-find-tool td { color: var(--e-sub); font-size: 12px; }
 .erp-find tr.erp-zero-row th { color: var(--e-faint); }
+.erp-find-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.erp-find tr.erp-find-pick { cursor: pointer; }
+.erp-find tr.erp-find-pick.on th, .erp-find tr.erp-find-pick.on td { background: var(--e-blue-soft); }
+.erp-find tr.erp-find-pick .erp-find-toggle span { color: var(--e-faint); }
 .erp-delta { font-size: 11px; font-weight: 600; margin-left: 2px; color: var(--e-faint); }
 .erp-delta.up { color: var(--e-up); }
 .erp-delta.down { color: var(--e-down); }
