@@ -173,6 +173,15 @@ function isOwnTeamOrPublic(o) {
 }
 // 홍보 학교 자동완성 — 많이 쓴 표준 학교 이름(ERP '이름 정리' 기준). 같은 학교를 여러 표기로 적지 않게
 const promoSchools = ref([])
+// 합재양 작성의 인도자·티엠자 자동완성과 같은 모양 — 입력칸 아래 카드 목록(포함 검색, 10개)
+const schoolAcRow = ref(-1)
+function schoolOpts(row) {
+    const q = (row.name || '').trim()
+    if (!q) return []
+    return promoSchools.value.filter((s) => s.includes(q) && s !== q).slice(0, 10)
+}
+function pickSchool(row, name) { row.name = name; schoolAcRow.value = -1; saveDraft() }
+function closeSchoolAc(idx) { setTimeout(() => { if (schoolAcRow.value === idx) schoolAcRow.value = -1 }, 150) }
 async function loadPromoSchools() {
     try {
         const r = await callApiPromise('/api/daily-report/promo-schools', {})
@@ -760,11 +769,14 @@ onMounted(async () => {
         </div>
 
         <label>🏫 홍보 학교</label>
-        <datalist id="promo-school-list"><option v-for="s in promoSchools" :key="s" :value="s" /></datalist>
         <div>
             <div v-for="(row, idx) in univRows" :key="idx" class="univ-row">
-                <div class="univ-input-group" style="flex:1.4;">
-                    <input class="univ-name" v-model="row.name" placeholder="학교명" list="promo-school-list" autocomplete="off" @input="saveDraft">
+                <div class="univ-input-group ac-wrap" style="flex:1.4;">
+                    <input class="univ-name" v-model="row.name" placeholder="학교명" autocomplete="off"
+                           @input="schoolAcRow = idx; saveDraft()" @focus="schoolAcRow = idx" @blur="closeSchoolAc(idx)">
+                    <div v-if="schoolAcRow === idx && schoolOpts(row).length" class="ac-dropdown">
+                        <div v-for="n in schoolOpts(row)" :key="n" class="ac-item" @mousedown.prevent="pickSchool(row, n)">{{ n }}</div>
+                    </div>
                 </div>
                 <div class="univ-input-group">
                     <select v-model="row.path" style="font-family:'Jua';" @change="saveDraft">
@@ -896,6 +908,28 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+/* 홍보 학교 자동완성 — 합재양 작성(HabjaeyangScreen) 인도자·티엠자 자동완성과 같은 모양 */
+.ac-wrap { position: relative; }
+.ac-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    z-index: 1000;
+    max-height: 180px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+.ac-item {
+    padding: 10px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+}
+.ac-item:last-child { border-bottom: none; }
+.ac-item:active { background: #f5f5f5; }
 .missed-section {
     background: #FFF3E0;
     border: 1px solid #FFE0B2;
