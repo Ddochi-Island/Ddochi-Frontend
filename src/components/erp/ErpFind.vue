@@ -66,6 +66,17 @@ function pickRow(k) {
     openDistricts.value = s
 }
 function pickRegion(r) { region.value = r; openDistricts.value = new Set() }
+
+// ── 그래프 — 찾기 구성(온라인 찾기 / 도구 노방 / 기타 오프) 가로 누적 막대, 줄은 표와 같음 ──
+// 색: 검증된 기본 범주 팔레트 앞 3칸(흰 배경 all-pairs 통과). 청록은 대비 2.8:1이라 합계·범례·위 표로 보완
+const SERIES = [['onlineFound', '온라인 찾기', '#2a78d6'], ['toolStreet', '도구 노방', '#eb6834'], ['offEtc', '기타 오프', '#1baf7a']]
+const chartMax = computed(() => Math.max(1, ...rows.value.map((r) => r.cells.found)))
+const segsOf = (cells) => SERIES.map(([k, label, color]) => ({ k, label, color, v: cells[k] || 0 })).filter((x) => x.v > 0)
+const tip = ref(null)  // { x, y, row }
+function showTip(e, row) {
+    const box = e.currentTarget.closest('.erp-chart').getBoundingClientRect()
+    tip.value = { x: e.clientX - box.left + 12, y: e.clientY - box.top + 12, row }
+}
 const membersOf = (dk) => (data.value?.members || [])
     .filter((m) => m.region === region.value && m.district === dk)
     .map((m) => ({ ...m, found: m.onlineFound + m.toolStreet + m.offEtc, act: m.talk + m.dm + m.qr + m.promo }))
@@ -142,6 +153,30 @@ const membersOf = (dk) => (data.value?.members || [])
                         </tfoot>
                     </table>
                 </div>
+                <figure class="erp-chart" @mouseleave="tip = null">
+                    <figcaption class="erp-chart-head">
+                        <span class="erp-chart-title">찾기 구성</span>
+                        <span class="erp-chart-legend">
+                            <span v-for="[k, label, color] in SERIES" :key="k"><i :style="{ background: color }"></i>{{ label }}</span>
+                        </span>
+                    </figcaption>
+                    <div v-for="row in rows" :key="'c' + (row.key ?? 'none')" class="erp-chart-row"
+                         :aria-label="`${row.label} 찾기 ${row.cells.found}명: ` + SERIES.map(([k, l]) => `${l} ${row.cells[k] || 0}`).join(', ')">
+                        <span class="erp-chart-label">{{ row.label }}</span>
+                        <span class="erp-chart-track" @mousemove="showTip($event, row)">
+                            <span class="erp-chart-bar" :style="{ width: `calc((100% - 48px) * ${row.cells.found / chartMax})` }">
+                                <span v-for="sg in segsOf(row.cells)" :key="sg.k" class="erp-chart-seg"
+                                      :style="{ flexGrow: sg.v, background: sg.color }"></span>
+                            </span>
+                            <span class="erp-chart-total">{{ row.cells.found }}</span>
+                        </span>
+                    </div>
+                    <div v-if="tip" class="erp-chart-tip" :style="{ left: tip.x + 'px', top: tip.y + 'px' }" role="status">
+                        <b>{{ tip.row.label }}</b> · 찾기 {{ tip.row.cells.found }}명
+                        <div v-for="[k, label, color] in SERIES" :key="k"><i :style="{ background: color }"></i>{{ label }} {{ tip.row.cells[k] || 0 }}</div>
+                    </div>
+                </figure>
+
                 <p class="erp-note" style="margin: 10px 0 0">
                     홍보(학교) = 일일보고에 적은 홍보 학교 수 · 인스타 광고는 일일보고에 칸이 없어 활동량이 없어요 ·
                     도구 노방 = shed로 받은 사람
