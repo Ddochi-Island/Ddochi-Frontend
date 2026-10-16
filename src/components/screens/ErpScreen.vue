@@ -142,6 +142,9 @@ details[open].erp-section > summary { margin-bottom: 10px; }
 .erp-find thead .find { color: var(--e-blue); }
 .erp-find-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 .erp-find tr.erp-find-pick { cursor: pointer; }
+.erp-find tr.erp-find-person th { padding-left: 46px; font-weight: 400; color: var(--e-sub); }
+.erp-find tr.erp-find-person td { font-size: 12px; color: var(--e-sub); }
+.erp-find tr.erp-find-person.idle th, .erp-find tr.erp-find-person.idle td { opacity: .5; }
 .erp-find tr.erp-find-pick .erp-find-toggle span { color: var(--e-faint); }
 .erp-delta { font-size: 11px; font-weight: 600; margin-left: 2px; color: var(--e-faint); }
 .erp-delta.up { color: var(--e-up); }

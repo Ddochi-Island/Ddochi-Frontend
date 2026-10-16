@@ -42,7 +42,19 @@ const rows = computed(() => [...new Set([...people.value, ...daily.value].map(ke
 })))
 const sum = computed(() => cellsOf(people.value, daily.value))
 
-function pickRow(k) { if (!region.value) region.value = k }
+// 구역 줄을 누르면 그 구역 사람별로 펼침(여러 구역 동시 가능)
+const openDistricts = ref(new Set())
+function pickRow(k) {
+    if (!region.value) { region.value = k; openDistricts.value = new Set(); return }
+    const s = new Set(openDistricts.value)
+    s.has(k) ? s.delete(k) : s.add(k)
+    openDistricts.value = s
+}
+function pickRegion(r) { region.value = r; openDistricts.value = new Set() }
+const membersOf = (dk) => (data.value?.members || [])
+    .filter((m) => m.region === region.value && m.district === dk)
+    .map((m) => ({ ...m, found: m.onlineFound + m.toolStreet + m.offEtc, act: m.talk + m.dm + m.qr + m.promo }))
+    .sort((a, b) => b.found - a.found || b.act - a.act || a.name.localeCompare(b.name))
 </script>
 
 <template>
@@ -59,12 +71,12 @@ function pickRow(k) { if (!region.value) region.value = k }
             <p><span class="erp-range-info">{{ range.from }} ~ {{ range.to }} · 찾기까지의 활동 · 만픽 이후는 전환 퍼널에서</span></p>
             <div class="erp-section">
                 <div class="erp-find-chips" role="group" aria-label="지역">
-                    <button :class="['erp-chip', { on: !region }]" :aria-pressed="!region" @click="region = ''">전체</button>
-                    <button v-for="r in regions" :key="r" :class="['erp-chip', { on: region === r }]" :aria-pressed="region === r" @click="region = r">{{ regionLabel(r) }}</button>
+                    <button :class="['erp-chip', { on: !region }]" :aria-pressed="!region" @click="pickRegion('')">전체</button>
+                    <button v-for="r in regions" :key="r" :class="['erp-chip', { on: region === r }]" :aria-pressed="region === r" @click="pickRegion(r)">{{ regionLabel(r) }}</button>
                 </div>
                 <h3 class="erp-h3">
                     {{ region ? `${regionLabel(region)} 구역별` : '지역별' }} 찾기 활동
-                    <span class="erp-sub">{{ region ? '' : '지역을 누르면 구역별로 들어가요 · ' }}활동량·온라인 찾기 = 일일보고(제출 당시 소속), 오프라인 찾기 = shed 유입(유입자 지역)</span>
+                    <span class="erp-sub">{{ region ? '구역을 누르면 사람별로 펼쳐져요 · ' : '지역을 누르면 구역별로 들어가요 · ' }}활동량·온라인 찾기 = 일일보고(제출 당시 소속), 오프라인 찾기 = shed 유입(유입자 지역)</span>
                 </h3>
                 <div class="erp-table-wrap">
                     <table class="erp-table erp-find">
@@ -78,15 +90,26 @@ function pickRow(k) { if (!region.value) region.value = k }
                             <tr><th v-for="c in COLS.slice(0, 7)" :key="c[0]" scope="col" :class="c[2]">{{ c[1] }}</th></tr>
                         </thead>
                         <tbody>
-                            <tr v-for="row in rows" :key="row.key ?? 'none'" :class="{ 'erp-find-pick': !region }" @click="pickRow(row.key)">
-                                <th scope="row">
-                                    <button v-if="!region" class="erp-find-toggle" @click.stop="pickRow(row.key)">{{ row.label }} <span aria-hidden="true">›</span></button>
-                                    <span v-else class="erp-find-name">{{ row.label }}</span>
-                                </th>
-                                <td v-for="c in COLS" :key="c[0]" :class="[c[2], { 'erp-zero': !row.cells[c[0]] }]">
-                                    <b v-if="c[2] === 'sum'">{{ row.cells[c[0]] }}</b><template v-else>{{ row.cells[c[0]].toLocaleString() }}</template>
-                                </td>
-                            </tr>
+                            <template v-for="row in rows" :key="row.key ?? 'none'">
+                                <tr class="erp-find-pick" @click="pickRow(row.key)">
+                                    <th scope="row">
+                                        <button class="erp-find-toggle" :aria-expanded="region ? openDistricts.has(row.key) : null" @click.stop="pickRow(row.key)">
+                                            <template v-if="region"><span aria-hidden="true">{{ openDistricts.has(row.key) ? '▾' : '▸' }}</span> {{ row.label }}</template>
+                                            <template v-else>{{ row.label }} <span aria-hidden="true">›</span></template>
+                                        </button>
+                                    </th>
+                                    <td v-for="c in COLS" :key="c[0]" :class="[c[2], { 'erp-zero': !row.cells[c[0]] }]">
+                                        <b v-if="c[2] === 'sum'">{{ row.cells[c[0]] }}</b><template v-else>{{ row.cells[c[0]].toLocaleString() }}</template>
+                                    </td>
+                                </tr>
+                                <template v-if="region && openDistricts.has(row.key)">
+                                    <tr v-for="m in membersOf(row.key)" :key="m.memberId" :class="['erp-find-person', { idle: !m.found && !m.act }]">
+                                        <th scope="row">{{ m.name }}</th>
+                                        <td v-for="c in COLS" :key="c[0]" :class="[c[2], { 'erp-zero': !m[c[0]] }]">{{ m[c[0]].toLocaleString() }}</td>
+                                    </tr>
+                                    <tr v-if="!membersOf(row.key).length" class="erp-find-person"><th scope="row" :colspan="COLS.length + 1">이 기간에 일일보고나 찾기 기록이 있는 사람이 없어요</th></tr>
+                                </template>
+                            </template>
                         </tbody>
                         <tfoot>
                             <tr>
