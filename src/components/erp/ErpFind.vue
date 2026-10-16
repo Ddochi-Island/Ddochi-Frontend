@@ -1,6 +1,6 @@
 <script setup>
 // ERP 찾기 분석 — 찾기까지의 활동만: 지역 → 구역별 활동량(일일보고 말걸기·DM·QR·홍보 학교)과 찾은 수(온라인 = 일일보고 온라인 찾기,
-// 오프라인 = shed 도구 노방 사쉐·모아 등). 만픽 이후 단계는 전환 퍼널에서 봄 (2026-10-16 사용자 결정)
+// 오프라인 = shed 도구 노방 등). 만픽 이후 단계는 전환 퍼널에서 봄 (2026-10-16 사용자 결정)
 import { ref, computed } from 'vue'
 import ErpRangePicker from './ErpRangePicker.vue'
 import { useErpLoad, monthOf, total, natCmp, regionLabel, districtLabel } from './erpUtil'
@@ -13,23 +13,21 @@ const OFFLINE_ROUTES = new Set(['도구노방', '생노', '바따장', '노방',
 // 칸 정의 — [key, 라벨, 묶음]. 활동량·온라인 찾기는 일일보고, 오프라인 찾기는 사람 단위(shed 유입·합재양 경로)
 const COLS = [
     ['talk', '말걸기', 'act'], ['dm', 'DM 보냄', 'act'], ['qr', 'QR 붙임', 'act'], ['promo', '홍보(학교)', 'act'],
-    ['onlineFound', '온라인 찾기', 'find'], ['sache', '도구 노방 · 사쉐', 'find'], ['moa', '도구 노방 · 모아', 'find'], ['offEtc', '기타 오프', 'find'],
+    ['onlineFound', '온라인 찾기', 'find'], ['toolStreet', '도구 노방', 'find'], ['offEtc', '기타 오프', 'find'],
     ['found', '찾기 합계', 'sum'],
 ]
 
-// 오프라인 찾은 사람 — 도구 노방(사쉐/모아)과 그 외 오프 경로. 온라인 경로 행은 일일보고로 대신하므로 안 셈
+// 오프라인 찾은 사람 — 도구 노방(모아는 이제 안 써서 도구 구분 없이 한 칸)과 그 외 오프 경로. 온라인 경로 행은 일일보고로 대신하므로 안 셈
 function offlineOf(r) {
     if (!r.route || !OFFLINE_ROUTES.has(r.route)) return null
-    if (r.route === '도구노방' && r.tool === '모아') return 'moa'
-    if (r.route === '도구노방') return 'sache'
-    return 'offEtc'
+    return r.route === '도구노방' ? 'toolStreet' : 'offEtc'
 }
 const keyOf = (r) => (region.value ? r.district : r.region)
 function cellsOf(people, daily) {
     const d = total(daily)
-    const c = { talk: d.talk || 0, dm: d.dm || 0, qr: d.qr || 0, promo: d.promo || 0, onlineFound: d.onlineFound || 0, sache: 0, moa: 0, offEtc: 0 }
+    const c = { talk: d.talk || 0, dm: d.dm || 0, qr: d.qr || 0, promo: d.promo || 0, onlineFound: d.onlineFound || 0, toolStreet: 0, offEtc: 0 }
     for (const r of people) { const k = offlineOf(r); if (k) c[k] += r.reg }
-    c.found = c.onlineFound + c.sache + c.moa + c.offEtc
+    c.found = c.onlineFound + c.toolStreet + c.offEtc
     return c
 }
 
@@ -74,10 +72,10 @@ function pickRow(k) { if (!region.value) region.value = k }
                             <tr>
                                 <th scope="col" rowspan="2">{{ region ? '구역' : '지역' }}</th>
                                 <th scope="colgroup" colspan="4" class="erp-grp act">활동량</th>
-                                <th scope="colgroup" colspan="4" class="erp-grp find">찾기</th>
+                                <th scope="colgroup" colspan="3" class="erp-grp find">찾기</th>
                                 <th scope="col" rowspan="2">찾기 합계</th>
                             </tr>
-                            <tr><th v-for="c in COLS.slice(0, 8)" :key="c[0]" scope="col" :class="c[2]">{{ c[1] }}</th></tr>
+                            <tr><th v-for="c in COLS.slice(0, 7)" :key="c[0]" scope="col" :class="c[2]">{{ c[1] }}</th></tr>
                         </thead>
                         <tbody>
                             <tr v-for="row in rows" :key="row.key ?? 'none'" :class="{ 'erp-find-pick': !region }" @click="pickRow(row.key)">
@@ -100,7 +98,7 @@ function pickRow(k) { if (!region.value) region.value = k }
                 </div>
                 <p class="erp-note" style="margin: 10px 0 0">
                     홍보(학교) = 일일보고에 적은 홍보 학교 수 · 인스타 광고는 일일보고에 칸이 없어 활동량이 없어요 ·
-                    도구 노방은 shed로 받은 사람(합재양 전이면 사쉐로 셈)
+                    도구 노방 = shed로 받은 사람
                 </p>
             </div>
         </template>
