@@ -44,6 +44,26 @@ const groups = computed(() => ['온라인', '오프라인'].map((side) => {
 }))
 const grand = computed(() => total(scoped.value))
 
+// ── 지역 > 구역별 — 행: 지역(누르면 구역), 열: 주요 찾기 활동 + 기타 + 합계, 숫자 종류는 고름 ──
+const metric = ref('reg')
+const MATRIX_COLS = [...MAIN_ORDER.온라인, ...MAIN_ORDER.오프라인]
+const colOf = (r) => (MATRIX_COLS.includes(r.activity) ? r.activity : '기타')
+function cellsOf(rows) {
+    const c = Object.fromEntries([...MATRIX_COLS, '기타', '합계'].map((k) => [k, 0]))
+    for (const r of rows) { c[colOf(r)] += r[metric.value] || 0; c.합계 += r[metric.value] || 0 }
+    return c
+}
+const matrix = computed(() => {
+    const regionKeys = [...new Set(scoped.value.map((r) => r.region))].sort(natCmp)
+    return regionKeys.map((rk) => {
+        const rows = scoped.value.filter((r) => r.region === rk)
+        const dks = [...new Set(rows.map((r) => r.district))].sort(natCmp)
+        return { key: rk, label: regionLabel(rk), cells: cellsOf(rows),
+            districts: dks.map((dk) => ({ key: dk, label: districtLabel(dk), cells: cellsOf(rows.filter((r) => r.district === dk)) })) }
+    })
+})
+const matrixTotal = computed(() => cellsOf(scoped.value))
+
 function toggle(key) {
     const s = new Set(open.value)
     s.has(key) ? s.delete(key) : s.add(key)
@@ -116,6 +136,47 @@ const scopeLabel = computed(() => (region.value ? regionLabel(region.value) + (d
                         </tr>
                     </tfoot>
                 </table>
+            </div>
+
+            <div class="erp-section" style="margin-top: 12px">
+                <h3 class="erp-h3">지역 · 구역별 <span class="erp-sub">유입자 지역 기준 · 지역을 누르면 구역별로 펼쳐져요</span></h3>
+                <div class="erp-seg" role="group" aria-label="숫자 종류">
+                    <button v-for="[k, l] in COLS" :key="k" :class="{ on: metric === k }" :aria-pressed="metric === k" @click="metric = k">{{ l }}</button>
+                </div>
+                <div class="erp-table-wrap">
+                    <table class="erp-table erp-find">
+                        <thead>
+                            <tr><th scope="col">지역 · 구역</th><th v-for="c in MATRIX_COLS" :key="c" scope="col">{{ c }}</th><th scope="col">기타</th><th scope="col">합계</th></tr>
+                        </thead>
+                        <tbody>
+                            <template v-for="rg in matrix" :key="rg.key">
+                                <tr>
+                                    <th scope="row">
+                                        <button class="erp-find-toggle" :aria-expanded="open.has('r' + rg.key)" @click="toggle('r' + rg.key)">
+                                            <span aria-hidden="true">{{ open.has('r' + rg.key) ? '▾' : '▸' }}</span> {{ rg.label }}
+                                        </button>
+                                    </th>
+                                    <td v-for="c in [...MATRIX_COLS, '기타']" :key="c" :class="{ 'erp-zero': !rg.cells[c] }">{{ rg.cells[c] }}</td>
+                                    <td><b>{{ rg.cells.합계 }}</b></td>
+                                </tr>
+                                <template v-if="open.has('r' + rg.key)">
+                                    <tr v-for="d in rg.districts" :key="d.key" class="erp-find-tool">
+                                        <th scope="row">{{ d.label }}</th>
+                                        <td v-for="c in [...MATRIX_COLS, '기타']" :key="c" :class="{ 'erp-zero': !d.cells[c] }">{{ d.cells[c] }}</td>
+                                        <td>{{ d.cells.합계 }}</td>
+                                    </tr>
+                                </template>
+                            </template>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th scope="row">전체</th>
+                                <td v-for="c in [...MATRIX_COLS, '기타']" :key="c">{{ matrixTotal[c] }}</td>
+                                <td>{{ matrixTotal.합계 }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
             </div>
         </template>
         <p v-else class="erp-empty">기간을 고르고 🔍 조회를 누르세요.</p>
