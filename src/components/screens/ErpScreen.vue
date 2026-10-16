@@ -139,6 +139,9 @@ details[open].erp-section > summary { margin-bottom: 10px; }
 .erp-find tr.erp-find-tool th { padding-left: 46px; font-weight: 400; color: var(--e-sub); }
 .erp-find tr.erp-find-tool td { color: var(--e-sub); font-size: 12px; }
 .erp-find tr.erp-zero-row th { color: var(--e-faint); }
+.erp-find th.erp-daily, .erp-find td.erp-daily { background: #FFFBEA; }
+.erp-find thead th.erp-daily { color: #8A6D1F; }
+.erp-find td.erp-volume { color: var(--e-sub); font-size: 12px; text-align: left; }
 .erp-find-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 .erp-find tr.erp-find-pick { cursor: pointer; }
 .erp-find tr.erp-find-pick.on th, .erp-find tr.erp-find-pick.on td { background: var(--e-blue-soft); }
