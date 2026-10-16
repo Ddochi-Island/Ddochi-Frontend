@@ -72,4 +72,17 @@ router.beforeEach((to, from, next) => {
     }
 })
 
+// 배포 직후·네트워크 순간 끊김으로 화면 파일(지연 로딩 chunk)을 못 받으면 가려던 화면으로 한 번 새로고침.
+// 같은 탭에서 30초 안에 또 실패하면 반복하지 않음(무한 새로고침 방지)
+const CHUNK_RELOAD_KEY = 'ddochi_chunk_reload_at'
+router.onError((err, to) => {
+    if (!/dynamically imported module|Importing a module script failed|Failed to fetch/i.test(String(err?.message))) return
+    let last = 0
+    try { last = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY)) || 0 } catch { /* 저장소 막힘 — 그냥 한 번 시도 */ }
+    if (Date.now() - last < 30000) return
+    try { sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now())) } catch { /* 무시 */ }
+    window.location.hash = '#' + to.fullPath
+    window.location.reload()
+})
+
 export default router
