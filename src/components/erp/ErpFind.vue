@@ -11,11 +11,21 @@ const region = ref('')  // '' = 지역별, 고르면 그 지역의 구역별
 
 const OFFLINE_ROUTES = new Set(['도구노방', '생노', '바따장', '노방', '오프찾'])
 // 칸 정의 — [key, 라벨, 묶음]. 활동량·온라인 찾기는 일일보고, 오프라인 찾기는 사람 단위(shed 유입·합재양 경로)
-const COLS = [
+const BASE_COLS = [
     ['talk', '말걸기', 'act'], ['dm', 'DM 보냄', 'act'], ['qr', 'QR 붙임', 'act'], ['promo', '홍보(학교)', 'act'],
     ['onlineFound', '온라인 찾기', 'find'], ['toolStreet', '도구 노방', 'find'], ['offEtc', '기타 오프', 'find'],
     ['found', '찾기 합계', 'sum'],
 ]
+// '기타 오프' 머리를 누르면 그 안의 경로(생노 등)별 칸을 바로 옆에 펼침 — 이번 기간 데이터에 있는 경로만
+const etcOpen = ref(false)
+const etcRoutes = computed(() => [...new Set((data.value?.rows || [])
+    .filter((r) => r.route && OFFLINE_ROUTES.has(r.route) && r.route !== '도구노방').map((r) => r.route))].sort(natCmp))
+const COLS = computed(() => {
+    if (!etcOpen.value) return BASE_COLS
+    const i = BASE_COLS.findIndex((c) => c[0] === 'offEtc')
+    return [...BASE_COLS.slice(0, i + 1), ...etcRoutes.value.map((r) => ['off:' + r, r, 'find sub']), ...BASE_COLS.slice(i + 1)]
+})
+const findSpan = computed(() => COLS.value.filter((c) => c[2].startsWith('find')).length)
 
 // 오프라인 찾은 사람 — 도구 노방(모아는 이제 안 써서 도구 구분 없이 한 칸)과 그 외 오프 경로. 온라인 경로 행은 일일보고로 대신하므로 안 셈
 function offlineOf(r) {
@@ -26,7 +36,12 @@ const keyOf = (r) => (region.value ? r.district : r.region)
 function cellsOf(people, daily) {
     const d = total(daily)
     const c = { talk: d.talk || 0, dm: d.dm || 0, qr: d.qr || 0, promo: d.promo || 0, onlineFound: d.onlineFound || 0, toolStreet: 0, offEtc: 0 }
-    for (const r of people) { const k = offlineOf(r); if (k) c[k] += r.reg }
+    for (const r of people) {
+        const k = offlineOf(r)
+        if (!k) continue
+        c[k] += r.reg
+        if (k === 'offEtc') c['off:' + r.route] = (c['off:' + r.route] || 0) + r.reg
+    }
     c.found = c.onlineFound + c.toolStreet + c.offEtc
     return c
 }
@@ -84,10 +99,17 @@ const membersOf = (dk) => (data.value?.members || [])
                             <tr>
                                 <th scope="col" rowspan="2">{{ region ? '구역' : '지역' }}</th>
                                 <th scope="colgroup" colspan="4" class="erp-grp act">활동량</th>
-                                <th scope="colgroup" colspan="3" class="erp-grp find">찾기</th>
+                                <th scope="colgroup" :colspan="findSpan" class="erp-grp find">찾기</th>
                                 <th scope="col" rowspan="2">찾기 합계</th>
                             </tr>
-                            <tr><th v-for="c in COLS.slice(0, 7)" :key="c[0]" scope="col" :class="c[2]">{{ c[1] }}</th></tr>
+                            <tr>
+                                <th v-for="c in COLS.slice(0, -1)" :key="c[0]" scope="col" :class="c[2]">
+                                    <button v-if="c[0] === 'offEtc' && etcRoutes.length" class="erp-col-toggle" :aria-expanded="etcOpen" @click="etcOpen = !etcOpen">
+                                        {{ c[1] }} <span aria-hidden="true">{{ etcOpen ? '◂' : '▸' }}</span>
+                                    </button>
+                                    <template v-else>{{ c[1] }}</template>
+                                </th>
+                            </tr>
                         </thead>
                         <tbody>
                             <template v-for="row in rows" :key="row.key ?? 'none'">
@@ -99,13 +121,13 @@ const membersOf = (dk) => (data.value?.members || [])
                                         </button>
                                     </th>
                                     <td v-for="c in COLS" :key="c[0]" :class="[c[2], { 'erp-zero': !row.cells[c[0]] }]">
-                                        <b v-if="c[2] === 'sum'">{{ row.cells[c[0]] }}</b><template v-else>{{ row.cells[c[0]].toLocaleString() }}</template>
+                                        <b v-if="c[2] === 'sum'">{{ row.cells[c[0]] }}</b><template v-else>{{ (row.cells[c[0]] || 0).toLocaleString() }}</template>
                                     </td>
                                 </tr>
                                 <template v-if="region && openDistricts.has(row.key)">
                                     <tr v-for="m in membersOf(row.key)" :key="m.memberId" :class="['erp-find-person', { idle: !m.found && !m.act }]">
                                         <th scope="row">{{ m.name }}</th>
-                                        <td v-for="c in COLS" :key="c[0]" :class="[c[2], { 'erp-zero': !m[c[0]] }]">{{ m[c[0]].toLocaleString() }}</td>
+                                        <td v-for="c in COLS" :key="c[0]" :class="[c[2], { 'erp-zero': !m[c[0]] }]">{{ (m[c[0]] || 0).toLocaleString() }}</td>
                                     </tr>
                                     <tr v-if="!membersOf(row.key).length" class="erp-find-person"><th scope="row" :colspan="COLS.length + 1">이 기간에 일일보고나 찾기 기록이 있는 사람이 없어요</th></tr>
                                 </template>
@@ -114,7 +136,7 @@ const membersOf = (dk) => (data.value?.members || [])
                         <tfoot>
                             <tr>
                                 <th scope="row">{{ region ? regionLabel(region) + ' 합계' : '전체' }}</th>
-                                <td v-for="c in COLS" :key="c[0]" :class="c[2]">{{ sum[c[0]].toLocaleString() }}</td>
+                                <td v-for="c in COLS" :key="c[0]" :class="c[2]">{{ (sum[c[0]] || 0).toLocaleString() }}</td>
                             </tr>
                         </tfoot>
                     </table>
