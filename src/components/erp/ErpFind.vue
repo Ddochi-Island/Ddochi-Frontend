@@ -69,6 +69,7 @@ function pickRegion(r) { region.value = r; openDistricts.value = new Set() }
 const membersOf = (dk) => (data.value?.members || [])
     .filter((m) => m.region === region.value && m.district === dk)
     .map((m) => ({ ...m, found: m.onlineFound + m.toolStreet + m.offEtc, act: m.talk + m.dm + m.qr + m.promo }))
+    .filter((m) => m.found || m.act)  // 일일보고는 냈지만 숫자가 모두 0인 사람은 안 보임
     .sort((a, b) => b.found - a.found || b.act - a.act || a.name.localeCompare(b.name))
 </script>
 
@@ -125,11 +126,11 @@ const membersOf = (dk) => (data.value?.members || [])
                                     </td>
                                 </tr>
                                 <template v-if="region && openDistricts.has(row.key)">
-                                    <tr v-for="m in membersOf(row.key)" :key="m.memberId" :class="['erp-find-person', { idle: !m.found && !m.act }]">
+                                    <tr v-for="m in membersOf(row.key)" :key="m.memberId" class="erp-find-person">
                                         <th scope="row">{{ m.name }}</th>
                                         <td v-for="c in COLS" :key="c[0]" :class="[c[2], { 'erp-zero': !m[c[0]] }]">{{ (m[c[0]] || 0).toLocaleString() }}</td>
                                     </tr>
-                                    <tr v-if="!membersOf(row.key).length" class="erp-find-person"><th scope="row" :colspan="COLS.length + 1">이 기간에 일일보고나 찾기 기록이 있는 사람이 없어요</th></tr>
+                                    <tr v-if="!membersOf(row.key).length" class="erp-find-person"><th scope="row" :colspan="COLS.length + 1">이 기간에 활동하거나 찾은 사람이 없어요</th></tr>
                                 </template>
                             </template>
                         </tbody>
