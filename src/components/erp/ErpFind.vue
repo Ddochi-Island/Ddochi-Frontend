@@ -3,16 +3,13 @@
 // 오프라인 = shed 도구 노방 등). 만픽 이후 단계는 전환 퍼널에서 봄 (2026-10-16 사용자 결정)
 import { ref, computed } from 'vue'
 import ErpRangePicker from './ErpRangePicker.vue'
-import ErpFindTrend from './ErpFindTrend.vue'
 import ErpFindWhere from './ErpFindWhere.vue'
 import { useErpLoad, monthOf, total, natCmp, regionLabel, districtLabel } from './erpUtil'
 
 const range = ref(monthOf())
 const { loading, error, data, load } = useErpLoad('/api/erp/find')
-const loaded = ref(null)  // 실제로 조회한 기간 — 그래프 가로축(조회 뒤 날짜만 바꿔도 안 틀어지게)
-async function run() { const r = { ...range.value }; if (await load(r)) loaded.value = r }
 const region = ref('')  // '' = 지역별, 고르면 그 지역의 구역별
-const trendDistrict = ref('')  // 선 그래프만 좁히는 구역 ('' = 지역 전체)
+const whereDistrict = ref('')  // 아래 장소·학교 표만 좁히는 구역 ('' = 지역 전체)
 
 const OFFLINE_ROUTES = new Set(['도구노방', '생노', '바따장', '노방', '오프찾'])
 // 칸 정의 — [key, 라벨, 묶음]. 활동량·온라인 찾기는 일일보고, 오프라인 찾기는 사람 단위(shed 유입·합재양 경로)
@@ -82,20 +79,15 @@ function pickRow(k) {
     s.has(k) ? s.delete(k) : s.add(k)
     openDistricts.value = s
 }
-function pickRegion(r) { region.value = r; openDistricts.value = new Set(); trendDistrict.value = '' }
+function pickRegion(r) { region.value = r; openDistricts.value = new Set(); whereDistrict.value = '' }
 
-// 날짜별 찾기 선 그래프 — 전체면 수지역, 지역이면 그 지역, 구역 칩까지 고르면 그 구역
+// 아래 장소·학교 표 범위 — 전체면 수지역, 지역이면 그 지역, 구역 칩까지 고르면 그 구역
 const districtsOfRegion = computed(() => (region.value
     ? [...new Set([...people.value, ...daily.value].map((r) => r.district).filter(Boolean))].sort(natCmp) : []))
-const trendPoints = computed(() => (data.value?.timeline || [])
-    .filter((p) => (!region.value || p.region === region.value) && (!trendDistrict.value || p.district === trendDistrict.value)))
-// 장소·학교 표도 그래프와 같은 범위(지역 + 구역 칩)
-const inTrendScope = (p) => (!region.value || p.region === region.value) && (!trendDistrict.value || p.district === trendDistrict.value)
-const wherePlaces = computed(() => (data.value?.places || []).filter(inTrendScope))
-const whereSchools = computed(() => (data.value?.schools || []).filter(inTrendScope))
-const scopeName = computed(() => (!region.value ? '수지역 전체' : regionLabel(region.value) + (trendDistrict.value ? ' ' + districtLabel(trendDistrict.value) : ' 전체')))
-const trendTitle = computed(() => '날짜별 찾기 수 — ' + (!region.value ? '수지역 전체'
-    : regionLabel(region.value) + (trendDistrict.value ? ' ' + districtLabel(trendDistrict.value) : ' 전체')))
+const inWhereScope = (p) => (!region.value || p.region === region.value) && (!whereDistrict.value || p.district === whereDistrict.value)
+const wherePlaces = computed(() => (data.value?.places || []).filter(inWhereScope))
+const whereSchools = computed(() => (data.value?.schools || []).filter(inWhereScope))
+const scopeName = computed(() => (!region.value ? '수지역 전체' : regionLabel(region.value) + (whereDistrict.value ? ' ' + districtLabel(whereDistrict.value) : ' 전체')))
 
 const membersOf = (dk) => (data.value?.members || [])
     .filter((m) => m.region === region.value && m.district === dk)
@@ -109,7 +101,7 @@ const membersOf = (dk) => (data.value?.members || [])
         <div class="erp-bar">
             <span class="erp-label">기간</span>
             <ErpRangePicker v-model="range" />
-            <button class="erp-btn" :disabled="loading" @click="run">🔍 조회</button>
+            <button class="erp-btn" :disabled="loading" @click="load(range)">🔍 조회</button>
         </div>
 
         <p v-if="loading" class="erp-empty">조회 중…</p>
@@ -174,13 +166,12 @@ const membersOf = (dk) => (data.value?.members || [])
                         </tfoot>
                     </table>
                 </div>
-                <div v-if="region" class="erp-find-chips erp-find-chips-sub" role="group" aria-label="아래 그래프·표 구역">
-                    <span class="erp-label">아래 그래프·표 구역</span>
-                    <button :class="['erp-chip', { on: !trendDistrict }]" :aria-pressed="!trendDistrict" @click="trendDistrict = ''">{{ regionLabel(region) }} 전체</button>
-                    <button v-for="d in districtsOfRegion" :key="d" :class="['erp-chip', { on: trendDistrict === d }]" :aria-pressed="trendDistrict === d"
-                            @click="trendDistrict = d">{{ districtLabel(d) }}</button>
+                <div v-if="region" class="erp-find-chips erp-find-chips-sub" role="group" aria-label="아래 표 구역">
+                    <span class="erp-label">아래 표 구역</span>
+                    <button :class="['erp-chip', { on: !whereDistrict }]" :aria-pressed="!whereDistrict" @click="whereDistrict = ''">{{ regionLabel(region) }} 전체</button>
+                    <button v-for="d in districtsOfRegion" :key="d" :class="['erp-chip', { on: whereDistrict === d }]" :aria-pressed="whereDistrict === d"
+                            @click="whereDistrict = d">{{ districtLabel(d) }}</button>
                 </div>
-                <ErpFindTrend v-if="loaded" :points="trendPoints" :from="loaded.from" :to="loaded.to" :title="trendTitle" />
                 <ErpFindWhere :places="wherePlaces" :schools="whereSchools" :scope="scopeName" />
 
                 <p class="erp-note" style="margin: 10px 0 0">

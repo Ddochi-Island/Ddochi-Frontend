@@ -143,24 +143,12 @@ details[open].erp-section > summary { margin-bottom: 10px; }
 .erp-col-toggle { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: inherit; cursor: pointer; white-space: nowrap; }
 .erp-col-toggle:hover { text-decoration: underline; }
 .erp-find .sub, .erp-table.erp-find tbody tr td.sub { background: #E6F0FD; font-size: 12px; }
-/* 찾기 분석 그래프 카드 */
-.erp-chart { position: relative; margin: 16px 0 0; padding: 14px 16px 12px; border: 1px solid var(--e-line); border-radius: 12px; background: #fff; }
-.erp-chart-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
-.erp-chart-title { font-size: 13px; font-weight: 700; color: var(--e-text); }
-.erp-chart-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--e-sub); }
 .erp-find-chips-sub { margin: 16px 0 0; align-items: center; }
-.erp-trend-wrap { position: relative; overflow: hidden; }
-.erp-trend svg { display: block; }
-.erp-trend-grid line { stroke: var(--e-line); stroke-width: 1; }
-.erp-trend-grid text { font-size: 11px; fill: var(--e-faint); font-variant-numeric: tabular-nums; }
-.erp-trend-cross { stroke: #B0B8C1; stroke-width: 1; stroke-dasharray: 3 3; }
 .erp-find .eff, .erp-table.erp-find tbody tr td.eff { background: #F3F0FF; }
 .erp-find thead .eff { color: #6250D6; }
 .erp-where { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
 .erp-where-more { margin-top: 6px; }
 @media (max-width: 900px) { .erp-where { grid-template-columns: 1fr; } }
-.erp-chart-tip { position: absolute; z-index: 2; pointer-events: none; background: #fff; border: 1px solid var(--e-line); border-radius: 8px;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, .1); padding: 8px 10px; font-size: 12px; color: var(--e-text); line-height: 1.7; white-space: nowrap; }
 .erp-find-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 .erp-find tr.erp-find-pick { cursor: pointer; }
 .erp-find tr.erp-find-person th { padding-left: 46px; font-weight: 400; color: var(--e-sub); }
