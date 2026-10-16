@@ -132,19 +132,16 @@ details[open].erp-section > summary { margin-bottom: 10px; }
 .erp-table tfoot th, .erp-table tfoot td { background: var(--e-head); font-weight: 700; }
 .erp-table tfoot th { text-align: left; }
 .erp-zero { color: #C4CAD1; }
-/* 찾기 분석 — 온/오프 소계 줄, 펼친 도구 줄 */
-.erp-find .erp-find-side th, .erp-find .erp-find-side td { background: var(--e-blue-soft); color: var(--e-blue); font-weight: 700; }
+/* 찾기 분석 — 활동량(노랑)·찾기(파랑) 칸 묶음, 지역 줄 클릭 */
 .erp-find-toggle { background: none; border: none; padding: 0 0 0 12px; font: inherit; font-weight: 600; color: var(--e-text); cursor: pointer; }
 .erp-find-name { padding-left: 26px; }
-.erp-find tr.erp-find-tool th { padding-left: 46px; font-weight: 400; color: var(--e-sub); }
-.erp-find tr.erp-find-tool td { color: var(--e-sub); font-size: 12px; }
-.erp-find tr.erp-zero-row th { color: var(--e-faint); }
-.erp-find th.erp-daily, .erp-find td.erp-daily { background: #FFFBEA; }
-.erp-find thead th.erp-daily { color: #8A6D1F; }
-.erp-find td.erp-volume { color: var(--e-sub); font-size: 12px; text-align: left; }
+.erp-find thead th.erp-grp { border-bottom: 2px solid var(--e-line); }
+.erp-find .act, .erp-table.erp-find tbody tr td.act { background: #FFFBEA; }
+.erp-find thead .act { color: #8A6D1F; }
+.erp-find .find, .erp-table.erp-find tbody tr td.find { background: #F0F7FF; }
+.erp-find thead .find { color: var(--e-blue); }
 .erp-find-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 .erp-find tr.erp-find-pick { cursor: pointer; }
-.erp-find tr.erp-find-pick.on th, .erp-find tr.erp-find-pick.on td { background: var(--e-blue-soft); }
 .erp-find tr.erp-find-pick .erp-find-toggle span { color: var(--e-faint); }
 .erp-delta { font-size: 11px; font-weight: 600; margin-left: 2px; color: var(--e-faint); }
 .erp-delta.up { color: var(--e-up); }
