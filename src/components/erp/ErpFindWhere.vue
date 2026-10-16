@@ -1,12 +1,12 @@
 <script setup>
-// ERP 찾기 분석 — 어디서 찾았나: 찾기 장소별(shed 도구 노방: 찾기 → 만픽·재가 비율)과 홍보 학교별(일일보고 홍보 횟수·다녀간 사람)
+// ERP 찾기 분석 — 어디서 찾았나: 찾기 장소별(shed 도구 노방: 찾기 → 만픽·재가 비율)과 홍보 학교별(일일보고 홍보 횟수, 홍보는 에브리타임)
 // 이름은 서버에서 묶어 옴(범계/범계역 → 범계, 가천대학교 → 가천대). 위 10개만, 더 보기로 전부
 import { ref, computed } from 'vue'
-import { pct } from './erpUtil'
+import { pct, natCmp } from './erpUtil'
 
 const props = defineProps({
     places: { type: Array, required: true },   // 이미 범위로 거른 [{ place, reg, meetFix, jaega }]
-    schools: { type: Array, required: true },  // 이미 범위로 거른 [{ school, visits, members[], last }]
+    schools: { type: Array, required: true },  // 이미 범위로 거른 [{ school, visits, last }]
     scope: { type: String, required: true },
 })
 const TOP = 10
@@ -24,12 +24,11 @@ const placeRows = computed(() => {
 const schoolRows = computed(() => {
     const by = {}
     for (const s of props.schools) {
-        const a = (by[s.school] ||= { name: s.school, visits: 0, members: new Set(), last: '' })
+        const a = (by[s.school] ||= { name: s.school, visits: 0, last: '' })
         a.visits += s.visits
-        s.members.forEach((m) => a.members.add(m))
         if (s.last > a.last) a.last = s.last
     }
-    return Object.values(by).map((a) => ({ ...a, people: a.members.size })).sort((a, b) => b.visits - a.visits || b.people - a.people)
+    return Object.values(by).sort((a, b) => b.visits - a.visits || natCmp(a.name, b.name))
 })
 const md = (d) => (d ? `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}` : '')
 </script>
@@ -59,18 +58,17 @@ const md = (d) => (d ? `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}` : ''
             </button>
         </div>
         <div class="erp-where-col">
-            <h3 class="erp-h3">홍보 학교별 <span class="erp-sub">{{ scope }} · 일일보고 홍보 학교 · {{ schoolRows.length }}곳</span></h3>
+            <h3 class="erp-h3">홍보 학교별 <span class="erp-sub">{{ scope }} · 일일보고 홍보 학교(에브리타임) · {{ schoolRows.length }}곳</span></h3>
             <div class="erp-table-wrap">
                 <table class="erp-table">
-                    <thead><tr><th scope="col">학교</th><th scope="col">홍보 횟수</th><th scope="col">다녀간 사람</th><th scope="col">마지막 홍보</th></tr></thead>
+                    <thead><tr><th scope="col">학교</th><th scope="col">홍보 횟수</th><th scope="col">마지막 홍보</th></tr></thead>
                     <tbody>
                         <tr v-for="r in (allSchools ? schoolRows : schoolRows.slice(0, TOP))" :key="r.name">
                             <th scope="row">{{ r.name }}</th>
                             <td>{{ r.visits }}</td>
-                            <td>{{ r.people }}</td>
                             <td>{{ md(r.last) }}</td>
                         </tr>
-                        <tr v-if="!schoolRows.length"><th scope="row" colspan="4">이 기간에 적힌 홍보 학교가 없어요</th></tr>
+                        <tr v-if="!schoolRows.length"><th scope="row" colspan="3">이 기간에 적힌 홍보 학교가 없어요</th></tr>
                     </tbody>
                 </table>
             </div>
