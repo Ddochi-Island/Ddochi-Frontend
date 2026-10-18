@@ -1,8 +1,8 @@
 <script setup>
-// ERP 주간 찾기 명단(찾기 분석 하위) — shed로 들어온 사람을 이관받은 날 기준 기간으로. 섭외자·인도자·유입자·조력자·소속·찾기장소·단계, "섭외자/인도자" 복사
+// ERP 주간 찾기 명단(찾기 분석 하위) — shed로 들어와 아직 찾기 단계인 사람을 이관받은 날 기준 기간으로. 섭외자·인도자·유입자·조력자·소속·찾기장소, "섭외자/인도자" 복사
 import { ref, computed } from 'vue'
 import ErpRangePicker from './ErpRangePicker.vue'
-import { useErpLoad, weekOf, natCmp, regionLabel, districtLabel, fmtDateTime, stageTone } from './erpUtil'
+import { useErpLoad, weekOf, natCmp, regionLabel, districtLabel, fmtDateTime } from './erpUtil'
 import { usePopup } from '@/composables/usePopup'
 
 const { showToast } = usePopup()
@@ -12,7 +12,6 @@ const region = ref('')
 const loaded = ref(null)  // 조회한 기간 — 복사 글 머리에 씀
 async function run() { const r = { ...range.value }; if (await load(r)) loaded.value = r }
 
-const STAGE_NAME = { 유입: '찾기', 상따: '상연' }  // DB 값은 그대로, 보이는 이름만(10/14 명칭 변경)
 const regions = computed(() => [...new Set((data.value?.rows || []).map((r) => r.region_code).filter(Boolean))].sort(natCmp))
 const rows = computed(() => (data.value?.rows || []).filter((r) => !region.value || r.region_code === region.value))
 const byRegion = computed(() => Object.fromEntries(regions.value.map((rg) => [rg, (data.value?.rows || []).filter((r) => r.region_code === rg).length])))
@@ -50,13 +49,13 @@ function copy() {
                     <button class="erp-btn" style="margin-left: auto" :disabled="!rows.length" @click="copy">섭외자/인도자 복사</button>
                 </div>
                 <h3 class="erp-h3">
-                    {{ md(loaded.from) }}~{{ md(loaded.to) }} shed 이관 명단 <span class="erp-sub">{{ rows.length }}명 · 이관받은 순서 · 인도자는 합재양을 쓴 뒤에 생겨요 · 지역은 유입자 기준</span>
+                    {{ md(loaded.from) }}~{{ md(loaded.to) }} shed 이관 명단 — 찾기 단계만 <span class="erp-sub">{{ rows.length }}명 · 이관받은 순서 · 티엠 이후로 넘어간 사람은 빠져요 · 인도자는 합재양을 쓴 뒤에 생겨요 · 지역은 유입자 기준</span>
                 </h3>
-                <p v-if="!rows.length" class="erp-empty">이 기간에 이관받은 shed 명단이 없어요.</p>
+                <p v-if="!rows.length" class="erp-empty">이 기간에 이관받고 아직 찾기 단계인 사람이 없어요.</p>
                 <div v-else class="erp-table-wrap">
                     <table class="erp-table erp-table-left">
                         <thead>
-                            <tr><th scope="col">이관받은 날</th><th scope="col">섭외자</th><th scope="col">인도자</th><th scope="col">유입자</th><th scope="col">조력자</th><th scope="col">소속</th><th scope="col">찾기장소</th><th scope="col">단계</th></tr>
+                            <tr><th scope="col">이관받은 날</th><th scope="col">섭외자</th><th scope="col">인도자</th><th scope="col">유입자</th><th scope="col">조력자</th><th scope="col">소속</th><th scope="col">찾기장소</th></tr>
                         </thead>
                         <tbody>
                             <tr v-for="r in rows" :key="r.sarang_id">
@@ -67,7 +66,6 @@ function copy() {
                                 <td :class="{ 'erp-zero': !r.helper_names }">{{ r.helper_names || '—' }}</td>
                                 <td>{{ regionLabel(r.region_code) }} {{ districtLabel(r.district_code) }}</td>
                                 <td>{{ r.location || '—' }}</td>
-                                <td><span :class="['erp-stage', stageTone(r.stage)]">{{ STAGE_NAME[r.stage] || r.stage }}</span></td>
                             </tr>
                         </tbody>
                     </table>
