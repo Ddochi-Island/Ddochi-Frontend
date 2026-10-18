@@ -1,5 +1,5 @@
 <script setup>
-// ERP 주간 찾기 명단(찾기 분석 하위) — shed로 들어와 아직 찾기 단계인 사람을 이관받은 날 기준 기간으로. 섭외자·인도자·유입자·조력자·소속·찾기장소, 시트에 바로 붙는 표 복사(탭 구분)
+// ERP 주간 찾기 명단(찾기 분석 하위) — shed로 들어와 아직 찾기 단계인 사람을 이관받은 날 기준 기간으로. 섭외자·유입자·조력자·소속·찾기장소, 시트에 바로 붙는 표 복사(탭 구분)
 import { ref, computed } from 'vue'
 import ErpRangePicker from './ErpRangePicker.vue'
 import { useErpLoad, weekOf, natCmp, regionLabel, districtLabel, fmtDateTime } from './erpUtil'
@@ -24,9 +24,9 @@ const kst = (iso) => {
     return d.toISOString().slice(0, 16).replace('T', ' ')
 }
 function copy() {
-    const head = ['이관받은 날', '섭외자', '인도자', '유입자', '조력자', '지역', '구역', '찾기장소']
+    const head = ['이관받은 날', '섭외자', '유입자', '조력자', '지역', '구역', '찾기장소']
     const lines = rows.value.map((r) => [
-        kst(r.accepted_at), r.name, r.guide_name, r.introducer_name, r.helper_names,
+        kst(r.accepted_at), r.name, r.introducer_name, r.helper_names,
         r.region_code ? `${r.region_code}지역` : '', r.district_code ? `${r.district_code}구역` : '', r.location,
     ].map(cell).join('\t'))
     navigator.clipboard.writeText([head.join('\t'), ...lines].join('\n')).catch(() => {})
@@ -54,19 +54,18 @@ function copy() {
                     <button class="erp-btn" style="margin-left: auto" :disabled="!rows.length" @click="copy">시트용 복사</button>
                 </div>
                 <h3 class="erp-h3">
-                    {{ md(loaded.from) }}~{{ md(loaded.to) }} shed 이관 명단 — 찾기 단계만 <span class="erp-sub">{{ rows.length }}명 · 이관받은 순서 · 티엠 이후로 넘어간 사람은 빠져요 · 인도자는 합재양을 쓴 뒤에 생겨요 · 지역은 유입자 기준</span>
+                    {{ md(loaded.from) }}~{{ md(loaded.to) }} shed 이관 명단 — 찾기 단계만 <span class="erp-sub">{{ rows.length }}명 · 이관받은 순서 · 티엠 이후로 넘어간 사람은 빠져요 · 지역은 유입자 기준</span>
                 </h3>
                 <p v-if="!rows.length" class="erp-empty">이 기간에 이관받고 아직 찾기 단계인 사람이 없어요.</p>
                 <div v-else class="erp-table-wrap">
                     <table class="erp-table erp-table-left">
                         <thead>
-                            <tr><th scope="col">이관받은 날</th><th scope="col">섭외자</th><th scope="col">인도자</th><th scope="col">유입자</th><th scope="col">조력자</th><th scope="col">소속</th><th scope="col">찾기장소</th></tr>
+                            <tr><th scope="col">이관받은 날</th><th scope="col">섭외자</th><th scope="col">유입자</th><th scope="col">조력자</th><th scope="col">소속</th><th scope="col">찾기장소</th></tr>
                         </thead>
                         <tbody>
                             <tr v-for="r in rows" :key="r.sarang_id">
                                 <td>{{ fmtDateTime(r.accepted_at) }}</td>
                                 <td><b>{{ r.name }}</b></td>
-                                <td :class="{ 'erp-zero': !r.guide_name }">{{ r.guide_name || '—' }}</td>
                                 <td>{{ r.introducer_name || '—' }}</td>
                                 <td :class="{ 'erp-zero': !r.helper_names }">{{ r.helper_names || '—' }}</td>
                                 <td>{{ regionLabel(r.region_code) }} {{ districtLabel(r.district_code) }}</td>
