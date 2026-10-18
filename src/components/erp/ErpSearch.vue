@@ -62,6 +62,7 @@ const timeline = computed(() =>
                     <div><dt>지역</dt><dd>{{ regionLabel(info.region_code) }} {{ districtLabel(info.district_code) }}</dd></div>
                     <div><dt>찾기일</dt><dd>{{ fmtDate(info.inflow_date) }} · {{ info.recruitment_type === 'ONLINE' ? '온라인' : '오프라인' }}</dd></div>
                     <div><dt>유입자</dt><dd>{{ info.introducer_name || '—' }}</dd></div>
+                    <div v-if="info.helper_names"><dt>조력자</dt><dd>{{ info.helper_names }}</dd></div>
                     <div><dt>인도자</dt><dd>{{ info.guide_name || '—' }}</dd></div>
                     <div><dt>티엠자</dt><dd>{{ info.caller_name || '—' }}</dd></div>
                     <div><dt>교사</dt><dd>{{ info.teacher_name || '—' }}</dd></div>
