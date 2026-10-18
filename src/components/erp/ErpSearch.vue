@@ -1,7 +1,7 @@
 <script setup>
 // ERP 섭외 조회(OR001) — 이름/전화번호로 사랑이를 찾고, 누르면 유입부터 매칭까지 전체 이력을 보여줌 (구 ERP 섭외이력 조회 화면 모양)
 import { ref, computed } from 'vue'
-import { useErpLoad, regionLabel, districtLabel, fmtDate, fmtDateTime } from './erpUtil'
+import { useErpLoad, regionLabel, districtLabel, fmtDate, fmtDateTime, stageTone } from './erpUtil'
 
 const q = ref('')
 const search = useErpLoad('/api/erp/search')
@@ -50,7 +50,7 @@ const timeline = computed(() =>
             <p v-if="detail.loading.value" class="erp-empty">이력 불러오는 중…</p>
             <p v-else-if="detail.error.value" class="erp-error">{{ detail.error.value }}</p>
             <div v-else-if="info" class="erp-detail">
-                <div class="erp-detail-name">{{ info.name }} <span class="erp-stage">{{ stageName(info.stage) }}</span></div>
+                <div class="erp-detail-name">{{ info.name }} <span :class="['erp-stage', stageTone(info.stage)]">{{ stageName(info.stage) }}</span></div>
 
                 <ol class="erp-steps" :aria-label="`진행 단계: ${stageName(info.stage)}`">
                     <li v-for="(st, i) in STEPS" :key="st" :class="{ done: i < stepIndex, now: i === stepIndex }">{{ stageName(st) }}</li>
@@ -103,7 +103,7 @@ const timeline = computed(() =>
                             {{ p.guide_name || p.introducer_name || '—' }} {{ p.guide_name ? '인도' : '유입' }} · {{ regionLabel(p.region_code) }} {{ districtLabel(p.district_code) }} · {{ fmtDate(p.inflow_date) }}
                         </span>
                     </span>
-                    <span class="erp-stage">{{ stageName(p.stage) }}</span>
+                    <span :class="['erp-stage', stageTone(p.stage)]">{{ stageName(p.stage) }}</span>
                 </button>
                 <p v-if="search.data.value.list.length >= 100" class="erp-sub">최대 100명까지 보여요. 더 좁혀서 찾아보세요.</p>
             </template>

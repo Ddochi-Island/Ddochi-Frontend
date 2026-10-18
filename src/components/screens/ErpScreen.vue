@@ -182,6 +182,15 @@ details[open].erp-section > summary { margin-bottom: 10px; }
 .erp-row-name { font-size: 14px; font-weight: 600; }
 .erp-row-meta { font-size: 12px; color: var(--e-faint); margin-top: 2px; }
 .erp-stage { flex: none; font-size: 11px; font-weight: 500; color: var(--e-blue); background: var(--e-blue-soft); padding: 2px 10px; border-radius: 20px; white-space: nowrap; }
+/* 단계별 태그 색 (erpUtil.stageTone) — 글자는 같은 계열의 진한 색이라 흰 배경 위에서도 읽힘 */
+.erp-stage.st-find { color: #4E5968; background: #EEF0F3; }
+.erp-stage.st-tm { color: #086A8D; background: #E3F6FC; }
+.erp-stage.st-fix { color: #1B64DA; background: #E8F1FE; }
+.erp-stage.st-hjy { color: #3D4FC4; background: #ECEEFD; }
+.erp-stage.st-jaega { color: #7A3EC8; background: #F3EBFD; }
+.erp-stage.st-match { color: #9F4D00; background: #FFF1E2; }
+.erp-stage.st-consult { color: #1F7A38; background: #E6F5EA; }
+.erp-stage.st-after { color: #0E7C6B; background: #E2F6F2; }
 .erp-detail { background: #fff; border: 1px solid var(--e-line); border-radius: 12px; padding: 20px 24px; }
 .erp-detail-name { font-size: 20px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
 .erp-sec { font-size: 13px; font-weight: 700; margin: 20px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--e-bg); }

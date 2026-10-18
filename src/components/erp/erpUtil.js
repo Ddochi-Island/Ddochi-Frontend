@@ -65,3 +65,7 @@ export function fmtDate(iso) {
     if (!iso) return ''
     return new Date(iso).toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', year: '2-digit', month: 'numeric', day: 'numeric' })
 }
+
+// 단계 태그 색 — 진행 순서대로 회색 → 하늘·파랑 → 보라 → 주황 → 초록. 클래스는 ErpScreen.vue의 .erp-stage.st-*
+const STAGE_TONE = { 유입: 'find', 티엠: 'tm', 만픽: 'fix', 합재양: 'hjy', 재가: 'jaega', 매칭: 'match', 상따: 'consult' }
+export const stageTone = (stage) => 'st-' + (STAGE_TONE[stage] || 'after')  // 성홀·성따·복방·센 = after

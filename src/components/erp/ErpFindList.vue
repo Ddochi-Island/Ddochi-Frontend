@@ -2,7 +2,7 @@
 // ERP 주간 찾기 명단(찾기 분석 하위) — shed로 들어온 사람을 이관받은 날 기준 기간으로. 섭외자·인도자·유입자·조력자·소속·찾기장소·단계, "섭외자/인도자" 복사
 import { ref, computed } from 'vue'
 import ErpRangePicker from './ErpRangePicker.vue'
-import { useErpLoad, weekOf, natCmp, regionLabel, districtLabel, fmtDateTime } from './erpUtil'
+import { useErpLoad, weekOf, natCmp, regionLabel, districtLabel, fmtDateTime, stageTone } from './erpUtil'
 import { usePopup } from '@/composables/usePopup'
 
 const { showToast } = usePopup()
@@ -67,7 +67,7 @@ function copy() {
                                 <td :class="{ 'erp-zero': !r.helper_names }">{{ r.helper_names || '—' }}</td>
                                 <td>{{ regionLabel(r.region_code) }} {{ districtLabel(r.district_code) }}</td>
                                 <td>{{ r.location || '—' }}</td>
-                                <td><span class="erp-stage">{{ STAGE_NAME[r.stage] || r.stage }}</span></td>
+                                <td><span :class="['erp-stage', stageTone(r.stage)]">{{ STAGE_NAME[r.stage] || r.stage }}</span></td>
                             </tr>
                         </tbody>
                     </table>
