@@ -9,6 +9,7 @@ import ErpFunnel from '@/components/erp/ErpFunnel.vue'
 import ErpWeekly from '@/components/erp/ErpWeekly.vue'
 import ErpFind from '@/components/erp/ErpFind.vue'
 import ErpNames from '@/components/erp/ErpNames.vue'
+import ErpFindList from '@/components/erp/ErpFindList.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -17,6 +18,7 @@ const route = useRoute()
 const MENU = [
     { key: 'search', code: 'OR001', label: '섭외 조회', comp: ErpSearch },
     { key: 'find', code: 'ST001', label: '찾기 분석', comp: ErpFind },
+    { key: 'findList', code: 'ST011', label: '주간 찾기 명단', comp: ErpFindList, sub: true },  // 찾기 분석 하위
     { key: 'weekly', code: 'ST006', label: '주간 보고서', comp: ErpWeekly },
     { key: 'tm', code: 'ST002', label: 'TM 결과 집계', comp: ErpTmStats },
     { key: 'funnel', code: 'ST004', label: '전환 퍼널 분석', comp: ErpFunnel },
@@ -34,7 +36,7 @@ const exit = () => router.push({ name: 'home' })
             <div class="erp-divider"></div>
             <ul class="erp-menu">
                 <li v-for="t in MENU" :key="t.key">
-                    <button :class="['erp-menu-item', { active: t.key === active.key }]" :aria-current="t.key === active.key ? 'page' : null"
+                    <button :class="['erp-menu-item', { active: t.key === active.key, sub: t.sub }]" :aria-current="t.key === active.key ? 'page' : null"
                             @click="setTab(t.key)">{{ t.label }}</button>
                 </li>
             </ul>
@@ -70,6 +72,8 @@ const exit = () => router.push({ name: 'home' })
     font-size: 13px; font-weight: 500; color: var(--e-sub); cursor: pointer; }
 .erp-menu-item:hover { background: var(--e-bg); color: var(--e-text); }
 .erp-menu-item.active { background: var(--e-blue-soft); color: var(--e-blue); font-weight: 700; }
+.erp-menu-item.sub { padding-left: 28px; font-size: 12px; }
+.erp-menu-item.sub::before { content: 'ㄴ '; color: var(--e-faint); }
 .erp-exit { margin-top: auto; border: none; background: none; padding: 10px 14px; text-align: left; font-size: 13px; color: var(--e-faint); cursor: pointer; border-radius: 8px; }
 .erp-exit:hover { background: var(--e-bg); color: var(--e-text); }
 
