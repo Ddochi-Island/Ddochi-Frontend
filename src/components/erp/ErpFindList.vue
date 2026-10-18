@@ -1,5 +1,5 @@
 <script setup>
-// ERP 주간 찾기 명단(찾기 분석 하위) — shed로 들어와 아직 찾기 단계인 사람을 이관받은 날 기준 기간으로. 섭외자·인도자·유입자·조력자·소속·찾기장소, "섭외자/인도자" 복사
+// ERP 주간 찾기 명단(찾기 분석 하위) — shed로 들어와 아직 찾기 단계인 사람을 이관받은 날 기준 기간으로. 섭외자·인도자·유입자·조력자·소속·찾기장소, 시트에 바로 붙는 표 복사(탭 구분)
 import { ref, computed } from 'vue'
 import ErpRangePicker from './ErpRangePicker.vue'
 import { useErpLoad, weekOf, natCmp, regionLabel, districtLabel, fmtDateTime } from './erpUtil'
@@ -17,15 +17,20 @@ const rows = computed(() => (data.value?.rows || []).filter((r) => !region.value
 const byRegion = computed(() => Object.fromEntries(regions.value.map((rg) => [rg, (data.value?.rows || []).filter((r) => r.region_code === rg).length])))
 
 const md = (ymd) => `${Number(ymd.slice(5, 7))}/${Number(ymd.slice(8, 10))}`
+// 스프레드시트에 그대로 붙게 탭 구분(TSV) — 첫 줄은 열 이름. 칸 안의 탭·줄바꿈은 공백으로 바꿔 칸이 밀리지 않게
+const cell = (v) => String(v ?? '').replace(/[\t\r\n]+/g, ' ').trim()
+const kst = (iso) => {
+    const d = new Date(new Date(iso).getTime() + 9 * 3600e3)  // KST로 옮겨서 YYYY-MM-DD HH:mm
+    return d.toISOString().slice(0, 16).replace('T', ' ')
+}
 function copy() {
-    const scope = region.value ? regionLabel(region.value) : '전체'
-    const text = [
-        `[주간 찾기 명단] ${md(loaded.value.from)}~${md(loaded.value.to)} · ${scope} · ${rows.value.length}명`,
-        '섭외자/인도자',
-        ...rows.value.map((r) => `- ${r.name}/${r.guide_name || '-'}`),
-    ].join('\n')
-    navigator.clipboard.writeText(text).catch(() => {})
-    showToast('📋 명단 복사됨')
+    const head = ['이관받은 날', '섭외자', '인도자', '유입자', '조력자', '지역', '구역', '찾기장소']
+    const lines = rows.value.map((r) => [
+        kst(r.accepted_at), r.name, r.guide_name, r.introducer_name, r.helper_names,
+        r.region_code ? `${r.region_code}지역` : '', r.district_code ? `${r.district_code}구역` : '', r.location,
+    ].map(cell).join('\t'))
+    navigator.clipboard.writeText([head.join('\t'), ...lines].join('\n')).catch(() => {})
+    showToast(`📋 ${rows.value.length}명 복사됨 — 시트에 붙여넣으세요`)
 }
 </script>
 
@@ -46,7 +51,7 @@ function copy() {
                     <button v-for="rg in regions" :key="rg" :class="['erp-chip', { on: region === rg }]" :aria-pressed="region === rg" @click="region = rg">
                         {{ regionLabel(rg) }} {{ byRegion[rg] }}
                     </button>
-                    <button class="erp-btn" style="margin-left: auto" :disabled="!rows.length" @click="copy">섭외자/인도자 복사</button>
+                    <button class="erp-btn" style="margin-left: auto" :disabled="!rows.length" @click="copy">시트용 복사</button>
                 </div>
                 <h3 class="erp-h3">
                     {{ md(loaded.from) }}~{{ md(loaded.to) }} shed 이관 명단 — 찾기 단계만 <span class="erp-sub">{{ rows.length }}명 · 이관받은 순서 · 티엠 이후로 넘어간 사람은 빠져요 · 인도자는 합재양을 쓴 뒤에 생겨요 · 지역은 유입자 기준</span>
