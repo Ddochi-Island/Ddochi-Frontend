@@ -1,5 +1,5 @@
 <script setup>
-// ERP 주간 찾기 명단(찾기 분석 하위) — shed로 들어온 사람을 이관받은 날 기준 기간으로. 섭외자·인도자·유입자·소속·찾기장소·단계, "섭외자/인도자" 복사
+// ERP 주간 찾기 명단(찾기 분석 하위) — shed로 들어온 사람을 이관받은 날 기준 기간으로. 섭외자·인도자·유입자·조력자·소속·찾기장소·단계, "섭외자/인도자" 복사
 import { ref, computed } from 'vue'
 import ErpRangePicker from './ErpRangePicker.vue'
 import { useErpLoad, weekOf, natCmp, regionLabel, districtLabel, fmtDateTime } from './erpUtil'
@@ -56,7 +56,7 @@ function copy() {
                 <div v-else class="erp-table-wrap">
                     <table class="erp-table erp-table-left">
                         <thead>
-                            <tr><th scope="col">이관받은 날</th><th scope="col">섭외자</th><th scope="col">인도자</th><th scope="col">유입자</th><th scope="col">소속</th><th scope="col">찾기장소</th><th scope="col">단계</th></tr>
+                            <tr><th scope="col">이관받은 날</th><th scope="col">섭외자</th><th scope="col">인도자</th><th scope="col">유입자</th><th scope="col">조력자</th><th scope="col">소속</th><th scope="col">찾기장소</th><th scope="col">단계</th></tr>
                         </thead>
                         <tbody>
                             <tr v-for="r in rows" :key="r.sarang_id">
@@ -64,6 +64,7 @@ function copy() {
                                 <td><b>{{ r.name }}</b></td>
                                 <td :class="{ 'erp-zero': !r.guide_name }">{{ r.guide_name || '—' }}</td>
                                 <td>{{ r.introducer_name || '—' }}</td>
+                                <td :class="{ 'erp-zero': !r.helper_names }">{{ r.helper_names || '—' }}</td>
                                 <td>{{ regionLabel(r.region_code) }} {{ districtLabel(r.district_code) }}</td>
                                 <td>{{ r.location || '—' }}</td>
                                 <td><span class="erp-stage">{{ STAGE_NAME[r.stage] || r.stage }}</span></td>
