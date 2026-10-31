@@ -10,6 +10,7 @@ import ErpWeekly from '@/components/erp/ErpWeekly.vue'
 import ErpFind from '@/components/erp/ErpFind.vue'
 import ErpNames from '@/components/erp/ErpNames.vue'
 import ErpFindList from '@/components/erp/ErpFindList.vue'
+import ErpMatchList from '@/components/erp/ErpMatchList.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -19,6 +20,7 @@ const MENU = [
     { key: 'search', code: 'OR001', label: '섭외 조회', comp: ErpSearch },
     { key: 'find', code: 'ST001', label: '찾기 분석', comp: ErpFind },
     { key: 'findList', code: 'ST011', label: '주간 찾기 명단', comp: ErpFindList, sub: true },  // 찾기 분석 하위
+    { key: 'matchList', code: 'ST012', label: '매칭 명단', comp: ErpMatchList },
     { key: 'weekly', code: 'ST006', label: '주간 보고서', comp: ErpWeekly },
     { key: 'tm', code: 'ST002', label: 'TM 결과 집계', comp: ErpTmStats },
     { key: 'funnel', code: 'ST004', label: '전환 퍼널 분석', comp: ErpFunnel },
