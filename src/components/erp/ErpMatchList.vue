@@ -22,12 +22,10 @@ const rows = computed(() => inRegion.value.filter((r) => !group.value || r.guide
 const count = (list, key, v) => list.filter((r) => r[key] === v).length
 
 const md = (ymd) => `${Number(ymd.slice(5, 7))}/${Number(ymd.slice(8, 10))}`
-// 시트처럼 M/D. 시간대 붙은 값(Z/+09:00)은 KST로 옮기고, 없는 값(MATCHED_AT 등 벽시계 시각)은 그대로 날짜만
-function day(iso) {
-    if (!iso) return ''
-    const s = /(Z|[+-]\d\d:?\d\d)$/.test(iso) ? new Date(new Date(iso).getTime() + 9 * 3600e3).toISOString() : iso
-    return md(s.slice(0, 10))
-}
+// 시트처럼 M/D. 만남 픽스(fix_at)는 실제 시각이라 KST로 옮기고, 만남 날짜(MATCHED_AT·만남 예정일)는
+// 입력한 벽시계 시각이 Z 붙은 채 저장돼 있어서 옮기지 않고 날짜만(옮기면 저녁 만남이 다음 날로 밀림)
+const day = (iso) => (iso ? md(iso.slice(0, 10)) : '')
+const kstDay = (iso) => (iso ? day(new Date(new Date(iso).getTime() + 9 * 3600e3).toISOString()) : '')
 const onOff = (t) => (t === 'ONLINE' ? '온라인' : t === 'OFFLINE' ? '오프라인' : '')
 const dist = (d) => (d ? `${d}구역` : '')
 // 스프레드시트에 그대로 붙게 탭 구분(TSV) — 칸 안의 탭·줄바꿈은 공백으로
@@ -36,7 +34,7 @@ function copy() {
     const head = ['합당한자 날짜', '인도 지역', '인도 반', '인도 구역', '교사 지역', '교사 반', '교사 구역', '섭', '인', '교',
         '유형', '도구이름', '온/오프라인', '최초만남 예정날짜', '최초만남 진행결과', '이후만남 진행결과', '상담연결 날짜']
     const lines = rows.value.map((r) => [
-        day(r.fix_at), r.guide_region ? regionLabel(r.guide_region) : '', r.guide_group, dist(r.guide_district),
+        kstDay(r.fix_at), r.guide_region ? regionLabel(r.guide_region) : '', r.guide_group, dist(r.guide_district),
         r.teacher_region ? regionLabel(r.teacher_region) : '', r.teacher_group, dist(r.teacher_district),
         r.name, r.guide_name, r.teacher_name, r.route, r.tool, onOff(r.recruitment_type),
         day(r.first_at), r.first_result, r.later_result, day(r.consult_at),
@@ -87,7 +85,7 @@ function copy() {
                         </thead>
                         <tbody>
                             <tr v-for="r in rows" :key="r.sarang_id">
-                                <td>{{ day(r.fix_at) }}</td>
+                                <td>{{ kstDay(r.fix_at) }}</td>
                                 <td>{{ r.guide_region ? regionLabel(r.guide_region) : '—' }} {{ r.guide_group || '' }} {{ dist(r.guide_district) }}</td>
                                 <td :class="{ 'erp-zero': !r.teacher_region }">{{ r.teacher_region ? `${regionLabel(r.teacher_region)} ${r.teacher_group || ''} ${dist(r.teacher_district)}` : '—' }}</td>
                                 <td><b>{{ r.name }}</b></td>
