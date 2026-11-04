@@ -24,6 +24,11 @@ export default defineConfig({
         target: 'http://localhost:8081',
         changeOrigin: true,
       },
+      // 합당한 자 실시간 웹소켓 — tel_router_py(uvicorn :8090)
+      '/ws': {
+        target: 'ws://localhost:8090',
+        ws: true,
+      },
     },
   },
   // npm run preview 도 dev 와 동일하게 main 으로 라우팅. vite 5.x 부터

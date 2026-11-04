@@ -12,6 +12,7 @@ import GachaSlotOverlay from '@/components/screens/GachaSlotOverlay.vue'
 import DuplicateHistoryPopup from '@/components/screens/popups/DuplicateHistoryPopup.vue'
 import MyTmLogPopup from '@/components/screens/popups/MyTmLogPopup.vue'
 import TmMemoThread from '@/components/screens/TmMemoThread.vue'
+import { useRealtime } from '@/composables/useRealtime'
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxeppzAwBF4n0uSXjvaD7lZBLfdoA3kX_V4VXcb6cuX7ckOXZ6WLTIPqFbeuqraDVMLTw/exec'
 
@@ -603,6 +604,29 @@ async function pollCalls() {
 }
 
 function startPolling() { pollCalls(); pollTimer = setInterval(pollCalls, 3500) }
+
+// ── 실시간 — 다른 사람이 기록·메모·이관받기 등을 하면 바로 새로고침(내가 한 건 이미 새로고침함).
+// 목록 응답이 커서(수백 명) 서버가 몰리지 않게: 연이은 신호는 모아서 한 번, 보는 사람마다 1~3초로 흩어서, 안 보는 탭은 돌아올 때 한 번
+let realtimeTimer = null
+let realtimeDirty = false
+function reloadSoon() {
+  if (document.hidden) { realtimeDirty = true; return }
+  clearTimeout(realtimeTimer)
+  realtimeTimer = setTimeout(load, 1000 + Math.random() * 2000)
+}
+function onVisible() { if (!document.hidden && realtimeDirty) { realtimeDirty = false; reloadSoon() } }
+document.addEventListener('visibilitychange', onVisible)
+if (!isPractice) {
+  useRealtime({
+    onMessage: (m) => {
+      if (m.by && m.by === auth.currentSabun) return
+      if (m.topic === 'calls') pollCalls()
+      else reloadSoon()
+    },
+    onReconnect: reloadSoon,
+  })
+}
+onUnmounted(() => { clearTimeout(realtimeTimer); document.removeEventListener('visibilitychange', onVisible) })
 function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null } }
 
 // ── 접속자 현황 ───────────────────────────────────────────────────────
