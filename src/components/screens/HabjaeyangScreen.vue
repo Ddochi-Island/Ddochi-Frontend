@@ -31,7 +31,7 @@ const auth = useAuthStore()
 const tm = useTmStore()
 const ui = useUiStore()
 const { callApi, callApiPromise } = useApi()
-const { showAppAlert } = usePopup()
+const { showAppAlert, showAppConfirm } = usePopup()
 const { autoResize, moveFocus } = useFormatters()
 
 const formData = reactive({})
@@ -123,10 +123,11 @@ onMounted(() => {
         // 추가 전에 저장된 draft라 mbti가 비어있음)으로 방금 넣은 값을 덮어쓸 수 있어서,
         // 번호찾 정보가 임시저장보다 우선하도록 다시 한번 덮어씀.
         if (ctx.mbti) formData.mbti = ctx.mbti
-        if (ctx.introducer) selectAc('inflow', ctx.introducer)
-    } else {
-        initForm()
+        if (ctx.introducer && !inflowName.value) selectAc('inflow', ctx.introducer)
+    } else if (!initForm()) {
+        offerResume()
     }
+    nextTick(() => { draftReady = true })
     callApi('/api/get-tool-configs', {}, res => {
         if (res?.list) toolOpts.value = res.list.map(t => t.toolName)
     })
@@ -139,6 +140,7 @@ function initForm() {
     const idx = tm.currentTmIndex
     const isValidIdx = idx !== null && idx !== undefined && Number.isFinite(idx) && idx >= 0 && idx < tm.tmDataList.length
     if (isValidIdx) populateFromTmItem(tm.tmDataList[idx])
+    return isValidIdx
 }
 
 function populateFromTmItem(item) {
@@ -192,27 +194,58 @@ function handlePhoneFocus(el, max, nextId) { moveFocus(el, max, nextId) }
 function onPhone3Input(event) { if (phone3.value.length >= 4) event.target.blur() }
 function handleAutoResize(event) { autoResize(event.target) }
 
-const DRAFT_KEY = () => currentDocId.value ? `hj_draft_${currentDocId.value}` : null
+// 임시저장 — 칸을 바꿀 때마다 기기에 저장(사람별 hj_draft_<docId>, 새 합재양은 hj_draft_new).
+// 뒤로 가기·앱 꺼짐 뒤 맥락(어느 사람 합재양인지) 없이 들어와도 이어 쓸 수 있게 마지막 작성 중 건을 LAST_KEY에 따로 남김
+const DRAFT_KEY = () => currentDocId.value ? `hj_draft_${currentDocId.value}` : 'hj_draft_new'
+const LAST_KEY = 'hj_draft_last'
+let draftReady = false  // 처음 채우는 중(번호찾 정보·예전 임시저장)엔 저장 안 함 — 손댄 뒤부터 저장
 function saveDraft() {
-    const key = DRAFT_KEY(); if (!key) return
-    try { localStorage.setItem(key, JSON.stringify({ formData: { ...formData }, phone1: phone1.value, phone2: phone2.value, phone3: phone3.value })) } catch (_) {}
+    if (!draftReady) return
+    try {
+        localStorage.setItem(DRAFT_KEY(), JSON.stringify({
+            formData: { ...formData }, phone1: phone1.value, phone2: phone2.value, phone3: phone3.value,
+            inflowName: inflowName.value, verbalManFix: verbalManFix.value,
+        }))
+        localStorage.setItem(LAST_KEY, JSON.stringify({ key: DRAFT_KEY(), docId: currentDocId.value, ctx: tm.shedContext, name: formData.subName || '' }))
+    } catch (_) {}
 }
 function loadDraft() {
-    const key = DRAFT_KEY(); if (!key) return
     try {
-        const raw = localStorage.getItem(key); if (!raw) return
+        const raw = localStorage.getItem(DRAFT_KEY()); if (!raw) return
         const d = JSON.parse(raw)
         if (d.formData) Object.assign(formData, d.formData)
         if (d.phone1) phone1.value = d.phone1
         if (d.phone2) phone2.value = d.phone2
         if (d.phone3) phone3.value = d.phone3
+        if (d.inflowName) inflowName.value = d.inflowName
+        if (d.verbalManFix) verbalManFix.value = d.verbalManFix
+        // 자동완성 칸은 acQuery를 보여줘서 같이 맞춰야 화면에 보임
+        for (const [field, val] of [['guide', formData.guide], ['tmName', formData.tmName], ['inflow', inflowName.value]]) {
+            if (val) { acQuery[field] = val; acConfirmed[field] = true; acStatus[field] = 'valid' }
+        }
     } catch (_) {}
 }
 function clearDraft() {
-    const key = DRAFT_KEY(); if (!key) return
-    try { localStorage.removeItem(key) } catch (_) {}
+    try { localStorage.removeItem(DRAFT_KEY()); localStorage.removeItem(LAST_KEY) } catch (_) {}
 }
-watch(formData, saveDraft, { deep: true })
+// 아무 맥락 없이 열렸는데(새로고침·앱 다시 켬) 작성 중이던 건이 있으면 이어 쓸지 물어봄
+function offerResume() {
+    let last = null
+    try { last = JSON.parse(localStorage.getItem(LAST_KEY) || 'null') } catch (_) {}
+    if (!last || !localStorage.getItem(last.key)) return
+    showAppConfirm(`작성 중이던 합재양${last.name ? `(${last.name})` : ''}이 있어. 이어서 쓸까?`, (yes) => {
+        if (!yes) {
+            try { localStorage.removeItem(LAST_KEY); if (!last.docId) localStorage.removeItem(last.key) } catch (_) {}
+            return
+        }
+        draftReady = false
+        if (last.ctx) tm.shedContext = last.ctx
+        currentDocId.value = last.docId || null
+        loadDraft()
+        nextTick(() => { document.querySelectorAll('.auto-textarea').forEach(el => autoResize(el)); draftReady = true })
+    }, { yesLabel: '이어 쓰기', noLabel: '새로 쓰기' })
+}
+watch([formData, phone1, phone2, phone3, inflowName, verbalManFix], saveDraft, { deep: true })
 
 function collectSubmitData() {
     const guideName = (formData.guide || '').trim()
