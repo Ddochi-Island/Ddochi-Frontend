@@ -1,5 +1,5 @@
 <script setup>
-// ERP 매칭 명단 — 구 매칭 시트처럼 만남 픽스 날 기준 기간 안 합재양 쓴 사람 한 줄씩. 인도 지역·반으로 좁히고 시트용(탭 구분) 복사
+// ERP 매칭 명단 — 구 매칭 시트처럼 합당한자 날짜(만남 픽스 날, 최초 만남이 3일 넘게 뒤면 그 3일 전) 기준 기간 안 합재양 쓴 사람 한 줄씩. 인도 지역·반으로 좁히고 시트용(탭 구분) 복사
 import { ref, computed, watch } from 'vue'
 import ErpRangePicker from './ErpRangePicker.vue'
 import { useErpLoad, monthOf, natCmp, regionLabel } from './erpUtil'
@@ -22,10 +22,9 @@ const rows = computed(() => inRegion.value.filter((r) => !group.value || r.guide
 const count = (list, key, v) => list.filter((r) => r[key] === v).length
 
 const md = (ymd) => `${Number(ymd.slice(5, 7))}/${Number(ymd.slice(8, 10))}`
-// 시트처럼 M/D. 만남 픽스(fix_at)는 실제 시각이라 KST로 옮기고, 만남 날짜(MATCHED_AT·만남 예정일)는
+// 시트처럼 M/D. 합당한자 날짜(hap_date)는 서버가 KST 날짜로 줌. 만남 날짜(MATCHED_AT·만남 예정일)는
 // 입력한 벽시계 시각이 Z 붙은 채 저장돼 있어서 옮기지 않고 날짜만(옮기면 저녁 만남이 다음 날로 밀림)
 const day = (iso) => (iso ? md(iso.slice(0, 10)) : '')
-const kstDay = (iso) => (iso ? day(new Date(new Date(iso).getTime() + 9 * 3600e3).toISOString()) : '')
 const onOff = (t) => (t === 'ONLINE' ? '온라인' : t === 'OFFLINE' ? '오프라인' : '')
 const dist = (d) => (d ? `${d}구역` : '')
 // 스프레드시트에 그대로 붙게 탭 구분(TSV) — 칸 안의 탭·줄바꿈은 공백으로
@@ -34,7 +33,7 @@ function copy() {
     const head = ['합당한자 날짜', '인도 지역', '인도 반', '인도 구역', '교사 지역', '교사 반', '교사 구역', '섭', '인', '교',
         '유형', '도구이름', '온/오프라인', '최초만남 예정날짜', '최초만남 진행결과', '이후만남 진행결과', '상담연결 날짜']
     const lines = rows.value.map((r) => [
-        kstDay(r.fix_at), r.guide_region ? regionLabel(r.guide_region) : '', r.guide_group, dist(r.guide_district),
+        day(r.hap_date), r.guide_region ? regionLabel(r.guide_region) : '', r.guide_group, dist(r.guide_district),
         r.teacher_region ? regionLabel(r.teacher_region) : '', r.teacher_group, dist(r.teacher_district),
         r.name, r.guide_name, r.teacher_name, r.route, r.tool, onOff(r.recruitment_type),
         day(r.first_at), r.first_result, r.later_result, day(r.consult_at),
@@ -47,7 +46,7 @@ function copy() {
 <template>
     <section>
         <div class="erp-bar">
-            <span class="erp-label">만남 픽스 날</span>
+            <span class="erp-label">합당한자 날짜</span>
             <ErpRangePicker v-model="range" />
             <button class="erp-btn" :disabled="loading" @click="run">🔍 조회</button>
         </div>
@@ -70,9 +69,9 @@ function copy() {
                     </button>
                 </div>
                 <h3 class="erp-h3">
-                    {{ md(loaded.from) }}~{{ md(loaded.to) }} 매칭 명단 <span class="erp-sub">{{ rows.length }}명 · 만남 픽스 순서 · 소속은 인도자·교사의 지금 소속</span>
+                    {{ md(loaded.from) }}~{{ md(loaded.to) }} 매칭 명단 <span class="erp-sub">{{ rows.length }}명 · 합당한자 날짜 순서 · 날짜는 만남 픽스 날(최초 만남이 3일 넘게 뒤면 그 3일 전) · 소속은 인도자·교사의 지금 소속</span>
                 </h3>
-                <p v-if="!rows.length" class="erp-empty">이 기간에 만남 픽스한 사람이 없어요.</p>
+                <p v-if="!rows.length" class="erp-empty">이 기간에 합당한자 날짜인 사람이 없어요.</p>
                 <div v-else class="erp-table-wrap">
                     <table class="erp-table erp-table-left erp-match-table">
                         <thead>
@@ -85,7 +84,7 @@ function copy() {
                         </thead>
                         <tbody>
                             <tr v-for="r in rows" :key="r.sarang_id">
-                                <td>{{ kstDay(r.fix_at) }}</td>
+                                <td>{{ day(r.hap_date) }}</td>
                                 <td>{{ r.guide_region ? regionLabel(r.guide_region) : '—' }} {{ r.guide_group || '' }} {{ dist(r.guide_district) }}</td>
                                 <td :class="{ 'erp-zero': !r.teacher_region }">{{ r.teacher_region ? `${regionLabel(r.teacher_region)} ${r.teacher_group || ''} ${dist(r.teacher_district)}` : '—' }}</td>
                                 <td><b>{{ r.name }}</b></td>
@@ -104,7 +103,7 @@ function copy() {
                 </div>
             </div>
         </template>
-        <p v-else class="erp-empty">만남 픽스한 기간을 고르고 🔍 조회를 누르세요.</p>
+        <p v-else class="erp-empty">합당한자 날짜 기간을 고르고 🔍 조회를 누르세요.</p>
     </section>
 </template>
 
