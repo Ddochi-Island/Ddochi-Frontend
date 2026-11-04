@@ -11,6 +11,7 @@ import { useRoles } from '@/composables/useRoles'
 import GachaSlotOverlay from '@/components/screens/GachaSlotOverlay.vue'
 import DuplicateHistoryPopup from '@/components/screens/popups/DuplicateHistoryPopup.vue'
 import MyTmLogPopup from '@/components/screens/popups/MyTmLogPopup.vue'
+import TmMemoThread from '@/components/screens/TmMemoThread.vue'
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxeppzAwBF4n0uSXjvaD7lZBLfdoA3kX_V4VXcb6cuX7ckOXZ6WLTIPqFbeuqraDVMLTw/exec'
 
@@ -139,8 +140,8 @@ const unregPhoneOpen = reactive({})
 
 // ── TM 노트 ───────────────────────────────────────────────────────────
 const noteToggles = reactive({})     // { [docId]: Set<string> }
-const noteText = reactive({})        // { [docId]: string }
-const noteTimers = reactive({})
+const memos = reactive({})           // { [docId]: [{ id, authorId, authorName, content, createdAt, updatedAt }] } — 통화 메모(댓글)
+const canManageMemos = ref(false)    // 지역장 이상 — 남의 메모도 수정·삭제
 
 const NOTE_TAGS = [
   '거주지', '과천까지', '센터까지', 'MBTI', '학교(직장)',
@@ -503,8 +504,8 @@ const searchTmDoneList = computed(() => {
 function initNoteState(p) {
   if (noteToggles[p.docId] === undefined) {
     noteToggles[p.docId] = new Set(p.tmNote?.toggles || [])
-    noteText[p.docId] = p.tmNote?.text || ''
   }
+  memos[p.docId] = p.memos || []
 }
 
 async function load() {
@@ -538,6 +539,7 @@ async function load() {
       lastTmLine: p.timeline?.[0]?.label || null,
       lastTmTs: p.timeline?.[0]?.createdAt || null,
     })) : []
+    canManageMemos.value = !!ddochiRes?.canManageMemos
     for (const p of allShedProspects.value) initNoteState(p)
   } catch (e) {
     error.value = e.message
@@ -688,21 +690,6 @@ function toggleTag(docId, tag) {
   if (!noteToggles[docId]) noteToggles[docId] = new Set()
   if (noteToggles[docId].has(tag)) noteToggles[docId].delete(tag)
   else noteToggles[docId].add(tag)
-  scheduleNoteSave(docId)
-}
-
-function onNoteInput(docId, e) {
-  noteText[docId] = e.target.value
-  scheduleNoteSave(docId)
-}
-
-function scheduleNoteSave(docId) {
-  if (noteTimers[docId]) clearTimeout(noteTimers[docId])
-  noteTimers[docId] = setTimeout(() => {
-    callApiPromise('/api/shed-note-save', {
-      data: { prospectId: docId.toUpperCase(), toggles: Array.from(noteToggles[docId] || []), text: noteText[docId] || '' },
-    })
-  }, 800)
 }
 
 // ── TM 액션 ───────────────────────────────────────────────────────────
@@ -816,7 +803,7 @@ function goHabjaeyang(p) {
     age: p.age,
     mbti: p.mbti,
     introducer: p.shedMeta?.introducer,
-    memo: noteText[p.docId] || p.tmNote?.text || '',
+    memo: (memos[p.docId] || []).map(m => m.content).join('\n'),
     returnTo: route.name,  // 합재양 저장 뒤 돌아올 화면(합당한자/선한 양치기/질적 찾기)
   }
   router.push({ name: 'habjaeyang' })
@@ -1354,13 +1341,8 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                   @click="toggleTag(p.docId, tag)"
                 >{{ noteToggles[p.docId]?.has(tag) ? '✓ ' + tag : tag }}</button>
               </div>
-              <textarea
-                class="sy-note-text"
-                :value="noteText[p.docId]"
-                @input="onNoteInput(p.docId, $event)"
-                placeholder="자유롭게 메모..."
-                rows="4"
-              ></textarea>
+              <TmMemoThread :sarang-id="p.docId" :memos="memos[p.docId] || []" :my-id="auth.currentSabun"
+                :can-manage="canManageMemos" :api="callApiPromise" @update="memos[p.docId] = $event" />
             </div>
 
           </div>
@@ -1474,10 +1456,8 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                   :class="{ on: noteToggles[callingProspect.docId]?.has(tag) }"
                   @click="toggleTag(callingProspect.docId, tag)">{{ noteToggles[callingProspect.docId]?.has(tag) ? '✓ ' + tag : tag }}</button>
               </div>
-              <textarea class="sy-note-text"
-                :value="noteText[callingProspect.docId]"
-                @input="onNoteInput(callingProspect.docId, $event)"
-                placeholder="자유롭게 메모..." rows="4"></textarea>
+              <TmMemoThread :sarang-id="callingProspect.docId" :memos="memos[callingProspect.docId] || []" :my-id="auth.currentSabun"
+                :can-manage="canManageMemos" :api="callApiPromise" @update="memos[callingProspect.docId] = $event" />
             </div>
           </div>
         </template>
@@ -1943,14 +1923,6 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
 }
 .sy-note-tag.on {
   background: #2E7D32; border-color: #2E7D32; color: #fff;
-}
-
-.sy-note-text {
-  width: 100%; box-sizing: border-box;
-  border: 1px solid #c5e1a5; border-radius: 8px;
-  padding: 8px; font-size: 12px; resize: vertical;
-  font-family: "Noto Sans KR", Arial, sans-serif;
-  background: #fafff5;
 }
 
 .sy-empty { text-align: center; padding: 36px; color: #aaa; font-size: 13px; }
