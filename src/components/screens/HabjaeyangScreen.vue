@@ -109,10 +109,6 @@ watch(() => formData.path, (newPath) => {
     if (newPath !== '도구노방' && newPath !== '생노') verbalManFix.value = 'X'
 })
 
-// 번호찾 팝업 (합재양 제출 전 확인)
-const regPopupState = ref(null) // null | 'confirm' | 'register'
-const regPopupEntries = ref([])
-const pendingSubmitData = ref(null)
 
 onMounted(() => {
     if (tm.shedContext) {
@@ -272,53 +268,11 @@ function collectSubmitData() {
     return data
 }
 
-async function submitHabjaeyang() {
+function submitHabjaeyang() {
     if (submitting.value || ui.isProcessing) return
     const submitData = collectSubmitData()
     if (!submitData) return
-    pendingSubmitData.value = submitData
-
-    const path = submitData.path || ''
-    const subName = submitData.subName || ''
-    if ((path === '도구노방' || path === '생노') && subName) {
-        submitting.value = true
-        ui.setProcessing(true)
-        try {
-            const r = await callApiPromise('/api/daily-report/search-reg', { name: subName })
-            const entries = (r?.success ? r.entries : []) || []
-            regPopupEntries.value = entries
-            regPopupState.value = entries.length > 0 ? 'confirm' : 'register'
-        } catch {
-            regPopupState.value = 'register'
-        } finally {
-            submitting.value = false
-            ui.setProcessing(false)
-        }
-        return
-    }
     doActualSubmit(submitData)
-}
-
-function onRegConfirmYes() {
-    regPopupState.value = null
-    doActualSubmit(pendingSubmitData.value)
-}
-function onRegConfirmNo() {
-    regPopupState.value = 'register'
-}
-function onRegRegisterYes() {
-    const submitData = pendingSubmitData.value
-    regPopupState.value = null
-    callApiPromise('/api/daily-report/add-reg-entry', {
-        name: submitData.subName,
-        verbalManFix: submitData.verbalManFix,
-        result: '만픽',
-    }).catch(() => {})
-    doActualSubmit(submitData)
-}
-function onRegRegisterNo() {
-    regPopupState.value = null
-    doActualSubmit(pendingSubmitData.value)
 }
 
 function finishAndGoHome(message) {
@@ -697,44 +651,6 @@ onUnmounted(() => {
             {{ submitting ? '제출 중...' : '제출하기 📨' }}
         </button>
 
-        <!-- 번호찾 확인 팝업 -->
-        <teleport to="body">
-            <div v-if="regPopupState" class="reg-overlay">
-                <!-- 기존 기록 확인 -->
-                <div v-if="regPopupState === 'confirm'" class="reg-popup">
-                    <div class="reg-popup-header-row">
-                        <span>🔍 번호찾 기록 확인</span>
-                        <span class="reg-close" @click="regPopupState = null">×</span>
-                    </div>
-                    <p class="reg-popup-desc">오늘 같은 이름으로 번호찾 기록이 있어요.<br>이 인원이 맞나요?</p>
-                    <div class="reg-entry-list">
-                        <div v-for="(e, i) in regPopupEntries" :key="i" class="reg-entry-row">
-                            <span class="reg-tag reg-name">{{ e.name }}</span>
-                            <span class="reg-tag reg-submitter">{{ e.submitterName }}</span>
-                            <span class="reg-tag reg-vmf" :class="{ 'vmf-yes': e.verbalManFix === 'O' }">{{ e.verbalManFix === 'O' ? '구두만픽' : '일반' }}</span>
-                            <span class="reg-tag reg-result">{{ e.result }}</span>
-                        </div>
-                    </div>
-                    <div class="reg-popup-btns">
-                        <button class="reg-btn reg-btn-yes" @click="onRegConfirmYes">✅ 맞아, 진행할게</button>
-                        <button class="reg-btn reg-btn-no" @click="onRegConfirmNo">❌ 아니야, 다른 인원이야</button>
-                    </div>
-                </div>
-                <!-- 번호찾 등록 -->
-                <div v-if="regPopupState === 'register'" class="reg-popup">
-                    <div class="reg-popup-header-row">
-                        <span>📝 번호찾 등록</span>
-                        <span class="reg-close" @click="regPopupState = null">×</span>
-                    </div>
-                    <p class="reg-popup-desc">「{{ pendingSubmitData?.subName || '' }}」을(를)<br>번호찾으로 등록할까요?</p>
-                    <div class="reg-popup-btns">
-                        <button class="reg-btn reg-btn-yes" @click="onRegRegisterYes">✅ 등록하고 제출</button>
-                        <button class="reg-btn reg-btn-no" @click="onRegRegisterNo">❌ 그냥 제출</button>
-                    </div>
-                </div>
-            </div>
-        </teleport>
-
         <DuplicateHistoryPopup
             v-if="duplicateList !== null"
             :list="duplicateList"
@@ -833,83 +749,6 @@ onUnmounted(() => {
     opacity: 0.3;
     cursor: not-allowed;
 }
-
-/* 번호찾 팝업 */
-.reg-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 9999;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-}
-.reg-popup {
-    background: #fff;
-    width: 100%;
-    max-width: 500px;
-    border-radius: 24px 24px 0 0;
-    padding: 24px 20px 32px;
-}
-.reg-popup-header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 17px;
-    font-weight: bold;
-    margin-bottom: 14px;
-}
-.reg-close {
-    font-size: 24px;
-    color: #aaa;
-    cursor: pointer;
-    line-height: 1;
-    padding: 0 2px;
-}
-.reg-popup-desc {
-    font-size: 14px;
-    color: #555;
-    margin-bottom: 16px;
-    line-height: 1.6;
-}
-.reg-entry-list {
-    margin-bottom: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-.reg-entry-row {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-}
-.reg-tag {
-    padding: 4px 9px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: bold;
-}
-.reg-name { background: #E3F2FD; color: #1565C0; }
-.reg-submitter { background: #F3E5F5; color: #6A1B9A; }
-.reg-vmf { background: #EFEBE9; color: #5D4037; }
-.reg-vmf.vmf-yes { background: #E8F5E9; color: #2E7D32; }
-.reg-result { background: #FFF8E1; color: #F57F17; }
-.reg-popup-btns {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-.reg-btn {
-    padding: 14px;
-    border-radius: 12px;
-    font-size: 15px;
-    font-weight: bold;
-    border: none;
-    cursor: pointer;
-    font-family: 'Jua', sans-serif;
-}
-.reg-btn-yes { background: #4CAF50; color: white; }
-.reg-btn-no { background: #E0E0E0; color: #333; }
 
 /* 자동완성 */
 .ac-wrap { position: relative; }
