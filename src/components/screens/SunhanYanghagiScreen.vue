@@ -509,9 +509,9 @@ function initNoteState(p) {
   memos[p.docId] = p.memos || []
 }
 
-async function load() {
-  loading.value = true
-  error.value = ''
+// silent: 실시간 갱신 — 스피너 없이 데이터만 바꿔 끼움(스크롤·펼친 카드·작성 중인 내용 유지)
+async function load(silent = false) {
+  if (!silent) { loading.value = true; error.value = '' }
   try {
     const ddochiRes = await callApiPromise('/api/get-shed-prospects', { data: {} })
     // sarang 스키마 응답(sarangId/habJaeYang/timeline)을 기존 컴포넌트가 쓰는 필드명으로 매핑.
@@ -543,12 +543,12 @@ async function load() {
     canManageMemos.value = !!ddochiRes?.canManageMemos
     for (const p of allShedProspects.value) initNoteState(p)
   } catch (e) {
-    error.value = e.message
+    if (!silent) error.value = e.message
   }
   loading.value = false
 
   // DB pending 건 로드 (자동이관된 미확인 건) — SARANG_INTAKE_QUEUE
-  asLoading.value = true
+  if (!silent) asLoading.value = true
   try {
     const asRes = await callApiPromise('/api/shed/pending-list').catch(() => null)
     asRows.value = asRes?.success ? (asRes.list || []).map(r => ({
@@ -612,7 +612,7 @@ let realtimeDirty = false
 function reloadSoon() {
   if (document.hidden) { realtimeDirty = true; return }
   clearTimeout(realtimeTimer)
-  realtimeTimer = setTimeout(load, 1000 + Math.random() * 2000)
+  realtimeTimer = setTimeout(() => load(true), 1000 + Math.random() * 2000)
 }
 function onVisible() { if (!document.hidden && realtimeDirty) { realtimeDirty = false; reloadSoon() } }
 document.addEventListener('visibilitychange', onVisible)
@@ -705,7 +705,7 @@ async function doWelcomeMsg() {
   welcomeSaving.value = true
   const r = await callApiPromise('/api/submit-result', { data: { rowIndex: welcomeMsgTarget.value.docId, logType: '선문자' } })
   welcomeSaving.value = false
-  if (r?.success) { closeWelcomeMsg(); showToast('선문자 완료!'); load() }
+  if (r?.success) { closeWelcomeMsg(); showToast('선문자 완료!'); load(true) }
   else showAppAlert(r?.message || '오류')
 }
 
@@ -742,7 +742,7 @@ async function doNoAnswer(p) {
   saving.value = true
   const r = await callApiPromise('/api/submit-result', { data: { rowIndex: p.docId, logType: '안받음' } })
   saving.value = false
-  if (r?.success) { showToast('안받음!'); if (isMyCalling(p)) await endCall(); load() }
+  if (r?.success) { showToast('안받음!'); if (isMyCalling(p)) await endCall(); load(true) }
   else showAppAlert(r?.message || '오류')
 }
 
@@ -765,7 +765,7 @@ async function cancelNoAnswerMsg() {
   saving.value = true
   const r = await callApiPromise('/api/submit-result', { data: { rowIndex: target.docId, logType: '안받음' } })
   saving.value = false
-  if (r?.success) { showToast('안받음!'); load() }
+  if (r?.success) { showToast('안받음!'); load(true) }
   else showAppAlert(r?.message || '오류')
 }
 async function doNoAnswerWithMsg() {
@@ -775,7 +775,7 @@ async function doNoAnswerWithMsg() {
   await callApiPromise('/api/submit-result', { data: { rowIndex: target.docId, logType: '안받음' } })
   const r = await callApiPromise('/api/submit-result', { data: { rowIndex: target.docId, logType: '안받문' } })
   noAnswerSaving.value = false
-  if (r?.success) { closeNoAnswerMsg(); showToast('안받음 + 부재중문자 완료!'); load() }
+  if (r?.success) { closeNoAnswerMsg(); showToast('안받음 + 부재중문자 완료!'); load(true) }
   else showAppAlert(r?.message || '오류')
 }
 
@@ -788,7 +788,7 @@ async function doReserve(p) {
   })
   saving.value = false
   closeAction()
-  if (r?.success) { showToast('예약 완료!'); if (isMyCalling(p)) await endCall(); load() }
+  if (r?.success) { showToast('예약 완료!'); if (isMyCalling(p)) await endCall(); load(true) }
   else showAppAlert(r?.message || '오류')
 }
 
@@ -806,7 +806,7 @@ async function doMeetingFix(p) {
         goHabjaeyang(p)
       } else {
         showToast('만남픽스!')
-        load()
+        load(true)
       }
     })
   })
@@ -839,7 +839,7 @@ async function submitBihap(p, reason) {
   const r = await callApiPromise('/api/submit-result', { data: { rowIndex: p.docId, logType: '비합처리', logContent: reason } })
   saving.value = false
   closeAction()
-  if (r?.success) { showToast('비합처리!'); if (isMyCalling(p)) await endCall(); load() }
+  if (r?.success) { showToast('비합처리!'); if (isMyCalling(p)) await endCall(); load(true) }
   else showAppAlert(r?.message || '오류')
 }
 
@@ -849,7 +849,7 @@ async function submitGeojeol(p, reason) {
   const r = await callApiPromise('/api/submit-result', { data: { rowIndex: p.docId, logType: '거절처리', logContent: reason } })
   saving.value = false
   closeAction()
-  if (r?.success) { showToast('거절처리!'); if (isMyCalling(p)) await endCall(); load() }
+  if (r?.success) { showToast('거절처리!'); if (isMyCalling(p)) await endCall(); load(true) }
   else showAppAlert(r?.message || '오류')
 }
 
@@ -859,7 +859,7 @@ async function submitMuyou(p, reason) {
   const r = await callApiPromise('/api/submit-result', { data: { rowIndex: p.docId, logType: '무효처리', logContent: reason } })
   saving.value = false
   closeAction()
-  if (r?.success) { showToast('무효처리!'); if (isMyCalling(p)) await endCall(); load() }
+  if (r?.success) { showToast('무효처리!'); if (isMyCalling(p)) await endCall(); load(true) }
   else showAppAlert(r?.message || '오류')
 }
 
@@ -867,7 +867,7 @@ async function deleteLog(p, log) {
   showAppConfirm('이 로그를 삭제할까요?', async (ok) => {
     if (!ok) return
     const r = await callApiPromise('/api/delete-log', { rowIndex: p.docId, id: log.id, source: 'tm' })
-    if (r?.success) { showToast('삭제됨!'); load() }
+    if (r?.success) { showToast('삭제됨!'); load(true) }
     else showAppAlert(r?.message || '삭제 실패')
   })
 }
@@ -878,7 +878,7 @@ async function cancelHabjaeyang(p) {
     cancelling.value = true
     const r = await callApiPromise('/api/cancel-shed-habjaeyang', { docId: p.docId })
     cancelling.value = false
-    if (r?.success) { showToast('취소 완료!'); expandedDoneId.value = null; load() }
+    if (r?.success) { showToast('취소 완료!'); expandedDoneId.value = null; load(true) }
     else showAppAlert(r?.message || '취소 실패')
   })
 }
@@ -909,7 +909,7 @@ function onRegachaDone() {
   regachaResult.value = null
   regachaProspect.value = null
   expandedDoneId.value = null
-  load()
+  load(true)
 }
 
 function fmtTmDt(val) {
@@ -990,7 +990,7 @@ async function doRegister(asRow) {
     saving.value = true
     const r = await callApiPromise('/api/shed-register', { intakeId: asRow.prospectId })
     saving.value = false
-    if (r?.success) { showToast('등록 완료!'); load() }
+    if (r?.success) { showToast('등록 완료!'); load(true) }
     else if (r?.duplicates?.length > 0) {
       shedDupList.value = r.duplicates
       shedDupExistingId.value = r.existingId
@@ -1026,7 +1026,7 @@ async function doReject(asRow) {
     saving.value = true
     const r = await callApiPromise('/api/shed-pending-reject', { intakeId: asRow.prospectId })
     saving.value = false
-    if (r?.success) { showToast('반려 처리 완료'); load() }
+    if (r?.success) { showToast('반려 처리 완료'); load(true) }
     else showAppAlert(r?.message || '반려 실패')
   })
 }
@@ -1038,7 +1038,7 @@ async function doRevive(row) {
     saving.value = true
     const r = await callApiPromise('/api/shed-pending-revive', { intakeId: row.intakeId })
     saving.value = false
-    if (r?.success) { showToast('회생 완료!'); load() }
+    if (r?.success) { showToast('회생 완료!'); load(true) }
     else showAppAlert(r?.message || '회생 실패')
   })
 }
@@ -1098,7 +1098,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
       <span class="sy-title">{{ isPractice ? '🎮 합당한자 연습' : isHapdang ? '🤝 합당한자' : isQualityFind ? '🌿 질적 찾기' : '🐑 선한 양치기' }}</span>
       <button v-if="!isPractice" class="sy-script-reg" @click="tmLogOpen = true">내 티엠</button>
       <button class="sy-script-reg" @click="openScriptModal('tm')">📝 스크립트</button>
-      <button class="sy-refresh" @click="load" :disabled="loading">↻</button>
+      <button class="sy-refresh" @click="load()" :disabled="loading">↻</button>
       <button class="sy-search-btn" @click="showShedSearch = true; nextTick(() => shedSearchInputRef?.focus())">🔍 검색</button>
     </div>
 
