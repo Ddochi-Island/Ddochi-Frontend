@@ -93,9 +93,11 @@ const OPEN_AFTER_DAYS = 4
 const OPEN_AFTER_CALLS = 4
 const kstDay = (d) => Math.floor((new Date(d).getTime() + 9 * 3600e3) / 86400e3)
 const daysOld = (d) => d ? kstDay(Date.now()) - kstDay(d) : 0
+// 티엠 횟수 — 실제로 건 통화만(예약 티엠은 통화 결과가 아니라 일정 기록이라 뺌)
+const tmCallCount = (x) => (x.tmLogs || []).filter(l => l.source === 'call' && l.category !== 'tmReserved').length
 const openToAll = (p) =>
   daysOld(p.appliedAt || p.createdTs) >= OPEN_AFTER_DAYS ||
-  (p.tmLogs || []).filter(l => l.source === 'call').length >= OPEN_AFTER_CALLS
+  tmCallCount(p) >= OPEN_AFTER_CALLS
 const shedProspects = computed(() => {
   return allShedProspects.value.filter(p =>
     isHapdang.value ? (inMyRegions(p.team) || openToAll(p)) && receivedAfterStart(p)
@@ -357,7 +359,7 @@ const isPublicP = (p) => isHapdang.value && p.status !== '만픽' && openToAll(p
 const isPublicR = (r) => isHapdang.value && daysOld(r.appliedAt || r.createdAt) >= OPEN_AFTER_DAYS
 // 전체 공개 탭 카드에 붙는 이유 — 티엠 횟수가 기준을 넘었으면 그걸, 아니면 신청(이관)일부터 지난 날
 function publicReason(x) {
-  const calls = (x.tmLogs || []).filter(l => l.source === 'call').length
+  const calls = tmCallCount(x)
   if (calls >= OPEN_AFTER_CALLS) return `티엠 ${calls}회`
   return `${daysOld(x.appliedAt || x.createdTs || x.createdAt)}일 지남`
 }
