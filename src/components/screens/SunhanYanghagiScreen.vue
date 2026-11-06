@@ -96,7 +96,7 @@ const daysOld = (d) => d ? kstDay(Date.now()) - kstDay(d) : 0
 // 티엠 횟수 — 실제로 건 통화만(예약 티엠은 통화 결과가 아니라 일정 기록이라 뺌)
 const tmCallCount = (x) => (x.tmLogs || []).filter(l => l.source === 'call' && l.category !== 'tmReserved').length
 const openToAll = (p) =>
-  daysOld(p.appliedAt || p.createdTs) >= OPEN_AFTER_DAYS ||
+  daysOld(p.createdTs) >= OPEN_AFTER_DAYS ||  // 이관받은 날부터(신청일 아님)
   tmCallCount(p) >= OPEN_AFTER_CALLS
 const shedProspects = computed(() => {
   return allShedProspects.value.filter(p =>
@@ -361,7 +361,7 @@ const isPublicR = (r) => isHapdang.value && daysOld(r.appliedAt || r.createdAt) 
 function publicReason(x) {
   const calls = tmCallCount(x)
   if (calls >= OPEN_AFTER_CALLS) return `티엠 ${calls}회`
-  return `${daysOld(x.appliedAt || x.createdTs || x.createdAt)}일 지남`
+  return `${daysOld(x.createdTs || x.appliedAt || x.createdAt)}일 지남`  // 이관받은 건은 이관일, 이관 대기 건은 신청일
 }
 const tabMatchP = (p, tab) => tab === PUBLIC_TAB ? isPublicP(p)
   : (!isHapdang.value || inMyRegions(p.team)) && (tab === '전체' || prospectEffTeam(p) === tab)
