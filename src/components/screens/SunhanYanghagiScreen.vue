@@ -353,7 +353,7 @@ const ddochiPhones = computed(() => new Set(shedProspects.value.map(p => normPho
 // 합당한자의 '🌏 전체 공개' 탭 — 다른 지역에도 열린 건(신청 4일 지남 / 티엠 4회 이상)을 따로 모아 봄.
 // 일반 탭(전체·N지역)에는 내 지역 건만 — 다른 지역 공개 건은 이 탭에서만 보여 왜 보이는지 헷갈리지 않게.
 const PUBLIC_TAB = '🌏 전체 공개'
-const isPublicP = (p) => isHapdang.value && openToAll(p)
+const isPublicP = (p) => isHapdang.value && p.status !== '만픽' && openToAll(p)  // 만남픽스된 건은 공개 탭에서 뺌(합재양 작성 필요로 계속 떠 있지 않게)
 const isPublicR = (r) => isHapdang.value && daysOld(r.appliedAt || r.createdAt) >= OPEN_AFTER_DAYS
 // 전체 공개 탭 카드에 붙는 이유 — 티엠 횟수가 기준을 넘었으면 그걸, 아니면 신청(이관)일부터 지난 날
 function publicReason(x) {
