@@ -1760,6 +1760,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
   cursor: pointer; font-family: "Noto Sans KR", Arial, sans-serif;
 }
 .sy-copy-btn:active { background: #e0e0e0; }
+.sy-copy-btn ~ div .sy-card-header { padding-right: 36px; }  /* 오른쪽 위 복사 버튼에 배지가 가리지 않게 */
 .sy-card.final { opacity: 0.6; }
 .sy-card.unreg { border-color: #FFE0B2; background: #FFFDE7; }
 
