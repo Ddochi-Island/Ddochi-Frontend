@@ -586,9 +586,9 @@ function handleMatchResultPick(resultType) {
     const item = tm.tmDataList[idx]
     if (!item) return
 
-    // \uAD50\uC0AC \uBBF8\uC9C0\uC815 \uAC00\uB4DC \u2014 \uC0C1\uB2F4\uB530\uAE30/2\uCC28\uB9CC\uB0A8 \uC740 \uAD50\uC0AC \uD544\uC694 (legacy \uC815\uD569)
+    // \uAD50\uC0AC \uBBF8\uC9C0\uC815 \uAC00\uB4DC \u2014 \uC0C1\uB2F4\uC5F0\uACB0/2\uCC28\uB9CC\uB0A8 \uC740 \uAD50\uC0AC \uD544\uC694 (legacy \uC815\uD569)
     const isTeacherAssigned = item.teacher && String(item.teacher).trim() !== '' && item.teacher !== '-'
-    if (!isTeacherAssigned && (resultType === '\uC0C1\uB2F4\uB530\uAE30' || resultType === '2\uCC28\uB9CC\uB0A8')) {
+    if (!isTeacherAssigned && (resultType === '\uC0C1\uB2F4\uC5F0\uACB0' || resultType === '2\uCC28\uB9CC\uB0A8')) {
         showAppAlert('\uAD50\uC0AC\uAC00 \uC9C0\uC815\uB418\uC9C0 \uC54A\uC558\uC5B4! \uD83E\uDD7A\n\uAD50\uC0AC\uB2D8\uC744 \uBA3C\uC800 \uC9C0\uC815\uD574\uC918!')
         return
     }
@@ -638,9 +638,9 @@ function handleMatchResultPick(resultType) {
         return
     }
 
-    if (resultType === '\uC0C1\uB2F4\uB530\uAE30') {
-        // 3. \uC0C1\uB2F4\uB530\uAE30 \u2192 /api/update-match type='status', matchResult='\u2B55\uFE0F\uC0C1\uB2F4\uB530\uAE30'
-        const resultStr = '\u2B55\uFE0F\uC0C1\uB2F4\uB530\uAE30'
+    if (resultType === '\uC0C1\uB2F4\uC5F0\uACB0') {
+        // 3. \uC0C1\uB2F4\uC5F0\uACB0 \u2192 /api/update-match type='status', matchResult='\u2B55\uFE0F\uC0C1\uB2F4\uC5F0\uACB0'
+        const resultStr = '\u2B55\uFE0F\uC0C1\uB2F4\uC5F0\uACB0'
         callApi('/api/update-match', {
             sabun: auth.currentSabun,
             rowIndex: item.docId,
@@ -652,7 +652,7 @@ function handleMatchResultPick(resultType) {
                 logContent: resultStr,
             },
         }, () => {
-            showAppAlert('\uC0C1\uB2F4\uB530\uAE30\uB85C \uACB0\uACFC\uAC00 \uC785\uB825\uB418\uC5C8\uC5B4! \uD83C\uDF89', () => {
+            showAppAlert('\uC0C1\uB2F4\uC5F0\uACB0\uB85C \uACB0\uACFC\uAC00 \uC785\uB825\uB418\uC5C8\uC5B4! \uD83C\uDF89', () => {
                 item.matchResultDetail = resultStr
                 loadMatchingData()
             })
