@@ -268,11 +268,44 @@ function collectSubmitData() {
     return data
 }
 
-function submitHabjaeyang() {
+async function submitHabjaeyang() {
     if (submitting.value || ui.isProcessing) return
     const submitData = collectSubmitData()
     if (!submitData) return
+    // 홈에서 새로 쓰는 도구노방·사쉐 합재양인데 번호가 합당한 자 CRM(shed 신청자)에 있으면 그 건으로 이어 쓰게 확인 —
+    // CRM에서 만남 픽스를 안 누르고 홈에서 쓰면 만남 픽스 기록이 빠져서 또 돌리는 일이 있었음(2026-11-11)
+    if (!currentDocId.value && !tm.shedContext && submitData.path === '도구노방' && submitData.tool === '사쉐') {
+        const r = await callApiPromise('/api/shed/crm-match', { phone: submitData.contact }).catch(() => null)
+        if (r?.match) return confirmCrmMatch(r.match, submitData)
+    }
     doActualSubmit(submitData)
+}
+
+const esc = (v) => String(v ?? '-').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`)
+function confirmCrmMatch(m, submitData) {
+    const rows = [
+        ['이름', `${m.name}${m.age ? ` (${m.age}세)` : ''}`], ['연락처', m.phone], ['MBTI', m.mbti],
+        ['유입자', m.introducer ? `${m.introducer}${m.team ? ` (${m.team}지역)` : ''}` : null],
+        ['신청 지역', m.regionName], ['이관받은 날', m.receivedDay], ['마지막 티엠', m.lastResult || '기록 없음'],
+    ]
+    const info = rows.map(([k, v]) => `<b>${k}</b> ${esc(v)}`).join('<br>')
+    showAppConfirm(
+        `합재양을 작성하시려는 분이 이 분 맞으신가요?<br><br>${info}<br><br>맞으면 합당한 자 건에 만남 픽스로 기록하고 이어서 써요.`,
+        async (yes) => {
+            if (!yes) return doActualSubmit(submitData)
+            if (m.stage !== '만픽') {
+                const r = await callApiPromise('/api/submit-result', { data: { rowIndex: m.docId, logType: '만남픽스' } })
+                if (!r?.success) return showAppAlert(r?.message || '만남 픽스 기록 실패')
+            }
+            try { localStorage.removeItem('hj_draft_new') } catch (_) {}
+            tm.shedContext = { docId: m.docId, name: m.name, phone: m.phone, age: m.age, mbti: m.mbti, introducer: m.introducer, returnTo: 'home' }
+            currentDocId.value = m.docId
+            if (m.introducer && !inflowName.value) selectAc('inflow', m.introducer)
+            if (formData.tmName) selectAc('tmName', formData.tmName)  // 일반 모드에서 쓴 티엠자를 shed 모드 입력칸에도 보이게
+            showAppAlert('합당한 자 건으로 바꿨어요. 유입자·티엠자를 확인하고 다시 제출해 주세요.')
+        },
+        { yesLabel: '맞아요', noLabel: '아니에요, 새로 등록' },
+    )
 }
 
 function finishAndGoHome(message) {
