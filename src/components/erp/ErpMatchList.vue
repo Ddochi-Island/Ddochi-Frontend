@@ -1,5 +1,5 @@
 <script setup>
-// ERP 매칭 명단 — 구 매칭 시트처럼 합당한자 날짜(만남 픽스 날, 최초 만남이 3일 넘게 뒤면 그 3일 전) 기준 기간 안 합재양 쓴 사람 한 줄씩. 인도 지역·반으로 좁히고 시트용(탭 구분) 복사
+// ERP 매칭 명단 — 구 매칭 시트처럼 합당한자 날짜(재가한 날) 기준 기간 안 재가된 사람 한 줄씩. 인도 지역·반으로 좁히고 시트용(탭 구분) 복사
 import { ref, computed, watch } from 'vue'
 import ErpRangePicker from './ErpRangePicker.vue'
 import { useErpLoad, monthOf, natCmp, regionLabel } from './erpUtil'
@@ -69,7 +69,7 @@ function copy() {
                     </button>
                 </div>
                 <h3 class="erp-h3">
-                    {{ md(loaded.from) }}~{{ md(loaded.to) }} 매칭 명단 <span class="erp-sub">{{ rows.length }}명 · 합당한자 날짜 순서 · 날짜는 만남 픽스 날(최초 만남이 3일 넘게 뒤면 그 3일 전) · 소속은 인도자·교사의 지금 소속</span>
+                    {{ md(loaded.from) }}~{{ md(loaded.to) }} 매칭 명단 <span class="erp-sub">{{ rows.length }}명 · 합당한자 날짜 순서 · 날짜는 재가한 날 · 소속은 인도자·교사의 지금 소속</span>
                 </h3>
                 <p v-if="!rows.length" class="erp-empty">이 기간에 합당한자 날짜인 사람이 없어요.</p>
                 <div v-else class="erp-table-wrap">
