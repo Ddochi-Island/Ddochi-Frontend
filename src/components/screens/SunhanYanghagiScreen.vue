@@ -350,7 +350,18 @@ function copyPhone(phone) {
   showToast('📋 ' + phone + ' 복사됨')
 }
 
-const ddochiPhones = computed(() => new Set(shedProspects.value.map(p => normPhone(p.phone))))
+// 번호별 가장 최근 이관받은 시각 — 이관 대기 건이 그 뒤 하루 안에 온 거면 중복 전송이라 숨기고,
+// 그보다 나중이면 재신청이라 다시 이관받기로 띄움(2026-11-15 사용자 결정)
+const ddochiPhones = computed(() => {
+  const m = new Map()
+  for (const p of shedProspects.value) {
+    const k = normPhone(p.phone), t = new Date(p.createdTs || 0).getTime()
+    if (!(m.get(k) >= t)) m.set(k, t)
+  }
+  return m
+})
+const alreadyTaken = (r) => ddochiPhones.value.has(normPhone(r.phone)) &&
+  ddochiPhones.value.get(normPhone(r.phone)) >= new Date(r.createdAt).getTime() - 86400000
 
 // 합당한자의 '🌏 전체 공개' 탭 — 다른 지역에도 열린 건(신청 4일 지남 / 티엠 4회 이상)을 따로 모아 봄.
 // 일반 탭(전체·N지역)에는 내 지역 건만 — 다른 지역 공개 건은 이 탭에서만 보여 왜 보이는지 헷갈리지 않게.
@@ -417,7 +428,7 @@ const callingProspect = computed(() =>
 )
 
 const unregList = computed(() => {
-  const list = filteredAsRows.value.filter(r => !ddochiPhones.value.has(normPhone(r.phone)))
+  const list = filteredAsRows.value.filter(r => !alreadyTaken(r))
   return list.filter(r => tabMatchR(r, activeTab.value))
 })
 
@@ -443,7 +454,7 @@ const rejectedList = computed(() => {
 
 const tabUnregCount = computed(() => {
   const m = {}
-  const unreg = filteredAsRows.value.filter(r => !ddochiPhones.value.has(normPhone(r.phone)))
+  const unreg = filteredAsRows.value.filter(r => !alreadyTaken(r))
   for (const tab of TABS.value) {
     if (tab === '전체') continue
     m[tab] = unreg.filter(r => tabMatchR(r, tab)).length
