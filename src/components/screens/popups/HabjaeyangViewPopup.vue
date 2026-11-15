@@ -1,10 +1,10 @@
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, reactive, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { usePopup } from '@/composables/usePopup'
 import { useFormatters } from '@/composables/useFormatters'
 import { useApi } from '@/composables/useApi'
-import { hjFields } from '@/constants'
+import { hjFields, MIN_OPTS, TRANSFER_OPTS } from '@/constants'
 
 // CenterScreen 의 합재양 read-only 상세 팝업.
 // legacy: viewHabjaeyangPopupForCenter / __copyHabjaeyang 정합.
@@ -37,6 +37,18 @@ function onSelect(type, e) {
     target.value = e.target.value
     callApi('/api/edit-match', { sabun: auth.currentSabun, rowIndex: props.item.docId, type, value: target.value }, (res) => {
         if (!res?.success) { target.value = prev; return showAppAlert(res?.message || '저장 실패') }
+        showToast('저장 완료!')
+        emit('fieldSaved')
+    })
+}
+// 과천·센터 시간/환승, 경계 밀어내기 O/X — 합재양 보기에서 바로 고치는 select
+const hjSel = reactive(Object.fromEntries(['gwacheonMin', 'gwacheonTransfer', 'centerMin', 'centerTransfer', 'waryPush']
+    .map(k => [k, props.item.habjaeyang?.[k] || ''])))
+function onHjSelect(type, e) {
+    const prev = hjSel[type]
+    hjSel[type] = e.target.value
+    callApi('/api/edit-match', { sabun: auth.currentSabun, rowIndex: props.item.docId, type, value: hjSel[type] }, (res) => {
+        if (!res?.success) { hjSel[type] = prev; return showAppAlert(res?.message || '저장 실패') }
         showToast('저장 완료!')
         emit('fieldSaved')
     })
@@ -148,7 +160,7 @@ function handleCopy() {
     const teamName = auth.currentUserTeam || ''
     const pathInfo = (route.value || '-') + (tool.value && !route.value.includes(tool.value) ? `(${tool.value})` : '')
     const dayStr = safe.mtDate && safe.mtDate !== '미정' ? getDay(safe.mtDate) : ''
-    const txt = `🐑 대학 ${teamName}의 합재양 🐑\n\n🚿인도자 : ${safe.guide || '-'}\n🚿티엠자 : ${safe.tmName || '-'}\n🚿섭외경로(도구) : ${pathInfo}\n🚿매칭 일시/장소 : ${safe.mtDate || '-'}(${dayStr}) ${safe.mtTime || ''} ${safe.mtPlace || ''}\n\n🫧인적\n• 이름(성별/나이) : ${safe.subName || '-'}(${safe.gender || '-'}/${safe.age || '-'})\n• 연락처 : ${safe.contact || '-'}\n• 거주지 : ${safe.nearSt || '-'}\n• MBTI : ${safe.mbti || '-'}\n\n🫧환경\n• 학교(전공)/직장 : ${safe.job || '-'}\n• 일정(학원,동아리,학생회,알바 등) : ${safe.sch || '-'}\n• 1년 환경 구체적으로 : ${safe.plan || '-'}\n\n🫧내면\n• 신청 목적 (메리트) : ${safe.purpose || '-'}\n• 나의 이미지(성격) : ${safe.selfImage || '-'}\n• 되고 싶은 내적 이미지(or 가장 고민되는 부분) : ${safe.trouble || '-'}\n\n• 인성(전화 태도) : ${safe.att || '-'}\n• 경계 : ${safe.wary || '-'}\n  : 경계 있을시 밀어내기 진행 여부 ${({ O: '⭕️', X: '❌' })[safe.waryPush] || '-'}\n• 거리부담 : ${safe.dist || '-'}\n• 특이사항 : ${safe.etc || '-'}`
+    const txt = `🐑 대학 ${teamName}의 합재양 🐑\n\n🚿인도자 : ${safe.guide || '-'}\n🚿티엠자 : ${safe.tmName || '-'}\n🚿섭외경로(도구) : ${pathInfo}\n🚿매칭 일시/장소 : ${safe.mtDate || '-'}(${dayStr}) ${safe.mtTime || ''} ${safe.mtPlace || ''}\n\n🫧인적\n• 이름(성별/나이) : ${safe.subName || '-'}(${safe.gender || '-'}/${safe.age || '-'})\n• 연락처 : ${safe.contact || '-'}\n• 거주지 : ${safe.nearSt || '-'}\n• MBTI : ${safe.mbti || '-'}\n\n🫧환경\n• 학교(전공)/직장 : ${safe.job || '-'}\n• 일정(학원,동아리,학생회,알바 등) : ${safe.sch || '-'}\n• 1년 환경 구체적으로 : ${safe.plan || '-'}\n\n🫧내면\n• 신청 목적 (메리트) : ${safe.purpose || '-'}\n• 나의 이미지(성격) : ${safe.selfImage || '-'}\n• 되고 싶은 내적 이미지(or 가장 고민되는 부분) : ${safe.trouble || '-'}\n\n• 인성(전화 태도) : ${safe.att || '-'}\n• 경계 : ${safe.wary || '-'}\n  : 경계 있을시 밀어내기 진행 여부 ${({ O: '⭕️', X: '❌' })[hjSel.waryPush] || '-'}\n• 거리부담 : ${safe.dist || '-'}\n• 특이사항 : ${safe.etc || '-'}`
     navigator.clipboard.writeText(txt).then(() => showToast('복사 완료!'))
 }
 </script>
@@ -195,6 +207,30 @@ function handleCopy() {
                             <div class="hj-row"><span class="hj-label">{{ LABEL.nearSt }}</span><div class="hj-val hj-editable" @click="editProspectField('residence', LABEL.nearSt, safeData.nearSt)">{{ safeData.nearSt || '-' }}</div></div>
                             <div class="hj-row"><span class="hj-label">MBTI</span><div class="hj-val hj-editable" @click="editHjField('mbti', 'MBTI', safeData.mbti)">{{ safeData.mbti || '-' }}</div></div>
                             <div class="hj-row"><span class="hj-label">{{ LABEL.job }}</span><div class="hj-val hj-editable" @click="editHjField('job', LABEL.job, safeData.job)">{{ safeData.job || '-' }}</div></div>
+                            <div class="hj-row"><span class="hj-label">과천까지(분)</span>
+                                <span v-if="readonly" class="hj-val">{{ hjSel.gwacheonMin || '-' }}</span>
+                                <select v-else class="hj-select" :value="hjSel.gwacheonMin" @change="onHjSelect('gwacheonMin', $event)">
+                                    <option value="">선택 안 함</option>
+                                    <option v-for="opt in MIN_OPTS" :key="opt" :value="opt">{{ opt }}</option>
+                                </select></div>
+                            <div class="hj-row"><span class="hj-label">과천 환승</span>
+                                <span v-if="readonly" class="hj-val">{{ hjSel.gwacheonTransfer || '-' }}</span>
+                                <select v-else class="hj-select" :value="hjSel.gwacheonTransfer" @change="onHjSelect('gwacheonTransfer', $event)">
+                                    <option value="">선택 안 함</option>
+                                    <option v-for="opt in TRANSFER_OPTS" :key="opt" :value="opt">{{ opt }}</option>
+                                </select></div>
+                            <div class="hj-row"><span class="hj-label">센터까지(분)</span>
+                                <span v-if="readonly" class="hj-val">{{ hjSel.centerMin || '-' }}</span>
+                                <select v-else class="hj-select" :value="hjSel.centerMin" @change="onHjSelect('centerMin', $event)">
+                                    <option value="">선택 안 함</option>
+                                    <option v-for="opt in MIN_OPTS" :key="opt" :value="opt">{{ opt }}</option>
+                                </select></div>
+                            <div class="hj-row"><span class="hj-label">센터 환승</span>
+                                <span v-if="readonly" class="hj-val">{{ hjSel.centerTransfer || '-' }}</span>
+                                <select v-else class="hj-select" :value="hjSel.centerTransfer" @change="onHjSelect('centerTransfer', $event)">
+                                    <option value="">선택 안 함</option>
+                                    <option v-for="opt in TRANSFER_OPTS" :key="opt" :value="opt">{{ opt }}</option>
+                                </select></div>
                         </div>
                         <div class="hj-sec-title">💭 내면 파악</div>
                         <div class="hj-section hj-stack">
@@ -208,7 +244,13 @@ function handleCopy() {
                         <div class="hj-section hj-stack" style="margin-bottom:20px;">
                             <div class="hj-row"><span class="hj-label">{{ LABEL.att }}</span><div class="hj-val hj-editable" @click="editHjField('att', LABEL.att, safeData.att)">{{ safeData.att || '-' }}</div></div>
                             <div class="hj-row"><span class="hj-label">{{ LABEL.wary }}</span><div class="hj-val hj-editable" @click="editHjField('wary', LABEL.wary, safeData.wary)">{{ safeData.wary || '-' }}</div></div>
-                            <div class="hj-row"><span class="hj-label">밀어내기 진행</span><div class="hj-val">{{ ({ O: '⭕️', X: '❌' })[safeData.waryPush] || '-' }}</div></div>
+                            <div class="hj-row"><span class="hj-label">밀어내기 진행</span>
+                                <span v-if="readonly" class="hj-val">{{ ({ O: '⭕️', X: '❌' })[hjSel.waryPush] || '-' }}</span>
+                                <select v-else class="hj-select" :value="hjSel.waryPush" @change="onHjSelect('waryPush', $event)">
+                                    <option value="">선택 안 함</option>
+                                    <option value="O">⭕️</option>
+                                    <option value="X">❌</option>
+                                </select></div>
                             <div class="hj-row"><span class="hj-label">{{ LABEL.dist }}</span><div class="hj-val hj-editable" @click="editHjField('dist', LABEL.dist, safeData.dist)">{{ safeData.dist || '-' }}</div></div>
                             <div class="hj-row"><span class="hj-label">{{ LABEL.etc }}</span><div class="hj-val hj-editable" @click="editHjField('etc', LABEL.etc, safeData.etc)">{{ safeData.etc || '-' }}</div></div>
                         </div>

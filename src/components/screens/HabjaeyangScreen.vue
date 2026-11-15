@@ -7,7 +7,7 @@ import { useUiStore } from '@/stores/ui'
 import { useApi } from '@/composables/useApi'
 import { usePopup } from '@/composables/usePopup'
 import { useFormatters } from '@/composables/useFormatters'
-import { hjFields, mbtiOptions } from '@/constants'
+import { hjFields, mbtiOptions, MIN_OPTS, TRANSFER_OPTS } from '@/constants'
 import DuplicateHistoryPopup from './popups/DuplicateHistoryPopup.vue'
 import GachaSlotOverlay from './GachaSlotOverlay.vue'
 
@@ -23,8 +23,6 @@ const FULL_WIDTH_FIELDS = new Set(['mtPlace', 'contact', 'purpose', 'selfImage',
 const EXPLICIT_TOP_IDS = new Set(['guide', 'tmName', 'path', 'tool', 'mtDate', 'mtTime', 'mtPlace', 'subName', 'gender', 'age', 'contact', 'nearSt', 'gwacheonMin', 'gwacheonTransfer', 'centerMin', 'centerTransfer', 'mbti', 'job'])
 const hjBottomFields = hjFields.filter(f => !EXPLICIT_TOP_IDS.has(f.id))
 
-const MIN_OPTS = ['미정', '10분', '20분', '30분', '40분', '50분', '1시간', '1시간 10분', '1시간 20분', '1시간 30분', '1시간 40분', '1시간 50분', '2시간 이상']
-const TRANSFER_OPTS = ['0회', '1회', '2회', '3회 이상']
 
 const router = useRouter()
 const auth = useAuthStore()
