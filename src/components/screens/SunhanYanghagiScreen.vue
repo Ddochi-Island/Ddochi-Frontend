@@ -360,6 +360,10 @@ const ddochiPhones = computed(() => {
   }
   return m
 })
+// 재신청 건의 예전 이관 이력(최신순) — 이관받기 카드에 어디까지 진행됐었는지 보여줌
+const prevCases = (r) => allShedProspects.value
+  .filter(p => normPhone(p.phone) === normPhone(r.phone))
+  .sort((x, y) => new Date(y.createdTs) - new Date(x.createdTs))
 const alreadyTaken = (r) => ddochiPhones.value.has(normPhone(r.phone)) &&
   ddochiPhones.value.get(normPhone(r.phone)) >= new Date(r.createdAt).getTime() - 86400000
 
@@ -1204,7 +1208,13 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
                 <span v-if="r.numberStatus === 'pending_dup'" class="sy-link-badge" style="background:#ff5252;color:#fff;">중복</span>
                 <span class="sy-link-badge sy-intr-badge">{{ rowEffTeam(r) }}</span>
                 <span v-if="activeTab === PUBLIC_TAB" class="sy-link-badge sy-public-badge">🌏 {{ publicReason(r) }}</span>
+                <span v-if="prevCases(r).length" class="sy-link-badge sy-reapply-badge">🔁 이미 신청했던 분</span>
               </div>
+              <details v-for="pc in prevCases(r)" :key="pc.docId" class="sy-prev-case">
+                <summary>{{ fmtInflowTs(pc.createdTs) }} 이관 · {{ pc.status || '-' }}{{ pc.managerName ? ` · ${pc.managerName}` : '' }}{{ pc.tmLogs?.[0]?.label ? ` · 마지막: ${pc.tmLogs[0].label}` : '' }}</summary>
+                <div v-for="log in pc.tmLogs" :key="log.id" class="sy-log-line">{{ fmtInflowTs(log.createdAt) }} · {{ log.label }} · {{ log.actorName || '-' }}</div>
+                <div v-if="!pc.tmLogs?.length" class="sy-log-line">기록 없음</div>
+              </details>
               <div v-if="r.region || r.env || r.reaction || r.introducer || r.tmLocation || r.rest" class="sy-fields">
                 <span v-if="r.region" class="sy-field"><b>지역</b>{{ r.region }}</span>
                 <span v-if="r.rest" class="sy-field"><b>MBTI</b>{{ r.rest }}</span>
@@ -1773,6 +1783,10 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
   cursor: pointer; font-family: "Noto Sans KR", Arial, sans-serif;
 }
 .sy-copy-btn:active { background: #e0e0e0; }
+.sy-reapply-badge { background: #fff3e0; color: #e65100; }
+.sy-prev-case { margin: 6px 0; padding: 6px 8px; background: #fff8f0; border-radius: 6px; font-size: 12px; }
+.sy-prev-case summary { cursor: pointer; font-weight: 600; color: #e65100; }
+.sy-prev-case .sy-log-line { display: block; margin-top: 3px; }
 .sy-copy-btn ~ div .sy-card-header { padding-right: 36px; }  /* 오른쪽 위 복사 버튼에 배지가 가리지 않게 */
 .sy-card.final { opacity: 0.6; }
 .sy-card.unreg { border-color: #FFE0B2; background: #FFFDE7; }
