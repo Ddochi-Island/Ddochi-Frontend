@@ -150,7 +150,7 @@ function populateFromTmItem(item) {
         guide: item.manager, contact: item.phone,
         mtDate: hj.mtDate || '', mtTime: hj.mtTime || '', mtPlace: hj.mtPlace || '',
         purpose: hj.purpose || '', sch: hj.sch || hj.schedule || '',
-        plan: hj.plan || '', selfImage: hj.selfImage || '', trouble: hj.trouble || '', wary: hj.wary || '',
+        plan: hj.plan || '', selfImage: hj.selfImage || '', trouble: hj.trouble || '', wary: hj.wary || '', waryPush: hj.waryPush || '',
         tmName: hj.tmName || '', mbti: hj.mbti || '', job: hj.job || '',
         att: hj.att || '', dist: hj.dist || '', etc: hj.etc || '',
         gwacheonMin: hj.gwacheonMin || '', gwacheonTransfer: hj.gwacheonTransfer || '',
