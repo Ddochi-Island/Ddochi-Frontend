@@ -1783,7 +1783,6 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
   cursor: pointer; font-family: "Noto Sans KR", Arial, sans-serif;
 }
 .sy-copy-btn:active { background: #e0e0e0; }
-.sy-reapply-badge { background: #fff3e0; color: #e65100; }
 .sy-prev-case { margin: 6px 0; padding: 6px 8px; background: #fff8f0; border-radius: 6px; font-size: 12px; }
 .sy-prev-case summary { cursor: pointer; font-weight: 600; color: #e65100; }
 .sy-prev-case .sy-log-line { display: block; margin-top: 3px; }
@@ -1827,6 +1826,7 @@ onBeforeRouteLeave(async () => { stopPolling(); if (callingDocId.value) await en
 .lk3 { background: #6a1b9a; }
 .lk5 { background: #e65100; }
 .sy-intr-badge { background: #00695c; }
+.sy-reapply-badge { background: #e65100; color: #fff; }
 .sy-public-badge { background: #1565C0; }
 .sy-inflow-ts { font-size: 11px; color: #aaa; }
 
