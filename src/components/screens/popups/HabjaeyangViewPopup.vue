@@ -179,6 +179,7 @@ function handleCopy() {
                 <div class="modal-content-scroll">
                     <div class="modal-title" style="margin-top:0;">합재양 상세</div>
                     <div class="hj-modal-content" :class="{ 'hj-readonly': readonly }">
+                        <div v-if="item.habjaeyang?.dupLabel" class="hj-dup-box">{{ item.habjaeyang.dupLabel }}</div>
                         <div class="hj-sec-title">📋 매칭 정보</div>
                         <div class="hj-section hj-stack">
                             <div class="hj-row"><span class="hj-label">인도자</span><div class="hj-val hj-editable" @click="editHjField('guide', '인도자', safeData.guide)">{{ safeData.guide || '-' }}</div></div>
@@ -327,4 +328,5 @@ function handleCopy() {
     white-space: nowrap;
     font-family: 'Jua';
 }
+.hj-dup-box { background: #fff3e0; border: 1px solid #ffcc80; color: #e65100; border-radius: 10px; padding: 10px 12px; font-size: 13px; font-weight: bold; margin-bottom: 14px; }
 </style>
