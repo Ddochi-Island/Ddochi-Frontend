@@ -241,6 +241,15 @@ function offerResume() {
 }
 watch([formData, phone1, phone2, phone3, inflowName, verbalManFix], saveDraft, { deep: true })
 
+// 번호를 다 쓰면 예전에 합재양을 쓴 사람인지 바로 보여줌(중섭 확인, 막지는 않음 — 2026-11-16)
+const priorHj = ref([])
+watch([phone1, phone2, phone3, currentDocId], async () => {
+    const phone = `${phone1.value}${phone2.value}${phone3.value}`.replace(/\D/g, '')
+    if (phone.length < 10) { priorHj.value = []; return }
+    const r = await callApiPromise('/api/habjaeyang/prior', { phone, excludeId: currentDocId.value }).catch(() => null)
+    if (phone === `${phone1.value}${phone2.value}${phone3.value}`.replace(/\D/g, '')) priorHj.value = r?.list || []
+})
+
 function collectSubmitData() {
     const guideName = (formData.guide || '').trim()
     const tmName = (formData.tmName || '').trim()
@@ -600,6 +609,13 @@ onUnmounted(() => {
                     <span class="dash">-</span>
                     <input type="tel" class="phone-input" id="hj-phone3" maxlength="4" v-model="phone3" @input="onPhone3Input">
                 </div>
+                <div v-if="priorHj.length" class="hj-prior">
+                    <div class="hj-prior-title">⚠️ 이 번호로 예전에 합재양을 쓴 적 있어요 (중섭 확인)</div>
+                    <div v-for="(p, i) in priorHj" :key="i" class="hj-prior-row">
+                        {{ p.hjDay }} · {{ p.name }} · 인도자 {{ p.guide || '-' }} · 티엠 {{ p.tmName || '-' }}{{ p.path ? ` · ${p.path}` : '' }}
+                        · {{ p.approval || p.stage }}{{ p.lastMatch ? ` · ${p.lastMatch}` : '' }}
+                    </div>
+                </div>
             </div>
 
             <!-- 거주지 근처 역 -->
@@ -862,4 +878,7 @@ onUnmounted(() => {
         grid-column: span 2;
     }
 }
+.hj-prior { margin-top: 8px; padding: 8px 10px; background: #fff3e0; border: 1px solid #ffcc80; border-radius: 8px; font-size: 12px; color: #6d4c41; line-height: 1.5; }
+.hj-prior-title { font-weight: bold; color: #e65100; margin-bottom: 4px; }
+.hj-prior-row + .hj-prior-row { margin-top: 2px; }
 </style>
