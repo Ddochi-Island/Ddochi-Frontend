@@ -235,10 +235,14 @@ const reportNameList = computed(() => {
     const set = new Set()
     reportNameOptions.value.forEach((o) => o.name && set.add(o.name))
     if (auth.currentUserName) set.add(auth.currentUserName)
-    // SPA 가 이미 보유한 validNames (legacy 호환) 도 fallback 추가
-    ;(auth.validNames || []).forEach((n) => set.add(n))
     return Array.from(set).sort()
 })
+// 구역장용 "우리 구역 오늘 보고" — 미보고 먼저(2026-11-16)
+const isAreaLead = ref(false)
+const STATUS_ORDER = { none: 0, submitted: 1, final: 2 }
+const districtStatus = computed(() => [...reportNameOptions.value]
+    .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || a.name.localeCompare(b.name)))
+const districtReportedCount = computed(() => reportNameOptions.value.filter(o => o.status !== 'none').length)
 const filteredSuggestions = computed(() => {
     const f = String(reportName.value || '').trim().toLowerCase()
     return reportNameList.value.filter((n) => !f || n.toLowerCase().includes(f))
@@ -250,7 +254,7 @@ function pickSuggestion(name) {
     reportName.value = name
     showSuggestions.value = false
     saveDraft()
-    loadReportForName(name)
+    loadReportForName(name, selectedDateKey.value || undefined)
 }
 
 // ── 다른 사용자의 보고서 prefill (Phase 2-B) ─────────────────────────
@@ -263,17 +267,22 @@ function resetForm() {
     mood.value = 5
     moodTouched.value = false
     isFinal.value = false
+    finalWarning.value = false
     reflection.value = ''
     univRows.splice(0, univRows.length, { name: '', path: '', tool: '' })
     leafRows.splice(0, leafRows.length, { val: '-', date: '' })
     loadPathPrefs()
 }
 
+const loadedName = ref(null)
 function loadReportForName(name, dateKey) {
     if (!name) return
     resetForm()
+    loadedName.value = null
     callApi('/api/daily-report/get', { dateKey: dateKey || getTodayDate(), name }, (r) => {
-        if (!r || !r.success || !r.exists) return
+        if (!r || !r.success) return
+        loadedName.value = name
+        if (!r.exists) return
         const d = r.data || {}
         if (d.activity) activity.value = d.activity
         talkCount.value = d.talkCount ?? ''
@@ -297,10 +306,10 @@ function loadReportForName(name, dateKey) {
     })
 }
 
-async function loadReportNameOptions() {
+async function loadReportNameOptions(dateKey) {
     try {
-        const r = await callApiPromise('/api/daily-report/list-names', { dateKey: getTodayDate() })
-        if (r && r.success) reportNameOptions.value = r.names || []
+        const r = await callApiPromise('/api/daily-report/list-names', { dateKey: dateKey || getTodayDate() })
+        if (r && r.success) { reportNameOptions.value = r.names || []; isAreaLead.value = !!r.isAreaLead }
     } catch (_) { /* 401/네트워크 — 명단은 fallback */ }
 }
 
@@ -451,8 +460,6 @@ async function submitDailyReport() {
 
     const rawName = reportName.value.trim()
     if (!rawName) return showAppAlert('이름을 입력해줘!')
-    if (ACTIVITY_DETAILS[activity.value] && !activityDetails.value.length) return showAppAlert('1. 활동에서 어떤 활동을 했는지 하나 이상 골라줘!')
-
     // 동명이인 / 미등록 처리
     let resolvedName
     try {
@@ -462,9 +469,14 @@ async function submitDailyReport() {
 
     // mood touched 검증 (본인 제출만, 대리 제출은 0 으로 저장)
     const isDelegated = resolvedName !== auth.currentUserName
+    if (!isDelegated && ACTIVITY_DETAILS[activity.value] && !activityDetails.value.length) {
+        return showAppAlert('1. 활동에서 어떤 활동을 했는지 하나 이상 골라줘!')
+    }
     if (!isDelegated && !moodTouched.value) {
         return showAppAlert('💖 오늘 나의 하루는! 점수를 입력해줘!')
     }
+    // 구역장이 구역원 보고를 불러와(폼에 기존 값이 채워진 상태) 대신 내는 거면 비교 창 없이 바로 저장
+    const skipPreview = isDelegated && loadedName.value === resolvedName
 
     const baseData = buildSubmitPayload(resolvedName)
     // 본인 제출이고 mood 안 만졌으면 위에서 막음. 대리 제출은 0.
@@ -479,7 +491,7 @@ async function submitDailyReport() {
             const isToday = (key === fmtKstKey(now))
             if (!isToday) return doSubmitWithKey(baseData, key)
             const existing = await fetchExisting(key, resolvedName)
-            if (existing) return showMergePreview(existing, baseData, key)
+            if (existing && !skipPreview) return showMergePreview(existing, baseData, key)
             return doSubmitWithKey(baseData, key)
         }
         const today = new Date(now)
@@ -493,7 +505,7 @@ async function submitDailyReport() {
                 dateChoice.value = null
                 if (!isToday) return doSubmitWithKey(baseData, key)
                 const existing = await fetchExisting(key, resolvedName)
-                if (existing) return showMergePreview(existing, baseData, key)
+                if (existing && !skipPreview) return showMergePreview(existing, baseData, key)
                 doSubmitWithKey(baseData, key)
             },
             onCancel: () => { dateChoice.value = null },
@@ -504,7 +516,7 @@ async function submitDailyReport() {
     // 22시 이전: 자동 오늘 (서버 default). 단 기존 보고 있으면 merge preview.
     const todayKey = fmtKstKey(now)
     const existing = await fetchExisting(todayKey, resolvedName)
-    if (existing) return showMergePreview(existing, baseData, null)
+    if (existing && !skipPreview) return showMergePreview(existing, baseData, null)
     doSubmitWithKey(baseData, null)
 }
 
@@ -595,10 +607,11 @@ function actuallySubmit(data) {
         ui.setProcessing(false)
         // 서버가 메시지 없이 실패(예: HTML 500 → callApi가 {}로 처리)해도 빈 알림창이 안 뜨게
         showAppAlert(res.message || '저장에 실패했어. 잠시 후 다시 시도해줘!', () => {
-            if (res.success) {
-                localStorage.removeItem('dailyReportDraft')
-                router.push({ name: 'home' })
-            }
+            if (!res.success) return
+            localStorage.removeItem('dailyReportDraft')
+            // 구역장이 구역원 것을 대신 냈으면 화면에 남아 다음 구역원으로 이어서 쓰게 — 상태 칸만 새로고침
+            if (isAreaLead.value && data.name !== auth.currentUserName) return loadReportNameOptions(selectedDateKey.value || undefined)
+            router.push({ name: 'home' })
         })
     })
 }
@@ -632,6 +645,7 @@ onMounted(async () => {
             onPick: (key, isToday) => {
                 dateChoice.value = null
                 selectedDateKey.value = key
+                loadReportNameOptions(key)
                 if (isToday) {
                     if (reportName.value) loadReportForName(reportName.value, key)
                 } else {
@@ -681,6 +695,16 @@ onMounted(async () => {
 
         <div class="report-section-divider">🌾 오늘의 수확 (보고)</div>
 
+        <div v-if="isAreaLead" class="district-status">
+            <div class="district-status-title">🏘️ 우리 구역 보고 {{ districtReportedCount }} / {{ reportNameOptions.length }}명</div>
+            <div class="district-status-chips">
+                <button v-for="o in districtStatus" :key="o.name" type="button"
+                    :class="['district-chip', o.status, { active: o.name === reportName }]" @click="pickSuggestion(o.name)">
+                    {{ o.status === 'final' ? '✅' : o.status === 'submitted' ? '📝' : '⬜' }} {{ o.name }}
+                </button>
+            </div>
+        </div>
+
         <label>🌻 보고 대상자</label>
         <div class="input-card" style="position:relative;">
             <input type="text" v-model="reportName" placeholder="이름 입력 또는 ▼ 눌러 선택"
@@ -697,6 +721,8 @@ onMounted(async () => {
                 </div>
             </div>
         </div>
+
+        <div v-if="finalWarning" class="final-note">✅ {{ reportName }}님은 이미 최종 제출했어요. 고쳐서 내면 지금 내용으로 덮어써요.</div>
 
         <label>🌱 1. 활동</label>
         <div class="input-card">
@@ -882,18 +908,6 @@ onMounted(async () => {
         <button class="btn submit-btn" @click="submitDailyReport" :disabled="ui.isProcessing">
             {{ ui.isProcessing ? '제출 중...' : '🌰 마감 제출하기' }}
         </button>
-
-        <!-- 최종마감 재진입 경고 팝업 -->
-        <div v-if="finalWarning" class="dr-modal-backdrop">
-            <div class="dr-modal">
-                <div class="dr-modal-title">✅ 이미 최종 제출한 보고야!</div>
-                <div class="dr-modal-desc">오늘 보고를 이미 최종으로 제출했어.<br>그래도 수정할 거야?</div>
-                <div class="dr-modal-btns">
-                    <button class="btn-pos" style="background:#1565C0;" @click="finalWarning = false">수정할게</button>
-                    <button class="btn-neg" @click="finalWarning = false; router.push({ name: 'home' })">나갈게</button>
-                </div>
-            </div>
-        </div>
 
         <DailyReportMergePreviewModal v-if="mergeExisting && mergeInput"
             :existing="mergeExisting" :input="mergeInput"
@@ -1203,4 +1217,12 @@ onMounted(async () => {
 }
 .activity-detail { display: flex; align-items: center; gap: 6px; margin: 6px 0 0; font-size: 13px; color: #555; cursor: pointer; }
 .activity-detail input { width: auto; margin: 0; }
+.district-status { background: #fff; border-radius: 14px; padding: 12px; margin-bottom: 14px; box-shadow: 0 2px 6px rgba(0,0,0,.05); }
+.district-status-title { font-size: 14px; color: #5d4037; margin-bottom: 8px; }
+.district-status-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.district-chip { border: 1px solid #ddd; background: #fafafa; border-radius: 14px; padding: 4px 10px; font-size: 13px; font-family: inherit; cursor: pointer; }
+.district-chip.none { border-color: #ffab91; background: #fff3e0; }
+.district-chip.final { color: #888; }
+.district-chip.active { border-color: #1565c0; box-shadow: 0 0 0 1px #1565c0 inset; }
+.final-note { font-size: 12px; color: #1565c0; background: #e3f2fd; border-radius: 8px; padding: 8px 10px; margin: 8px 0 12px; }
 </style>
