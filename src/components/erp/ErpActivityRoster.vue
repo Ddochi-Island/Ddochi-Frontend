@@ -1,8 +1,8 @@
 <script setup>
 // ERP 활동자 명단 — 기간 안에서 사람마다 가장 상위 활동(대면>전단지>비대면>대체>미활동)과 그 날짜를 표로(매칭 명단처럼). 지역으로 좁히고 시트용 복사
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import ErpRangePicker from './ErpRangePicker.vue'
-import { useErpLoad, weekOf, natCmp, regionLabel } from './erpUtil'
+import { useErpLoad, weekOf, natCmp, regionLabel, districtLabel } from './erpUtil'
 import { usePopup } from '@/composables/usePopup'
 
 const STAGES = [
@@ -15,12 +15,17 @@ const { showToast } = usePopup()
 const range = ref(weekOf())
 const { loading, error, data, load } = useErpLoad('/api/erp/activity-roster')
 const region = ref('')
+const district = ref('')
+watch(region, () => { district.value = '' })
 const loaded = ref(false)
 async function run() { if (await load({ ...range.value })) loaded.value = true }
 
 const all = computed(() => data.value?.rows || [])
 const regions = computed(() => [...new Set(all.value.map((r) => r.region).filter(Boolean))].sort(natCmp))
-const rows = computed(() => all.value.filter((r) => !region.value || r.region === region.value))
+const inRegion = computed(() => all.value.filter((r) => !region.value || r.region === region.value))
+// 구역 — 지역을 고르면 그 지역의 구역으로 더 좁힘(보고한 날 소속 기준)
+const districts = computed(() => (region.value ? [...new Set(inRegion.value.map((r) => r.district).filter(Boolean))].sort(natCmp) : []))
+const rows = computed(() => inRegion.value.filter((r) => !district.value || r.district === district.value))
 const RANK = Object.fromEntries(STAGES.map((st, i) => [st.code, i]))
 const LABEL = Object.fromEntries(STAGES.map((st) => [st.code, st.label]))
 // 사람마다 기간 안 가장 상위 활동 한 줄 — 같은 단계를 여러 날 했으면 가장 최근 날짜(2026-11-16 사용자 요청)
@@ -62,6 +67,12 @@ function copy() {
                         {{ regionLabel(rg) }}
                     </button>
                     <button class="erp-btn" style="margin-left: auto" :disabled="!rows.length" @click="copy">시트용 복사</button>
+                </div>
+                <div v-if="districts.length" class="erp-find-chips" role="group" aria-label="구역">
+                    <button :class="['erp-chip', { on: !district }]" :aria-pressed="!district" @click="district = ''">{{ regionLabel(region) }} 전체</button>
+                    <button v-for="d in districts" :key="d" :class="['erp-chip', { on: district === d }]" :aria-pressed="district === d" @click="district = d">
+                        {{ districtLabel(d) }}
+                    </button>
                 </div>
                 <h3 class="erp-h3" style="margin-top: 12px">
                     활동자 명단 <span class="erp-sub">{{ people.length }}명 · 사람마다 기간 안 가장 상위 활동과 그 날짜(같은 단계면 최근 날) · 옛 오프찾은 대면 · 일일보고를 안 낸 사람은 안 나와요</span>
