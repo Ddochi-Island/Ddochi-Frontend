@@ -243,6 +243,32 @@ const STATUS_ORDER = { none: 0, submitted: 1, final: 2 }
 const districtStatus = computed(() => [...reportNameOptions.value]
     .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || a.name.localeCompare(b.name)))
 const districtReportedCount = computed(() => reportNameOptions.value.filter(o => o.status !== 'none').length)
+// 구역장 "우리 구역 활동" — 이름 → 활동 문구('' = 아직 안 고름). 저장된 활동으로 채워 시작
+const ACT_CATS = [
+    { value: '대면 활동!', label: '👥 대면' }, { value: '전단지 활동!', label: '📄 전단지' },
+    { value: '비대면 활동!', label: '🌐 비대면' }, { value: '대체 활동!', label: '🔄 대체' },
+    { value: '활동을 하지 못했어..', label: '🛋 미활동' },
+]
+const actAssign = reactive({})
+const activeCat = ref('대면 활동!')
+const actSaving = ref(false)
+watch(reportNameOptions, (opts) => {
+    for (const k of Object.keys(actAssign)) delete actAssign[k]
+    for (const o of opts) actAssign[o.name] = o.activity || ''
+})
+const namesIn = (cat) => Object.keys(actAssign).filter(n => actAssign[n] === cat).sort()
+function toggleAct(name) { actAssign[name] = actAssign[name] === activeCat.value ? '' : activeCat.value }
+function submitActivities() {
+    const items = Object.entries(actAssign).filter(([, a]) => a).map(([name, activity]) => ({ name, activity }))
+    if (!items.length) return showAppAlert('활동을 고른 사람이 없어!')
+    const dateKey = selectedDateKey.value || getTodayDate()
+    actSaving.value = true
+    callApi('/api/daily-report/activities', { dateKey, items }, (res) => {
+        actSaving.value = false
+        showAppAlert(res?.message || '저장에 실패했어. 잠시 후 다시 시도해줘!')
+        if (res?.success) loadReportNameOptions(dateKey)
+    })
+}
 const filteredSuggestions = computed(() => {
     const f = String(reportName.value || '').trim().toLowerCase()
     return reportNameList.value.filter((n) => !f || n.toLowerCase().includes(f))
@@ -469,7 +495,7 @@ async function submitDailyReport() {
 
     // mood touched 검증 (본인 제출만, 대리 제출은 0 으로 저장)
     const isDelegated = resolvedName !== auth.currentUserName
-    if (!isDelegated && ACTIVITY_DETAILS[activity.value] && !activityDetails.value.length) {
+    if (!isAreaLead.value && !isDelegated && ACTIVITY_DETAILS[activity.value] && !activityDetails.value.length) {
         return showAppAlert('1. 활동에서 어떤 활동을 했는지 하나 이상 골라줘!')
     }
     if (!isDelegated && !moodTouched.value) {
@@ -572,7 +598,8 @@ function buildSubmitPayload(name) {
         sabun: auth.currentSabun,
         name,
         dateKey: currentReportDateKey(),
-        activity: activity.value,
+        // 구역장은 활동을 "우리 구역 활동"으로 따로 냄 — 여기선 안 보내서 서버가 기존 활동을 그대로 둠
+        ...(isAreaLead.value ? {} : { activity: activity.value }),
         talkCount: talkCount.value,
         dmCount: dmRows.reduce((s, r) => s + (Number(r.count) || 0), 0),
         qrCount: qrRows.reduce((s, r) => s + (Number(r.count) || 0), 0),
@@ -695,6 +722,48 @@ onMounted(async () => {
 
         <div class="report-section-divider">🌾 오늘의 수확 (보고)</div>
 
+        <!-- 구역장: 우리 구역 활동을 활동별로 이름 담아 한 번에 제출(2026-11-16) — 수치는 아래 보고 대상자별로 -->
+        <div v-if="isAreaLead" class="district-act">
+            <label>🌱 1. 우리 구역 활동</label>
+            <div class="district-act-cats">
+                <button v-for="c in ACT_CATS" :key="c.value" type="button"
+                    :class="['act-cat', { active: activeCat === c.value }]" @click="activeCat = c.value">{{ c.label }}</button>
+            </div>
+            <div class="district-act-hint">위에서 활동을 고르고, 아래 이름을 누르면 그 활동에 담겨요. 한 번 더 누르면 빠져요.</div>
+            <div v-for="c in ACT_CATS" :key="'row' + c.value" class="act-row">
+                <span class="act-row-label">{{ c.label }}</span>
+                <button v-for="n in namesIn(c.value)" :key="n" type="button" class="act-name in" @click="toggleAct(n)">{{ n }}</button>
+                <span v-if="!namesIn(c.value).length" class="act-empty">-</span>
+            </div>
+            <div class="act-row">
+                <span class="act-row-label">아직 안 고름</span>
+                <button v-for="n in namesIn('')" :key="n" type="button" class="act-name" @click="toggleAct(n)">{{ n }}</button>
+                <span v-if="!namesIn('').length" class="act-empty">다 골랐어요 👍</span>
+            </div>
+            <button class="btn" style="margin-top:10px;" :disabled="actSaving" @click="submitActivities">
+                {{ actSaving ? '저장 중...' : '🌱 우리 구역 활동 제출' }}
+            </button>
+        </div>
+        <template v-if="!isAreaLead">
+        <label>🌱 1. 활동</label>
+        <div class="input-card">
+            <select v-model="activity" @change="saveDraft">
+                <option>활동을 하지 못했어..</option>
+                <option>대면 활동!</option>
+                <option>전단지 활동!</option>
+                <option>비대면 활동!</option>
+                <option>대체 활동!</option>
+            </select>
+        </div>
+        <div v-if="ACTIVITY_DESC[activity]" style="font-size:12px; color:#888; margin:8px 4px 16px; line-height:1.5;">
+            {{ ACTIVITY_DESC[activity] }}
+            <label v-for="d in ACTIVITY_DETAILS[activity]" :key="d" class="activity-detail">
+                <input type="checkbox" :value="d" v-model="activityDetails"> {{ d }}
+            </label>
+            <div v-if="activity === '대체 활동!'" style="color:#d32f2f; margin-top:4px;">※ 기도문 작성, 전도대 참석&amp;보강, 내년 전도계획 작성은 허용되지 않음</div>
+        </div>
+        </template>
+
         <div v-if="isAreaLead" class="district-status">
             <div class="district-status-title">🏘️ 우리 구역 보고 {{ districtReportedCount }} / {{ reportNameOptions.length }}명</div>
             <div class="district-status-chips">
@@ -723,24 +792,6 @@ onMounted(async () => {
         </div>
 
         <div v-if="finalWarning" class="final-note">✅ {{ reportName }}님은 이미 최종 제출했어요. 고쳐서 내면 지금 내용으로 덮어써요.</div>
-
-        <label>🌱 1. 활동</label>
-        <div class="input-card">
-            <select v-model="activity" @change="saveDraft">
-                <option>활동을 하지 못했어..</option>
-                <option>대면 활동!</option>
-                <option>전단지 활동!</option>
-                <option>비대면 활동!</option>
-                <option>대체 활동!</option>
-            </select>
-        </div>
-        <div v-if="ACTIVITY_DESC[activity]" style="font-size:12px; color:#888; margin:8px 4px 16px; line-height:1.5;">
-            {{ ACTIVITY_DESC[activity] }}
-            <label v-for="d in ACTIVITY_DETAILS[activity]" :key="d" class="activity-detail">
-                <input type="checkbox" :value="d" v-model="activityDetails"> {{ d }}
-            </label>
-            <div v-if="activity === '대체 활동!'" style="color:#d32f2f; margin-top:4px;">※ 기도문 작성, 전도대 참석&amp;보강, 내년 전도계획 작성은 허용되지 않음</div>
-        </div>
 
         <label>🗣️ 말걸기 수</label>
         <div class="input-card">
@@ -1225,4 +1276,14 @@ onMounted(async () => {
 .district-chip.final { color: #888; }
 .district-chip.active { border-color: #1565c0; box-shadow: 0 0 0 1px #1565c0 inset; }
 .final-note { font-size: 12px; color: #1565c0; background: #e3f2fd; border-radius: 8px; padding: 8px 10px; margin: 8px 0 12px; }
+.district-act { background: #fff; border-radius: 14px; padding: 12px; margin-bottom: 14px; box-shadow: 0 2px 6px rgba(0,0,0,.05); }
+.district-act-cats { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.act-cat { border: 1px solid #ccc; background: #fafafa; border-radius: 14px; padding: 5px 10px; font-size: 13px; font-family: inherit; cursor: pointer; }
+.act-cat.active { background: #2e7d32; border-color: #2e7d32; color: #fff; }
+.district-act-hint { font-size: 12px; color: #888; margin-bottom: 8px; }
+.act-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 0; border-top: 1px dashed #eee; }
+.act-row-label { font-size: 13px; color: #5d4037; min-width: 72px; }
+.act-name { border: 1px solid #ffab91; background: #fff3e0; border-radius: 12px; padding: 3px 9px; font-size: 13px; font-family: inherit; cursor: pointer; }
+.act-name.in { border-color: #81c784; background: #e8f5e9; }
+.act-empty { font-size: 12px; color: #bbb; }
 </style>
