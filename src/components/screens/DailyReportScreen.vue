@@ -259,7 +259,10 @@ watch(reportNameOptions, (opts) => {
 const namesIn = (cat) => Object.keys(actAssign).filter(n => actAssign[n] === cat).sort()
 function toggleAct(name) { actAssign[name] = actAssign[name] === activeCat.value ? '' : activeCat.value }
 function submitActivities() {
-    const items = Object.entries(actAssign).filter(([, a]) => a).map(([name, activity]) => ({ name, activity }))
+    // 아직 안 고른 사람이 있으면 제출 막음 — 한 번에 구역 전원 활동이 들어가게(2026-11-16)
+    const left = namesIn('')
+    if (left.length) return showAppAlert(`아직 활동을 안 고른 사람이 있어!<br>${left.join(', ')}`)
+    const items = Object.entries(actAssign).map(([name, activity]) => ({ name, activity }))
     if (!items.length) return showAppAlert('활동을 고른 사람이 없어!')
     const dateKey = selectedDateKey.value || getTodayDate()
     actSaving.value = true
