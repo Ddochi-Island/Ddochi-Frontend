@@ -697,7 +697,7 @@ onMounted(async () => {
                 <option>대체 활동!</option>
             </select>
         </div>
-        <div v-if="ACTIVITY_DESC[activity]" style="font-size:12px; color:#888; margin:-6px 4px 12px; line-height:1.5;">{{ ACTIVITY_DESC[activity] }}</div>
+        <div v-if="ACTIVITY_DESC[activity]" style="font-size:12px; color:#888; margin:8px 4px 16px; line-height:1.5;">{{ ACTIVITY_DESC[activity] }}</div>
 
         <label>🗣️ 말걸기 수</label>
         <div class="input-card">
