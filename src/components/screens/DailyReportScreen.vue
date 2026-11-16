@@ -252,12 +252,17 @@ const ACT_CATS = [
 const actAssign = reactive({})
 const activeCat = ref('대면 활동!')
 const actSaving = ref(false)
+// 전도팀장 이상·청년회 사명자는 항상 대면 고정(서버 alwaysFace, 2026-11-16) — 눌러도 안 옮겨짐
+const fixedFace = computed(() => new Set(reportNameOptions.value.filter(o => o.alwaysFace).map(o => o.name)))
 watch(reportNameOptions, (opts) => {
     for (const k of Object.keys(actAssign)) delete actAssign[k]
-    for (const o of opts) actAssign[o.name] = o.activity || ''
+    for (const o of opts) actAssign[o.name] = o.alwaysFace ? '대면 활동!' : (o.activity || '')
 })
 const namesIn = (cat) => Object.keys(actAssign).filter(n => actAssign[n] === cat).sort()
-function toggleAct(name) { actAssign[name] = actAssign[name] === activeCat.value ? '' : activeCat.value }
+function toggleAct(name) {
+    if (fixedFace.value.has(name)) return showToast('전도팀장 이상 사명자는 항상 대면 활동이에요')
+    actAssign[name] = actAssign[name] === activeCat.value ? '' : activeCat.value
+}
 function submitActivities() {
     // 아직 안 고른 사람이 있으면 제출 막음 — 한 번에 구역 전원 활동이 들어가게(2026-11-16)
     const left = namesIn('')
@@ -735,7 +740,7 @@ onMounted(async () => {
             <div class="district-act-hint">위에서 활동을 고르고, 아래 이름을 누르면 그 활동에 담겨요. 한 번 더 누르면 빠져요.</div>
             <div v-for="c in ACT_CATS" :key="'row' + c.value" class="act-row">
                 <span class="act-row-label">{{ c.label }}</span>
-                <button v-for="n in namesIn(c.value)" :key="n" type="button" class="act-name in" @click="toggleAct(n)">{{ n }}</button>
+                <button v-for="n in namesIn(c.value)" :key="n" type="button" :class="['act-name in', { fixed: fixedFace.has(n) }]" @click="toggleAct(n)">{{ fixedFace.has(n) ? '🔒 ' : '' }}{{ n }}</button>
                 <span v-if="!namesIn(c.value).length" class="act-empty">-</span>
             </div>
             <div class="act-row">
@@ -1288,5 +1293,6 @@ onMounted(async () => {
 .act-row-label { font-size: 13px; color: #5d4037; min-width: 72px; }
 .act-name { border: 1px solid #ffab91; background: #fff3e0; border-radius: 12px; padding: 3px 9px; font-size: 13px; font-family: inherit; cursor: pointer; }
 .act-name.in { border-color: #81c784; background: #e8f5e9; }
+.act-name.fixed { opacity: .75; cursor: default; }
 .act-empty { font-size: 12px; color: #bbb; }
 </style>
