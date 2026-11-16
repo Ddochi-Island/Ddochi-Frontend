@@ -1,5 +1,5 @@
 <script setup>
-// ERP 활동자 명단 — 일일보고에 올린 활동을 날짜마다 단계(대면/전단지/비대면/대체/미활동)별 이름으로. 지역으로 좁히고 시트용 복사
+// ERP 활동자 명단 — 기간 안에서 사람마다 가장 상위 활동(대면>전단지>비대면>대체>미활동)과 그 날짜를 표로(매칭 명단처럼). 지역으로 좁히고 시트용 복사
 import { ref, computed } from 'vue'
 import ErpRangePicker from './ErpRangePicker.vue'
 import { useErpLoad, weekOf, natCmp, regionLabel } from './erpUtil'
@@ -21,24 +21,26 @@ async function run() { if (await load({ ...range.value })) loaded.value = true }
 const all = computed(() => data.value?.rows || [])
 const regions = computed(() => [...new Set(all.value.map((r) => r.region).filter(Boolean))].sort(natCmp))
 const rows = computed(() => all.value.filter((r) => !region.value || r.region === region.value))
-// [{ day, stages: [{ code, label, people: [r] }], total }] — 최근 날짜부터
-const days = computed(() => {
-    const byDay = new Map()
-    for (const r of rows.value) (byDay.get(r.day) || byDay.set(r.day, []).get(r.day)).push(r)
-    return [...byDay.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([day, list]) => ({
-        day, total: list.length,
-        stages: STAGES.map((s) => ({ ...s, people: list.filter((r) => r.activity === s.code) })),
-    }))
+const RANK = Object.fromEntries(STAGES.map((st, i) => [st.code, i]))
+const LABEL = Object.fromEntries(STAGES.map((st) => [st.code, st.label]))
+// 사람마다 기간 안 가장 상위 활동 한 줄 — 같은 단계를 여러 날 했으면 가장 최근 날짜(2026-11-16 사용자 요청)
+const people = computed(() => {
+    const best = new Map()
+    for (const r of rows.value) {
+        const b = best.get(r.name)
+        if (!b || RANK[r.activity] < RANK[b.activity] || (r.activity === b.activity && r.day > b.day)) best.set(r.name, r)
+    }
+    return [...best.values()].sort((a, b) => RANK[a.activity] - RANK[b.activity] || b.day.localeCompare(a.day) || a.name.localeCompare(b.name))
 })
+const stageCount = (code) => people.value.filter((r) => r.activity === code).length
 const dayLabel = (ymd) => `${Number(ymd.slice(5, 7))}/${Number(ymd.slice(8, 10))}(${WEEK[new Date(`${ymd}T00:00:00`).getDay()]})`
-const who = (r) => `${r.name}${r.region ? ` ${r.region}-${r.district || '?'}` : ''}`
+const stageName = (code) => LABEL[code].slice(2).trim()
 
 function copy() {
-    const lines = [['날짜', '활동', '이름', '지역', '구역'].join('\t')]
-    for (const d of days.value) for (const s of d.stages) for (const r of s.people)
-        lines.push([d.day, s.label.slice(2).trim(), r.name, r.region || '', r.district || ''].join('\t'))
+    const lines = [['날짜', '활동 단계', '이름'].join('\t'),
+        ...people.value.map((r) => [dayLabel(r.day), stageName(r.activity), r.name].join('\t'))]
     navigator.clipboard.writeText(lines.join('\n')).catch(() => {})
-    showToast(`📋 ${lines.length - 1}줄 복사됨 — 시트에 붙여넣으세요`)
+    showToast(`📋 ${people.value.length}명 복사됨 — 시트에 붙여넣으세요`)
 }
 </script>
 
@@ -61,28 +63,27 @@ function copy() {
                     </button>
                     <button class="erp-btn" style="margin-left: auto" :disabled="!rows.length" @click="copy">시트용 복사</button>
                 </div>
-                <p class="erp-sub" style="margin: 8px 0 0">소속은 보고한 날 기준 · 옛 오프찾은 대면으로 · 일일보고를 안 낸 사람은 안 나와요</p>
-            </div>
-            <p v-if="!days.length" class="erp-empty">이 기간에 올라온 일일보고가 없어요.</p>
-            <div v-for="d in days" :key="d.day" class="erp-section">
-                <h3 class="erp-h3">{{ dayLabel(d.day) }} <span class="erp-sub">보고 {{ d.total }}명</span></h3>
-                <div v-for="s in d.stages" :key="s.code" class="act-stage">
-                    <span class="act-stage-label">{{ s.label }} <b>{{ s.people.length }}</b></span>
-                    <span class="act-stage-names">
-                        <template v-if="s.people.length">{{ s.people.map(who).join(', ') }}</template>
-                        <span v-else class="erp-zero">—</span>
-                    </span>
+                <h3 class="erp-h3" style="margin-top: 12px">
+                    활동자 명단 <span class="erp-sub">{{ people.length }}명 · 사람마다 기간 안 가장 상위 활동과 그 날짜(같은 단계면 최근 날) · 옛 오프찾은 대면 · 일일보고를 안 낸 사람은 안 나와요</span>
+                </h3>
+                <div class="erp-find-chips">
+                    <span v-for="st in STAGES" :key="st.code" class="erp-sub">{{ st.label }} {{ stageCount(st.code) }}</span>
+                </div>
+                <p v-if="!people.length" class="erp-empty">이 기간에 올라온 일일보고가 없어요.</p>
+                <div v-else class="erp-table-wrap">
+                    <table class="erp-table erp-table-left">
+                        <thead><tr><th scope="col">날짜</th><th scope="col">활동 단계</th><th scope="col">이름</th></tr></thead>
+                        <tbody>
+                            <tr v-for="r in people" :key="r.name">
+                                <td>{{ dayLabel(r.day) }}</td>
+                                <td>{{ LABEL[r.activity] }}</td>
+                                <td><b>{{ r.name }}</b></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </template>
         <p v-else class="erp-empty">보고 날짜 기간을 고르고 🔍 조회를 누르세요.</p>
     </section>
 </template>
-
-<style scoped>
-.act-stage { display: grid; grid-template-columns: 110px 1fr; gap: 8px; padding: 6px 0; border-top: 1px solid var(--e-line); font-size: 13px; }
-.act-stage:first-of-type { border-top: none; }
-.act-stage-label { color: var(--e-sub); white-space: nowrap; }
-.act-stage-label b { color: var(--e-text); margin-left: 2px; }
-.act-stage-names { line-height: 1.6; }
-</style>
