@@ -279,6 +279,15 @@ async function submitHabjaeyang() {
     if (submitting.value || ui.isProcessing) return
     const submitData = collectSubmitData()
     if (!submitData) return
+    // 새로 쓰는데 같은 번호로 예전 합재양이 있으면 제출 전에 한 번 더 확인(중섭, 2026-11-16)
+    if (!currentDocId.value && priorHj.value.length) {
+        return showAppConfirm(`이 번호로 예전에 합재양을 쓴 적 있어요(${priorHj.value.length}건).<br>중복 섭외가 아닌지 확인했나요?`,
+            (yes) => { if (yes) continueSubmit(submitData) }, { yesLabel: '그래도 제출', noLabel: '다시 볼게요' })
+    }
+    continueSubmit(submitData)
+}
+
+async function continueSubmit(submitData) {
     // 홈에서 새로 쓰는 도구노방·사쉐 합재양인데 번호가 합당한 자 CRM(shed 신청자)에 있으면 그 건으로 이어 쓰게 확인 —
     // CRM에서 만남 픽스를 안 누르고 홈에서 쓰면 만남 픽스 기록이 빠져서 또 돌리는 일이 있었음(2026-11-11)
     if (!currentDocId.value && !tm.shedContext && submitData.path === '도구노방' && submitData.tool === '사쉐') {
