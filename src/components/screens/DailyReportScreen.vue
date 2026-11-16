@@ -130,6 +130,13 @@ function resolveAllMissed() {
 
 const reportName = ref('')
 const activity = ref('활동을 하지 못했어..')
+// 활동자 기준(2026-11-16 공지) — 고른 항목 아래 한 줄 설명. 오프찾은 대면(찾기)에 포함돼 선택지에서 빠짐
+const ACTIVITY_DESC = {
+    '대면 활동!': '거주지·비대면 활동지 말고 현장에 나가 활동 참여, 대면 친교(인·교·섬·잎), 찾기(도구노방·명함·디엠·티엠·홍보·씨앗작성), 매칭·상연·성소·복음방, 해외전도, 섭외자와 대화하는 전도의장 봉사 중 하나 이상',
+    '전단지 활동!': '대면 기준엔 못 미치지만 현장에서 전단지 배부나 QR 부착을 함',
+    '비대면 활동!': '거주지·비대면 활동지에서 DM, 콜링, 홍보 등 온라인 활동을 함',
+    '대체 활동!': '후원잎사귀, 인스타에 올릴 레퍼런스 찾기, 섭외자와 대화하지 않는 전도의장 봉사 (기도문 작성, 전도대 참석·보강, 내년 전도계획 작성은 안 돼요)',
+}
 const talkCount = ref('')
 const dmRows = reactive([{ count: '', path: '', tool: '' }])
 const qrRows = reactive([{ count: '', path: '', tool: '' }])
@@ -372,7 +379,7 @@ function loadDraft() {
         if (draft.date !== targetDate) return
 
         reportName.value = draft.reportName || ''
-        activity.value = draft.activity || '활동을 하지 못했어..'
+        activity.value = draft.activity === '오프찾 했어!' ? '대면 활동!' : (draft.activity || '활동을 하지 못했어..')
         talkCount.value = draft.talkCount || ''
         if (draft.dmRows?.length) dmRows.splice(0, dmRows.length, ...draft.dmRows)
         if (draft.qrRows?.length) qrRows.splice(0, qrRows.length, ...draft.qrRows)
@@ -684,11 +691,13 @@ onMounted(async () => {
         <div class="input-card">
             <select v-model="activity" @change="saveDraft">
                 <option>활동을 하지 못했어..</option>
-                <option>비대면 활동!</option>
                 <option>대면 활동!</option>
-                <option>오프찾 했어!</option>
+                <option>전단지 활동!</option>
+                <option>비대면 활동!</option>
+                <option>대체 활동!</option>
             </select>
         </div>
+        <div v-if="ACTIVITY_DESC[activity]" style="font-size:12px; color:#888; margin:-6px 4px 12px; line-height:1.5;">{{ ACTIVITY_DESC[activity] }}</div>
 
         <label>🗣️ 말걸기 수</label>
         <div class="input-card">
