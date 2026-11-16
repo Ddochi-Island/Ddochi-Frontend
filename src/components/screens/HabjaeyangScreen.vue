@@ -611,10 +611,13 @@ onUnmounted(() => {
                 </div>
                 <div v-if="priorHj.length" class="hj-prior">
                     <div class="hj-prior-title">⚠️ 이 번호로 예전에 합재양을 쓴 적 있어요 (중섭 확인)</div>
-                    <div v-for="(p, i) in priorHj" :key="i" class="hj-prior-row">
-                        {{ p.hjDay }} · {{ p.name }} · 인도자 {{ p.guide || '-' }} · 티엠 {{ p.tmName || '-' }}{{ p.path ? ` · ${p.path}` : '' }}
-                        · {{ p.approval || p.stage }}{{ p.lastMatch ? ` · ${p.lastMatch}` : '' }}
-                    </div>
+                    <details v-for="(p, i) in priorHj" :key="i" class="hj-prior-row">
+                        <summary>
+                            {{ p.hjDay }} · {{ p.name }} · 인도자 {{ p.guide || '-' }} · 티엠 {{ p.tmName || '-' }}{{ p.path ? ` · ${p.path}` : '' }}
+                            · {{ p.approval || p.stage }}{{ p.lastMatch ? ` · ${p.lastMatch}` : '' }}
+                        </summary>
+                        <div class="hj-prior-card">{{ p.card || '예전 합재양이라 본문이 없어요' }}</div>
+                    </details>
                 </div>
             </div>
 
@@ -880,5 +883,7 @@ onUnmounted(() => {
 }
 .hj-prior { margin-top: 8px; padding: 8px 10px; background: #fff3e0; border: 1px solid #ffcc80; border-radius: 8px; font-size: 12px; color: #6d4c41; line-height: 1.5; }
 .hj-prior-title { font-weight: bold; color: #e65100; margin-bottom: 4px; }
-.hj-prior-row + .hj-prior-row { margin-top: 2px; }
+.hj-prior-row + .hj-prior-row { margin-top: 4px; }
+.hj-prior-row summary { cursor: pointer; }
+.hj-prior-card { margin-top: 6px; padding: 8px; background: #fff; border-radius: 6px; white-space: pre-wrap; color: #444; max-height: 320px; overflow-y: auto; }
 </style>
