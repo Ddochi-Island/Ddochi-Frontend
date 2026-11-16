@@ -254,14 +254,23 @@ const activeCat = ref('대면 활동!')
 const actSaving = ref(false)
 // 전도팀장 이상·청년회 사명자는 항상 대면 고정(서버 alwaysFace, 2026-11-16) — 눌러도 안 옮겨짐
 const fixedFace = computed(() => new Set(reportNameOptions.value.filter(o => o.alwaysFace).map(o => o.name)))
+// "구역원 추가" 후보 — 직책이 회원뿐인 같은 구역원(명단엔 안 뜸). 그날 활동이 이미 있으면 처음부터 담아 둠
+const districtOthers = ref([])
+const showAddOthers = ref(false)
+const addableOthers = computed(() => districtOthers.value.map(o => o.name).filter(n => !(n in actAssign)))
 watch(reportNameOptions, (opts) => {
     for (const k of Object.keys(actAssign)) delete actAssign[k]
     for (const o of opts) actAssign[o.name] = o.alwaysFace ? '대면 활동!' : (o.activity || '')
+    for (const o of districtOthers.value) if (o.activity) actAssign[o.name] = o.activity
 })
+function addOther(name) { actAssign[name] = activeCat.value }
 const namesIn = (cat) => Object.keys(actAssign).filter(n => actAssign[n] === cat).sort()
 function toggleAct(name) {
     if (fixedFace.value.has(name)) return showToast('전도팀장 이상 사명자는 항상 대면 활동이에요')
-    actAssign[name] = actAssign[name] === activeCat.value ? '' : activeCat.value
+    const next = actAssign[name] === activeCat.value ? '' : activeCat.value
+    // 추가한 구역원은 빼면 명단에서 아예 빠짐(아직 안 고름에 남겨 제출을 막지 않게)
+    if (!next && districtOthers.value.some(o => o.name === name)) delete actAssign[name]
+    else actAssign[name] = next
 }
 function submitActivities() {
     // 아직 안 고른 사람이 있으면 제출 막음 — 한 번에 구역 전원 활동이 들어가게(2026-11-16)
@@ -343,7 +352,7 @@ function loadReportForName(name, dateKey) {
 async function loadReportNameOptions(dateKey) {
     try {
         const r = await callApiPromise('/api/daily-report/list-names', { dateKey: dateKey || getTodayDate() })
-        if (r && r.success) { reportNameOptions.value = r.names || []; isAreaLead.value = !!r.isAreaLead }
+        if (r && r.success) { districtOthers.value = r.others || []; reportNameOptions.value = r.names || []; isAreaLead.value = !!r.isAreaLead }
     } catch (_) { /* 401/네트워크 — 명단은 fallback */ }
 }
 
@@ -747,6 +756,16 @@ onMounted(async () => {
                 <span class="act-row-label">아직 안 고름</span>
                 <button v-for="n in namesIn('')" :key="n" type="button" class="act-name" @click="toggleAct(n)">{{ n }}</button>
                 <span v-if="!namesIn('').length" class="act-empty">다 골랐어요 👍</span>
+            </div>
+            <div v-if="districtOthers.length" class="act-add">
+                <button type="button" class="act-add-btn" @click="showAddOthers = !showAddOthers">
+                    {{ showAddOthers ? '▲ 구역원 추가 닫기' : '➕ 구역원 추가' }}
+                </button>
+                <div v-if="showAddOthers" class="act-add-list">
+                    <div class="district-act-hint">누르면 지금 고른 활동에 담겨요. 담은 뒤 다시 누르면 빠져요.</div>
+                    <button v-for="n in addableOthers" :key="n" type="button" class="act-name" @click="addOther(n)">{{ n }}</button>
+                    <span v-if="!addableOthers.length" class="act-empty">다 추가했어요</span>
+                </div>
             </div>
             <button class="btn" style="margin-top:10px;" :disabled="actSaving" @click="submitActivities">
                 {{ actSaving ? '저장 중...' : '🌱 우리 구역 활동 제출' }}
@@ -1295,4 +1314,8 @@ onMounted(async () => {
 .act-name.in { border-color: #81c784; background: #e8f5e9; }
 .act-name.fixed { opacity: .75; cursor: default; }
 .act-empty { font-size: 12px; color: #bbb; }
+.act-add { margin-top: 8px; border-top: 1px dashed #eee; padding-top: 8px; }
+.act-add-btn { border: 1px dashed #8d6e63; background: none; border-radius: 12px; padding: 4px 10px; font-size: 13px; font-family: inherit; color: #5d4037; cursor: pointer; }
+.act-add-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.act-add-list .district-act-hint { width: 100%; margin: 0; }
 </style>
