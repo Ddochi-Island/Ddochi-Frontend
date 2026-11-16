@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useApi } from '@/composables/useApi'
@@ -137,6 +137,16 @@ const ACTIVITY_DESC = {
     '비대면 활동!': '거주지 및 비대면 활동지에서 DM, 콜링, 홍보 등 온라인 활동을 한 자',
     '대체 활동!': '물질활동 등 대체 활동을 진행한 자',
 }
+// 상세 활동 — 내 활동이 그 기준에 드는지 확인용 체크(하나 이상 필수). 저장은 안 함(2026-11-16 사용자 결정)
+const ACTIVITY_DETAILS = {
+    '대면 활동!': ['활동 참여 (현장 직접 참여)', '대면 친교 관리 (인, 교, 섬, 잎)', '찾기 (도구노방, 명함, 디엠, 티엠, 홍보, 씨앗작성)',
+        '매칭, 상연, 성소, 복음방 진행', '해외전도 활동', '섭외자와 대화하는 전도의장 봉사'],
+    '전단지 활동!': ['전단지 배부', 'QR 부착'],
+    '비대면 활동!': ['DM', '콜링', '홍보', '그 외 온라인 활동'],
+    '대체 활동!': ['후원잎사귀', '인스타에 올릴 레퍼런스 찾는 활동', '섭외자와 대화하지 않는 전도의장 봉사'],
+}
+const activityDetails = ref([])
+watch(activity, () => { activityDetails.value = [] })
 const talkCount = ref('')
 const dmRows = reactive([{ count: '', path: '', tool: '' }])
 const qrRows = reactive([{ count: '', path: '', tool: '' }])
@@ -441,6 +451,7 @@ async function submitDailyReport() {
 
     const rawName = reportName.value.trim()
     if (!rawName) return showAppAlert('이름을 입력해줘!')
+    if (ACTIVITY_DETAILS[activity.value] && !activityDetails.value.length) return showAppAlert('1. 활동에서 어떤 활동을 했는지 하나 이상 골라줘!')
 
     // 동명이인 / 미등록 처리
     let resolvedName
@@ -697,7 +708,13 @@ onMounted(async () => {
                 <option>대체 활동!</option>
             </select>
         </div>
-        <div v-if="ACTIVITY_DESC[activity]" style="font-size:12px; color:#888; margin:8px 4px 16px; line-height:1.5;">{{ ACTIVITY_DESC[activity] }}</div>
+        <div v-if="ACTIVITY_DESC[activity]" style="font-size:12px; color:#888; margin:8px 4px 16px; line-height:1.5;">
+            {{ ACTIVITY_DESC[activity] }}
+            <label v-for="d in ACTIVITY_DETAILS[activity]" :key="d" class="activity-detail">
+                <input type="checkbox" :value="d" v-model="activityDetails"> {{ d }}
+            </label>
+            <div v-if="activity === '대체 활동!'" style="color:#d32f2f; margin-top:4px;">※ 기도문 작성, 전도대 참석&amp;보강, 내년 전도계획 작성은 허용되지 않음</div>
+        </div>
 
         <label>🗣️ 말걸기 수</label>
         <div class="input-card">
@@ -1184,4 +1201,6 @@ onMounted(async () => {
     background: #4CAF50;
     font-size: 20px;
 }
+.activity-detail { display: flex; align-items: center; gap: 6px; margin: 6px 0 0; font-size: 13px; color: #555; cursor: pointer; }
+.activity-detail input { width: auto; margin: 0; }
 </style>
