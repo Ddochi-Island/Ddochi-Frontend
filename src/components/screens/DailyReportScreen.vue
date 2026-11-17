@@ -279,10 +279,11 @@ function toggleAct(name) {
     else actAssign[name] = next
 }
 function submitActivities() {
-    // 아직 안 고른 사람이 있으면 제출 막음 — 한 번에 구역 전원 활동이 들어가게(2026-11-16)
+    // 구역장은 아직 안 고른 사람이 있으면 제출 막음 — 한 번에 구역 전원 활동이 들어가게(2026-11-16).
+    // 지역부전서(지역 범위)는 고른 사람만 내도 됨 — 자기 이름만 올려도 제출(2026-11-17)
     const left = namesIn('')
-    if (left.length) return showAppAlert(`아직 활동을 안 고른 사람이 있어!<br>${left.join(', ')}`)
-    const items = Object.entries(actAssign).map(([name, activity]) => ({ name, activity }))
+    if (proxyScope.value !== 'region' && left.length) return showAppAlert(`아직 활동을 안 고른 사람이 있어!<br>${left.join(', ')}`)
+    const items = Object.entries(actAssign).filter(([, a]) => a).map(([name, activity]) => ({ name, activity }))
     if (!items.length) return showAppAlert('활동을 고른 사람이 없어!')
     const dateKey = selectedDateKey.value || getTodayDate()
     actSaving.value = true
