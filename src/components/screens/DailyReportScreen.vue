@@ -237,7 +237,13 @@ const reportNameList = computed(() => {
     if (auth.currentUserName) set.add(auth.currentUserName)
     return Array.from(set).sort()
 })
-// 구역장용 "우리 구역 오늘 보고" — 미보고 먼저(2026-11-16)
+// 구역장용 "우리 구역 오늘 보고" — 미보고 먼저(2026-11-16). 지역부전서는 같은 화면을 "우리 지역"으로(scope='region', 2026-11-17)
+const proxyScope = ref('')
+const scopeWord = computed(() => (proxyScope.value === 'region' ? '지역' : '구역'))
+// 지역 범위면 이름 옆에 구역을 붙이고 구역 순으로 — 지역 전체라 같은 이름이 어느 구역인지 보이게
+const districtOf = computed(() => Object.fromEntries([...reportNameOptions.value, ...districtOthers.value].map(o => [o.name, o.district || ''])))
+const nameLabel = (n) => (proxyScope.value === 'region' && districtOf.value[n] ? `${n} ${districtOf.value[n]}구역` : n)
+const byDistrict = (a, b) => String(districtOf.value[a] || '').localeCompare(String(districtOf.value[b] || ''), undefined, { numeric: true }) || a.localeCompare(b)
 const isAreaLead = ref(false)
 const STATUS_ORDER = { none: 0, submitted: 1, final: 2 }
 const districtStatus = computed(() => [...reportNameOptions.value]
@@ -257,14 +263,14 @@ const fixedFace = computed(() => new Set(reportNameOptions.value.filter(o => o.a
 // "구역원 추가" 후보 — 직책이 회원뿐인 같은 구역원(명단엔 안 뜸). 그날 활동이 이미 있으면 처음부터 담아 둠
 const districtOthers = ref([])
 const showAddOthers = ref(false)
-const addableOthers = computed(() => districtOthers.value.map(o => o.name).filter(n => !(n in actAssign)))
+const addableOthers = computed(() => districtOthers.value.map(o => o.name).filter(n => !(n in actAssign)).sort(byDistrict))
 watch(reportNameOptions, (opts) => {
     for (const k of Object.keys(actAssign)) delete actAssign[k]
     for (const o of opts) actAssign[o.name] = o.alwaysFace ? '대면 활동!' : (o.activity || '')
     for (const o of districtOthers.value) if (o.activity) actAssign[o.name] = o.activity
 })
 function addOther(name) { actAssign[name] = activeCat.value }
-const namesIn = (cat) => Object.keys(actAssign).filter(n => actAssign[n] === cat).sort()
+const namesIn = (cat) => Object.keys(actAssign).filter(n => actAssign[n] === cat).sort(byDistrict)
 function toggleAct(name) {
     if (fixedFace.value.has(name)) return showToast('전도팀장 이상 사명자는 항상 대면 활동이에요')
     const next = actAssign[name] === activeCat.value ? '' : activeCat.value
@@ -352,7 +358,7 @@ function loadReportForName(name, dateKey) {
 async function loadReportNameOptions(dateKey) {
     try {
         const r = await callApiPromise('/api/daily-report/list-names', { dateKey: dateKey || getTodayDate() })
-        if (r && r.success) { districtOthers.value = r.others || []; reportNameOptions.value = r.names || []; isAreaLead.value = !!r.isAreaLead }
+        if (r && r.success) { districtOthers.value = r.others || []; reportNameOptions.value = r.names || []; isAreaLead.value = !!r.isAreaLead; proxyScope.value = r.scope || '' }
     } catch (_) { /* 401/네트워크 — 명단은 fallback */ }
 }
 
@@ -741,7 +747,7 @@ onMounted(async () => {
 
         <!-- 구역장: 우리 구역 활동을 활동별로 이름 담아 한 번에 제출(2026-11-16) — 수치는 아래 보고 대상자별로 -->
         <div v-if="isAreaLead" class="district-act">
-            <label>🌱 1. 우리 구역 활동</label>
+            <label>🌱 1. 우리 {{ scopeWord }} 활동</label>
             <div class="district-act-cats">
                 <button v-for="c in ACT_CATS" :key="c.value" type="button"
                     :class="['act-cat', { active: activeCat === c.value }]" @click="activeCat = c.value">{{ c.label }}</button>
@@ -749,26 +755,26 @@ onMounted(async () => {
             <div class="district-act-hint">위에서 활동을 고르고, 아래 이름을 누르면 그 활동에 담겨요. 한 번 더 누르면 빠져요.</div>
             <div v-for="c in ACT_CATS" :key="'row' + c.value" class="act-row">
                 <span class="act-row-label">{{ c.label }}</span>
-                <button v-for="n in namesIn(c.value)" :key="n" type="button" :class="['act-name in', { fixed: fixedFace.has(n) }]" @click="toggleAct(n)">{{ fixedFace.has(n) ? '🔒 ' : '' }}{{ n }}</button>
+                <button v-for="n in namesIn(c.value)" :key="n" type="button" :class="['act-name in', { fixed: fixedFace.has(n) }]" @click="toggleAct(n)">{{ fixedFace.has(n) ? '🔒 ' : '' }}{{ nameLabel(n) }}</button>
                 <span v-if="!namesIn(c.value).length" class="act-empty">-</span>
             </div>
             <div class="act-row">
                 <span class="act-row-label">아직 안 고름</span>
-                <button v-for="n in namesIn('')" :key="n" type="button" class="act-name" @click="toggleAct(n)">{{ n }}</button>
+                <button v-for="n in namesIn('')" :key="n" type="button" class="act-name" @click="toggleAct(n)">{{ nameLabel(n) }}</button>
                 <span v-if="!namesIn('').length" class="act-empty">다 골랐어요 👍</span>
             </div>
             <div v-if="districtOthers.length" class="act-add">
                 <button type="button" class="act-add-btn" @click="showAddOthers = !showAddOthers">
-                    {{ showAddOthers ? '▲ 구역원 추가 닫기' : '➕ 구역원 추가' }}
+                    {{ showAddOthers ? `▲ ${scopeWord}원 추가 닫기` : `➕ ${scopeWord}원 추가` }}
                 </button>
                 <div v-if="showAddOthers" class="act-add-list">
                     <div class="district-act-hint">누르면 지금 고른 활동에 담겨요. 담은 뒤 다시 누르면 빠져요.</div>
-                    <button v-for="n in addableOthers" :key="n" type="button" class="act-name" @click="addOther(n)">{{ n }}</button>
+                    <button v-for="n in addableOthers" :key="n" type="button" class="act-name" @click="addOther(n)">{{ nameLabel(n) }}</button>
                     <span v-if="!addableOthers.length" class="act-empty">다 추가했어요</span>
                 </div>
             </div>
             <button class="btn" style="margin-top:10px;" :disabled="actSaving" @click="submitActivities">
-                {{ actSaving ? '저장 중...' : '🌱 우리 구역 활동 제출' }}
+                {{ actSaving ? '저장 중...' : `🌱 우리 ${scopeWord} 활동 제출` }}
             </button>
         </div>
         <template v-if="!isAreaLead">
@@ -792,11 +798,11 @@ onMounted(async () => {
         </template>
 
         <div v-if="isAreaLead" class="district-status">
-            <div class="district-status-title">🏘️ 우리 구역 보고 {{ districtReportedCount }} / {{ reportNameOptions.length }}명</div>
+            <div class="district-status-title">🏘️ 우리 {{ scopeWord }} 보고 {{ districtReportedCount }} / {{ reportNameOptions.length }}명</div>
             <div class="district-status-chips">
                 <button v-for="o in districtStatus" :key="o.name" type="button"
                     :class="['district-chip', o.status, { active: o.name === reportName }]" @click="pickSuggestion(o.name)">
-                    {{ o.status === 'final' ? '✅' : o.status === 'submitted' ? '📝' : '⬜' }} {{ o.name }}
+                    {{ o.status === 'final' ? '✅' : o.status === 'submitted' ? '📝' : '⬜' }} {{ nameLabel(o.name) }}
                 </button>
             </div>
         </div>
