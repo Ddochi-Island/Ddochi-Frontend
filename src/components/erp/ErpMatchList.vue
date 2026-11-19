@@ -26,7 +26,9 @@ const colFilter = reactive(Object.fromEntries(FILTER_COLS.map((k) => [k, ''])))
 watch([region, group], () => { for (const k of FILTER_COLS) colFilter[k] = '' })
 const colOptions = (key) => [...new Set(chipRows.value.map((r) => r[key] || NONE))].sort(natCmp)
 const colLabel = (key, v) => (v === NONE ? '(없음)' : key.endsWith('region') ? regionLabel(v) : key.endsWith('district') ? dist(v) : v)
-const rows = computed(() => chipRows.value.filter((r) => FILTER_COLS.every((k) => !colFilter[k] || (r[k] || NONE) === colFilter[k])))
+// 최초만남 날짜 순(없는 사람은 맨 뒤, 같으면 합당한자 날짜 순) — 2026-11-20 사용자 요청(전엔 합당한자 날짜 순)
+const byFirstMeet = (a, b) => (!a.first_at - !b.first_at) || String(a.first_at || '').localeCompare(String(b.first_at || '')) || String(a.hap_at || '').localeCompare(String(b.hap_at || ''))
+const rows = computed(() => chipRows.value.filter((r) => FILTER_COLS.every((k) => !colFilter[k] || (r[k] || NONE) === colFilter[k])).sort(byFirstMeet))
 const filtering = computed(() => FILTER_COLS.some((k) => colFilter[k]))
 const clearFilters = () => { for (const k of FILTER_COLS) colFilter[k] = '' }
 const count = (list, key, v) => list.filter((r) => r[key] === v).length
@@ -79,7 +81,7 @@ function copy() {
                     </button>
                 </div>
                 <h3 class="erp-h3">
-                    {{ md(loaded.from) }}~{{ md(loaded.to) }} 매칭 명단 <span class="erp-sub">{{ rows.length }}명 · 합당한자 날짜 순서 · 날짜는 재가한 날 · 소속은 인도자·교사의 지금 소속</span>
+                    {{ md(loaded.from) }}~{{ md(loaded.to) }} 매칭 명단 <span class="erp-sub">{{ rows.length }}명 · 최초만남 날짜 순서 · 날짜는 재가한 날 · 소속은 인도자·교사의 지금 소속</span>
                 </h3>
                 <p v-if="!chipRows.length" class="erp-empty">이 기간에 합당한자 날짜인 사람이 없어요.</p>
                 <div v-else class="erp-table-wrap">
