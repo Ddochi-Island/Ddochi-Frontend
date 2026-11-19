@@ -39,6 +39,9 @@ const md = (ymd) => `${Number(ymd.slice(5, 7))}/${Number(ymd.slice(8, 10))}`
 const day = (iso) => (iso ? md(iso.slice(0, 10)) : '')
 const onOff = (t) => (t === 'ONLINE' ? '온라인' : t === 'OFFLINE' ? '오프라인' : '')
 const dist = (d) => (d ? `${d}구역` : '')
+// 2차만남·밀림 결과의 괄호 속 날짜를 단기/장기 색으로 — 서버가 *_term으로 줌(다음 만남까지 3일 이내 단기, 2026-11-20)
+const splitDate = (text) => { const m = String(text || '').match(/^(.*?)(\d{1,2}\/\d{1,2})(\)?)$/); return m ? [m[1], m[2], m[3]] : [text, '', ''] }
+const TERM_CLASS = { 단기: 'erp-term-short', 장기: 'erp-term-long' }
 // 스프레드시트에 그대로 붙게 탭 구분(TSV) — 칸 안의 탭·줄바꿈은 공백으로
 const cell = (v) => String(v ?? '').replace(/[\t\r\n]+/g, ' ').trim()
 function copy() {
@@ -81,7 +84,7 @@ function copy() {
                     </button>
                 </div>
                 <h3 class="erp-h3">
-                    {{ md(loaded.from) }}~{{ md(loaded.to) }} 매칭 명단 <span class="erp-sub">{{ rows.length }}명 · 최초만남 날짜 순서 · 날짜는 재가한 날 · 소속은 인도자·교사의 지금 소속</span>
+                    {{ md(loaded.from) }}~{{ md(loaded.to) }} 매칭 명단 <span class="erp-sub">{{ rows.length }}명 · 최초만남 날짜 순서 · 날짜는 재가한 날 · 소속은 인도자·교사의 지금 소속 · 2차만남·밀림 날짜 색 <span class="erp-term-short">단기(3일 이내)</span> / <span class="erp-term-long">장기</span></span>
                 </h3>
                 <p v-if="!chipRows.length" class="erp-empty">이 기간에 합당한자 날짜인 사람이 없어요.</p>
                 <div v-else class="erp-table-wrap">
@@ -126,8 +129,10 @@ function copy() {
                                 <td>{{ onOff(r.recruitment_type) }}</td>
                                 <td :class="{ 'erp-stage-2': r.meet_stage !== '1차' }">{{ r.meet_stage || '—' }}</td>
                                 <td>{{ day(r.first_at) || '—' }}</td>
-                                <td>{{ r.first_result || '—' }}</td>
-                                <td>{{ r.later_result || '—' }}</td>
+                                <td v-for="([res, term], ci) in [[r.first_result, r.first_term], [r.later_result, r.later_term]]" :key="ci">
+                                    <template v-if="res && term">{{ splitDate(res)[0] }}<span :class="TERM_CLASS[term]" :title="term">{{ splitDate(res)[1] }}</span>{{ splitDate(res)[2] }}</template>
+                                    <template v-else>{{ res || '—' }}</template>
+                                </td>
                                 <td>{{ day(r.consult_at) || '—' }}</td>
                             </tr>
                         </tbody>
@@ -142,6 +147,8 @@ function copy() {
 <style scoped>
 .erp-match-table td { white-space: nowrap; }
 .erp-stage-2 { color: var(--e-blue); font-weight: 700; }
+.erp-term-short { color: var(--e-up); font-weight: 700; }
+.erp-term-long { color: #E8590C; font-weight: 700; }
 .erp-filter-row th { background: #fff; padding: 4px 6px; font-weight: normal; }
 .erp-filter { width: 100%; min-width: 72px; border: 1px solid var(--e-line); border-radius: 6px; padding: 3px 4px; font-size: 12px; color: var(--e-sub); background: #fff; }
 .erp-filter.on { border-color: #C8DEFF; background: var(--e-blue-soft); color: var(--e-blue); font-weight: 600; }
