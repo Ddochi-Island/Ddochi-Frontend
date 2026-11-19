@@ -618,23 +618,32 @@ function handleMatchResultPick(resultType) {
 
     if (resultType === '\uBC00\uB9BC\uCC98\uB9AC' || resultType === '2\uCC28\uB9CC\uB0A8') {
         // 2. \uBC00\uB9BC/2\uCC28 \u2192 date popup \u2192 /api/postpone-meeting (V3.19: \uBBF8\uD305 \uB9C8\uD0B9 + \uC0C8 \uBBF8\uD305\uD589)
-        const promptTitle = resultType === '\uBC00\uB9BC\uCC98\uB9AC' ? '\uC5B8\uC81C\uB85C \uBC00\uB838\uC5B4?\u3160' : '\uC218\uACE0\uD588\uC5B4! 2\uCC28\uB294 \uC5B8\uC81C\uC57C?'
-        showPopup('date', promptTitle, '', (res) => {
-            if (!res || !res.date) return
-            const hj = item.habjaeyang || {}
-            const oldDateInfo = `${hj.mtDate || '-'} ${hj.mtTime || '00:00'}`
-            const safeReason = res.reason || '-'
-            callApi('/api/postpone-meeting', {
-                sabun: auth.currentSabun,
-                rowIndex: item.docId,
-                newDate: res.date,
-                logType: resultType,
-                logContent: safeReason,
-                oldDateInfo,
-            }, r => {
-                showAppAlert(r.message, () => loadMatchingData())
+        // \uBC00\uB9BC\uC740 \uC0AC\uC720(\uC12D\uC678\uC790\uBBF8\uB8F8/\uAD50\uC0AC\uBABB\uAD6C\uD568)\uB97C \uBA3C\uC800 \uACE0\uB984(2026-11-20)
+        const askDate = (delayReason, reasonText) => {
+            const promptTitle = resultType === '\uBC00\uB9BC\uCC98\uB9AC' ? '\uC5B8\uC81C\uB85C \uBC00\uB838\uC5B4?\u3160' : '\uC218\uACE0\uD588\uC5B4! 2\uCC28\uB294 \uC5B8\uC81C\uC57C?'
+            showPopup('date', promptTitle, '', (res) => {
+                if (!res || !res.date) return
+                const hj = item.habjaeyang || {}
+                const oldDateInfo = `${hj.mtDate || '-'} ${hj.mtTime || '00:00'}`
+                const safeReason = reasonText || res.reason || '-'
+                callApi('/api/postpone-meeting', {
+                    sabun: auth.currentSabun,
+                    rowIndex: item.docId,
+                    newDate: res.date,
+                    logType: resultType,
+                    logContent: safeReason,
+                    delayReason,
+                    oldDateInfo,
+                }, r => {
+                    showAppAlert(r.message, () => loadMatchingData())
+                })
             })
-        })
+        }
+        if (resultType === '2\uCC28\uB9CC\uB0A8') return askDate(null, '')
+        showPopup('reason', '\uBC00\uB9BC\uCC98\uB9AC', '', (res) => {
+            if (!res || !res.reasonType) return
+            askDate(res.reasonType, res.reason || '')
+        }, { options: ['\uC12D\uC678\uC790\uBBF8\uB8F8', '\uAD50\uC0AC\uBABB\uAD6C\uD568'] })
         return
     }
 
