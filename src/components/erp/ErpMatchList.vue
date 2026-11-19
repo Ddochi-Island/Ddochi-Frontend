@@ -43,11 +43,11 @@ const dist = (d) => (d ? `${d}구역` : '')
 const cell = (v) => String(v ?? '').replace(/[\t\r\n]+/g, ' ').trim()
 function copy() {
     const head = ['합당한자 날짜', '인도 지역', '인도 반', '인도 구역', '교사 지역', '교사 반', '교사 구역', '섭', '인', '교',
-        '유형', '도구이름', '온/오프라인', '최초만남 예정날짜', '최초만남 진행결과', '이후만남 진행결과', '상담연결 날짜']
+        '유형', '도구이름', '온/오프라인', '현재 단계', '최초만남 예정날짜', '최초만남 진행결과', '이후만남 진행결과', '상담연결 날짜']
     const lines = rows.value.map((r) => [
         day(r.hap_date), r.guide_region ? regionLabel(r.guide_region) : '', r.guide_group, dist(r.guide_district),
         r.teacher_region ? regionLabel(r.teacher_region) : '', r.teacher_group, dist(r.teacher_district),
-        r.name, r.guide_name, r.teacher_name, r.route, r.tool, onOff(r.recruitment_type),
+        r.name, r.guide_name, r.teacher_name, r.route, r.tool, onOff(r.recruitment_type), r.meet_stage,
         day(r.first_at), r.first_result, r.later_result, day(r.consult_at),
     ].map(cell).join('\t'))
     navigator.clipboard.writeText([head.join('\t'), ...lines].join('\n')).catch(() => {})
@@ -92,7 +92,7 @@ function copy() {
                                 <th scope="col">인도 지역</th><th scope="col">인도 반</th><th scope="col">인도 구역</th>
                                 <th scope="col">교사 지역</th><th scope="col">교사 반</th><th scope="col">교사 구역</th>
                                 <th scope="col">섭</th><th scope="col">인</th><th scope="col">교</th>
-                                <th scope="col">유형</th><th scope="col">도구</th><th scope="col">온/오프</th>
+                                <th scope="col">유형</th><th scope="col">도구</th><th scope="col">온/오프</th><th scope="col">현재 단계</th>
                                 <th scope="col">최초만남</th><th scope="col">최초 결과</th><th scope="col">이후 결과</th><th scope="col">상담연결</th>
                             </tr>
                             <tr class="erp-filter-row">
@@ -105,11 +105,11 @@ function copy() {
                                         <option v-for="v in colOptions(k)" :key="v" :value="v">{{ colLabel(k, v) }}</option>
                                     </select>
                                 </th>
-                                <th colspan="10"></th>
+                                <th colspan="11"></th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-if="!rows.length"><td colspan="17" class="erp-zero">필터에 맞는 사람이 없어요.</td></tr>
+                            <tr v-if="!rows.length"><td colspan="18" class="erp-zero">필터에 맞는 사람이 없어요.</td></tr>
                             <tr v-for="r in rows" :key="r.sarang_id">
                                 <td>{{ day(r.hap_date) }}</td>
                                 <td>{{ r.guide_region ? regionLabel(r.guide_region) : '—' }}</td>
@@ -124,6 +124,7 @@ function copy() {
                                 <td>{{ r.route || '—' }}</td>
                                 <td>{{ r.tool || '—' }}</td>
                                 <td>{{ onOff(r.recruitment_type) }}</td>
+                                <td :class="{ 'erp-stage-2': r.meet_stage !== '1차' }">{{ r.meet_stage || '—' }}</td>
                                 <td>{{ day(r.first_at) || '—' }}</td>
                                 <td>{{ r.first_result || '—' }}</td>
                                 <td>{{ r.later_result || '—' }}</td>
@@ -140,6 +141,7 @@ function copy() {
 
 <style scoped>
 .erp-match-table td { white-space: nowrap; }
+.erp-stage-2 { color: var(--e-blue); font-weight: 700; }
 .erp-filter-row th { background: #fff; padding: 4px 6px; font-weight: normal; }
 .erp-filter { width: 100%; min-width: 72px; border: 1px solid var(--e-line); border-radius: 6px; padding: 3px 4px; font-size: 12px; color: var(--e-sub); background: #fff; }
 .erp-filter.on { border-color: #C8DEFF; background: var(--e-blue-soft); color: var(--e-blue); font-weight: 600; }
