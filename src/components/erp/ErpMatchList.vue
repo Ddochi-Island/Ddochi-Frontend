@@ -76,7 +76,9 @@ function copy() {
                     <table class="erp-table erp-table-left erp-match-table">
                         <thead>
                             <tr>
-                                <th scope="col">합당한자 날짜</th><th scope="col">인도 소속</th><th scope="col">교사 소속</th>
+                                <th scope="col">합당한자 날짜</th>
+                                <th scope="col">인도 지역</th><th scope="col">인도 반</th><th scope="col">인도 구역</th>
+                                <th scope="col">교사 지역</th><th scope="col">교사 반</th><th scope="col">교사 구역</th>
                                 <th scope="col">섭</th><th scope="col">인</th><th scope="col">교</th>
                                 <th scope="col">유형</th><th scope="col">도구</th><th scope="col">온/오프</th>
                                 <th scope="col">최초만남</th><th scope="col">최초 결과</th><th scope="col">이후 결과</th><th scope="col">상담연결</th>
@@ -85,8 +87,12 @@ function copy() {
                         <tbody>
                             <tr v-for="r in rows" :key="r.sarang_id">
                                 <td>{{ day(r.hap_date) }}</td>
-                                <td>{{ r.guide_region ? regionLabel(r.guide_region) : '—' }} {{ r.guide_group || '' }} {{ dist(r.guide_district) }}</td>
-                                <td :class="{ 'erp-zero': !r.teacher_region }">{{ r.teacher_region ? `${regionLabel(r.teacher_region)} ${r.teacher_group || ''} ${dist(r.teacher_district)}` : '—' }}</td>
+                                <td>{{ r.guide_region ? regionLabel(r.guide_region) : '—' }}</td>
+                                <td>{{ r.guide_group || '—' }}</td>
+                                <td>{{ dist(r.guide_district) || '—' }}</td>
+                                <td :class="{ 'erp-zero': !r.teacher_region }">{{ r.teacher_region ? regionLabel(r.teacher_region) : '—' }}</td>
+                                <td :class="{ 'erp-zero': !r.teacher_group }">{{ r.teacher_group || '—' }}</td>
+                                <td :class="{ 'erp-zero': !r.teacher_district }">{{ dist(r.teacher_district) || '—' }}</td>
                                 <td><b>{{ r.name }}</b></td>
                                 <td>{{ r.guide_name || '—' }}</td>
                                 <td :class="{ 'erp-zero': !r.teacher_name }">{{ r.teacher_name || '—' }}</td>
