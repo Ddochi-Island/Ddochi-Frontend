@@ -1,6 +1,6 @@
 <script setup>
-// ERP 매칭 명단 — 구 매칭 시트처럼 합당한자 날짜(재가한 날) 기준 기간 안 재가된 사람 한 줄씩. 인도 지역·반으로 좁히고 시트용(탭 구분) 복사
-import { ref, computed, watch } from 'vue'
+// ERP 매칭 명단 — 구 매칭 시트처럼 합당한자 날짜(재가한 날) 기준 기간 안 재가된 사람 한 줄씩. 인도 지역·반 버튼과 칸별 소속 필터로 좁히고 시트용(탭 구분) 복사
+import { ref, reactive, computed, watch } from 'vue'
 import ErpRangePicker from './ErpRangePicker.vue'
 import { useErpLoad, monthOf, natCmp, regionLabel } from './erpUtil'
 import { usePopup } from '@/composables/usePopup'
@@ -18,7 +18,17 @@ const all = computed(() => data.value?.rows || [])
 const regions = computed(() => [...new Set(all.value.map((r) => r.guide_region).filter(Boolean))].sort(natCmp))
 const inRegion = computed(() => all.value.filter((r) => !region.value || r.guide_region === region.value))
 const groups = computed(() => (region.value ? [...new Set(inRegion.value.map((r) => r.guide_group).filter(Boolean))].sort(natCmp) : []))
-const rows = computed(() => inRegion.value.filter((r) => !group.value || r.guide_group === group.value))
+const chipRows = computed(() => inRegion.value.filter((r) => !group.value || r.guide_group === group.value))
+// 표 제목 아래 칸별 선택 필터(엑셀 필터처럼) — 인도·교사 소속 지역/반/구역. '' = 전체, NONE = 값 없음(2026-11-20)
+const NONE = '__none__'
+const FILTER_COLS = ['guide_region', 'guide_group', 'guide_district', 'teacher_region', 'teacher_group', 'teacher_district']
+const colFilter = reactive(Object.fromEntries(FILTER_COLS.map((k) => [k, ''])))
+watch([region, group], () => { for (const k of FILTER_COLS) colFilter[k] = '' })
+const colOptions = (key) => [...new Set(chipRows.value.map((r) => r[key] || NONE))].sort(natCmp)
+const colLabel = (key, v) => (v === NONE ? '(없음)' : key.endsWith('region') ? regionLabel(v) : key.endsWith('district') ? dist(v) : v)
+const rows = computed(() => chipRows.value.filter((r) => FILTER_COLS.every((k) => !colFilter[k] || (r[k] || NONE) === colFilter[k])))
+const filtering = computed(() => FILTER_COLS.some((k) => colFilter[k]))
+const clearFilters = () => { for (const k of FILTER_COLS) colFilter[k] = '' }
 const count = (list, key, v) => list.filter((r) => r[key] === v).length
 
 const md = (ymd) => `${Number(ymd.slice(5, 7))}/${Number(ymd.slice(8, 10))}`
@@ -71,7 +81,7 @@ function copy() {
                 <h3 class="erp-h3">
                     {{ md(loaded.from) }}~{{ md(loaded.to) }} 매칭 명단 <span class="erp-sub">{{ rows.length }}명 · 합당한자 날짜 순서 · 날짜는 재가한 날 · 소속은 인도자·교사의 지금 소속</span>
                 </h3>
-                <p v-if="!rows.length" class="erp-empty">이 기간에 합당한자 날짜인 사람이 없어요.</p>
+                <p v-if="!chipRows.length" class="erp-empty">이 기간에 합당한자 날짜인 사람이 없어요.</p>
                 <div v-else class="erp-table-wrap">
                     <table class="erp-table erp-table-left erp-match-table">
                         <thead>
@@ -83,8 +93,21 @@ function copy() {
                                 <th scope="col">유형</th><th scope="col">도구</th><th scope="col">온/오프</th>
                                 <th scope="col">최초만남</th><th scope="col">최초 결과</th><th scope="col">이후 결과</th><th scope="col">상담연결</th>
                             </tr>
+                            <tr class="erp-filter-row">
+                                <th>
+                                    <button v-if="filtering" class="erp-filter-clear" @click="clearFilters">필터 해제</button>
+                                </th>
+                                <th v-for="k in FILTER_COLS" :key="k">
+                                    <select v-model="colFilter[k]" :class="['erp-filter', { on: colFilter[k] }]" :aria-label="`${k.startsWith('guide') ? '인도' : '교사'} 소속 필터`">
+                                        <option value="">전체 ▾</option>
+                                        <option v-for="v in colOptions(k)" :key="v" :value="v">{{ colLabel(k, v) }}</option>
+                                    </select>
+                                </th>
+                                <th colspan="10"></th>
+                            </tr>
                         </thead>
                         <tbody>
+                            <tr v-if="!rows.length"><td colspan="17" class="erp-zero">필터에 맞는 사람이 없어요.</td></tr>
                             <tr v-for="r in rows" :key="r.sarang_id">
                                 <td>{{ day(r.hap_date) }}</td>
                                 <td>{{ r.guide_region ? regionLabel(r.guide_region) : '—' }}</td>
@@ -115,4 +138,8 @@ function copy() {
 
 <style scoped>
 .erp-match-table td { white-space: nowrap; }
+.erp-filter-row th { background: #fff; padding: 4px 6px; font-weight: normal; }
+.erp-filter { width: 100%; min-width: 72px; border: 1px solid var(--e-line); border-radius: 6px; padding: 3px 4px; font-size: 12px; color: var(--e-sub); background: #fff; }
+.erp-filter.on { border-color: #C8DEFF; background: var(--e-blue-soft); color: var(--e-blue); font-weight: 600; }
+.erp-filter-clear { border: none; background: none; color: var(--e-blue); font-size: 12px; cursor: pointer; padding: 0; white-space: nowrap; }
 </style>
