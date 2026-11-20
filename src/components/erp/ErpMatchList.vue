@@ -28,7 +28,27 @@ const colOptions = (key) => [...new Set(chipRows.value.map((r) => r[key] || NONE
 const colLabel = (key, v) => (v === NONE ? '(없음)' : key.endsWith('region') ? regionLabel(v) : key.endsWith('district') ? dist(v) : v)
 // 최초만남 날짜 순(없는 사람은 맨 뒤, 같으면 합당한자 날짜 순) — 2026-11-20 사용자 요청(전엔 합당한자 날짜 순)
 const byFirstMeet = (a, b) => (!a.first_at - !b.first_at) || String(a.first_at || '').localeCompare(String(b.first_at || '')) || String(a.hap_at || '').localeCompare(String(b.hap_at || ''))
-const rows = computed(() => chipRows.value.filter((r) => FILTER_COLS.every((k) => !colFilter[k] || (r[k] || NONE) === colFilter[k])).sort(byFirstMeet))
+// 노션처럼 칸 제목을 누르면 정렬 — 오름차순 → 내림차순 → 해제(기본: 최초만남 날짜 순). 빈 값은 항상 맨 뒤(2026-11-20)
+const COLS = [
+    ['hap_at', '합당한자 날짜'], ['guide_region', '인도 지역'], ['guide_group', '인도 반'], ['guide_district', '인도 구역'],
+    ['teacher_region', '교사 지역'], ['teacher_group', '교사 반'], ['teacher_district', '교사 구역'],
+    ['name', '섭'], ['guide_name', '인'], ['teacher_name', '교'], ['route', '유형'], ['tool', '도구'], ['recruitment_type', '온/오프'],
+    ['meet_stage', '현재 단계'], ['first_at', '최초만남'], ['first_result', '최초 결과'], ['later_result', '이후 결과'], ['consult_at', '상담연결'],
+]
+const sortKey = ref('')
+const sortDir = ref(1)
+function toggleSort(key) {
+    if (sortKey.value !== key) { sortKey.value = key; sortDir.value = 1 }
+    else if (sortDir.value === 1) sortDir.value = -1
+    else sortKey.value = ''
+}
+const bySort = (a, b) => {
+    const k = sortKey.value
+    const va = a[k] ?? '', vb = b[k] ?? ''
+    return (!va - !vb) || sortDir.value * natCmp(va, vb) || byFirstMeet(a, b)
+}
+const rows = computed(() => chipRows.value.filter((r) => FILTER_COLS.every((k) => !colFilter[k] || (r[k] || NONE) === colFilter[k]))
+    .sort(sortKey.value ? bySort : byFirstMeet))
 const filtering = computed(() => FILTER_COLS.some((k) => colFilter[k]))
 const clearFilters = () => { for (const k of FILTER_COLS) colFilter[k] = '' }
 const count = (list, key, v) => list.filter((r) => r[key] === v).length
@@ -84,19 +104,18 @@ function copy() {
                     </button>
                 </div>
                 <h3 class="erp-h3">
-                    {{ md(loaded.from) }}~{{ md(loaded.to) }} 매칭 명단 <span class="erp-sub">{{ rows.length }}명 · 최초만남 날짜 순서 · 날짜는 재가한 날 · 소속은 인도자·교사의 지금 소속 · 2차만남·밀림 날짜 색 <span class="erp-term-short">단기(3일 이내)</span> / <span class="erp-term-long">장기</span></span>
+                    {{ md(loaded.from) }}~{{ md(loaded.to) }} 매칭 명단 <span class="erp-sub">{{ rows.length }}명 · {{ sortKey ? `${COLS.find(([k]) => k === sortKey)[1]} ${sortDir === 1 ? '오름차순' : '내림차순'}` : '최초만남 날짜 순서' }} · 날짜는 재가한 날 · 소속은 인도자·교사의 지금 소속 · 2차만남·밀림 날짜 색 <span class="erp-term-short">단기(3일 이내)</span> / <span class="erp-term-long">장기</span></span>
                 </h3>
                 <p v-if="!chipRows.length" class="erp-empty">이 기간에 합당한자 날짜인 사람이 없어요.</p>
                 <div v-else class="erp-table-wrap">
                     <table class="erp-table erp-table-left erp-match-table">
                         <thead>
                             <tr>
-                                <th scope="col">합당한자 날짜</th>
-                                <th scope="col">인도 지역</th><th scope="col">인도 반</th><th scope="col">인도 구역</th>
-                                <th scope="col">교사 지역</th><th scope="col">교사 반</th><th scope="col">교사 구역</th>
-                                <th scope="col">섭</th><th scope="col">인</th><th scope="col">교</th>
-                                <th scope="col">유형</th><th scope="col">도구</th><th scope="col">온/오프</th><th scope="col">현재 단계</th>
-                                <th scope="col">최초만남</th><th scope="col">최초 결과</th><th scope="col">이후 결과</th><th scope="col">상담연결</th>
+                                <th v-for="[k, label] in COLS" :key="k" scope="col" :aria-sort="sortKey === k ? (sortDir === 1 ? 'ascending' : 'descending') : 'none'">
+                                    <button type="button" :class="['erp-sort', { on: sortKey === k }]" @click="toggleSort(k)">
+                                        {{ label }}<span class="erp-sort-mark">{{ sortKey === k ? (sortDir === 1 ? ' ▲' : ' ▼') : ' ↕' }}</span>
+                                    </button>
+                                </th>
                             </tr>
                             <tr class="erp-filter-row">
                                 <th>
@@ -148,6 +167,9 @@ function copy() {
 .erp-match-table td { white-space: nowrap; }
 .erp-stage-2 { color: var(--e-blue); font-weight: 700; }
 .erp-term-short { color: var(--e-up); font-weight: 700; }
+.erp-sort { border: none; background: none; padding: 0; font: inherit; font-weight: 700; color: inherit; cursor: pointer; white-space: nowrap; }
+.erp-sort-mark { color: var(--e-faint); font-size: 11px; }
+.erp-sort.on, .erp-sort.on .erp-sort-mark { color: var(--e-blue); }
 .erp-term-long { color: #E8590C; font-weight: 700; }
 .erp-filter-row th { background: #fff; padding: 4px 6px; font-weight: normal; }
 .erp-filter { width: 100%; min-width: 72px; border: 1px solid var(--e-line); border-radius: 6px; padding: 3px 4px; font-size: 12px; color: var(--e-sub); background: #fff; }
