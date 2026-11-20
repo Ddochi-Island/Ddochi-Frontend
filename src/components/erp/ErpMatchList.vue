@@ -22,23 +22,32 @@ const regions = computed(() => [...new Set(all.value.map((r) => r.guide_region).
 const inRegion = computed(() => all.value.filter((r) => !region.value || r.guide_region === region.value))
 const groups = computed(() => (region.value ? [...new Set(inRegion.value.map((r) => r.guide_group).filter(Boolean))].sort(natCmp) : []))
 const chipRows = computed(() => inRegion.value.filter((r) => !group.value || r.guide_group === group.value))
-// 표 제목 아래 칸별 선택 필터(엑셀 필터처럼) — 인도·교사 소속 지역/반/구역. '' = 전체, NONE = 값 없음(2026-11-20)
-const NONE = '__none__'
-const FILTER_COLS = ['guide_region', 'guide_group', 'guide_district', 'teacher_region', 'teacher_group', 'teacher_district']
-const colFilter = reactive(Object.fromEntries(FILTER_COLS.map((k) => [k, ''])))
-watch([region, group], () => { for (const k of FILTER_COLS) colFilter[k] = '' })
-const colOptions = (key) => [...new Set(chipRows.value.map((r) => r[key] || NONE))].sort(natCmp)
-const colLabel = (key, v) => (v === NONE ? '(없음)' : key.endsWith('region') ? regionLabel(v) : key.endsWith('district') ? dist(v) : v)
-// 최초만남 날짜 순(없는 사람은 맨 뒤, 같으면 합당한자 날짜 순) — 2026-11-20 사용자 요청(전엔 합당한자 날짜 순)
-const byFirstMeet = (a, b) => (!a.first_at - !b.first_at) || String(a.first_at || '').localeCompare(String(b.first_at || '')) || String(a.hap_at || '').localeCompare(String(b.hap_at || ''))
-// 노션 데이터베이스처럼 정렬 규칙을 쌓음 — [열, 오름/내림] 여러 개, 위 규칙부터 적용. 빈 값은 항상 맨 뒤,
-// 규칙이 없거나 다 같으면 최초만남 날짜 순(2026-11-20)
+// 표 열 — [응답 키, 제목]. 정렬·필터가 같이 씀
 const COLS = [
     ['hap_at', '합당한자 날짜'], ['guide_region', '인도 지역'], ['guide_group', '인도 반'], ['guide_district', '인도 구역'],
     ['teacher_region', '교사 지역'], ['teacher_group', '교사 반'], ['teacher_district', '교사 구역'],
     ['name', '섭'], ['guide_name', '인'], ['teacher_name', '교'], ['route', '유형'], ['tool', '도구'], ['recruitment_type', '온/오프'],
     ['meet_stage', '현재 단계'], ['first_at', '최초만남'], ['first_result', '최초 결과'], ['later_result', '이후 결과'], ['consult_at', '상담연결'],
 ]
+// 표 제목 아래 칸별 선택 필터(엑셀 필터처럼) — 모든 열, 화면에 보이는 글자 기준. '' = 전체, NONE = 값 없음(2026-11-20)
+const NONE = '__none__'
+const FILTER_COLS = COLS.map(([k]) => k)
+const colFilter = reactive(Object.fromEntries(FILTER_COLS.map((k) => [k, ''])))
+watch([region, group], () => { for (const k of FILTER_COLS) colFilter[k] = '' })
+const DATE_COLS = { hap_at: 'hap_date', first_at: 'first_at', consult_at: 'consult_at' }
+const cellText = (k, r) => {
+    if (DATE_COLS[k]) return day(r[DATE_COLS[k]]) || NONE
+    if (k.endsWith('region')) return r[k] ? regionLabel(r[k]) : NONE
+    if (k.endsWith('district')) return dist(r[k]) || NONE
+    if (k === 'recruitment_type') return onOff(r[k]) || NONE
+    return r[k] || NONE
+}
+const colOptions = (k) => [...new Set(chipRows.value.map((r) => cellText(k, r)))].sort(natCmp)
+const colLabel = (k, v) => (v === NONE ? '(없음)' : v)
+// 최초만남 날짜 순(없는 사람은 맨 뒤, 같으면 합당한자 날짜 순) — 2026-11-20 사용자 요청(전엔 합당한자 날짜 순)
+const byFirstMeet = (a, b) => (!a.first_at - !b.first_at) || String(a.first_at || '').localeCompare(String(b.first_at || '')) || String(a.hap_at || '').localeCompare(String(b.hap_at || ''))
+// 노션 데이터베이스처럼 정렬 규칙을 쌓음 — [열, 오름/내림] 여러 개, 위 규칙부터 적용. 빈 값은 항상 맨 뒤,
+// 규칙이 없거나 다 같으면 최초만남 날짜 순(2026-11-20)
 const COL_LABEL = Object.fromEntries(COLS)
 const sorts = ref([])  // [{ key, dir: 1 | -1 }]
 const showSort = ref(false)
@@ -56,7 +65,7 @@ const bySorts = (a, b) => {
     return byFirstMeet(a, b)
 }
 const sortSummary = computed(() => sorts.value.map(({ key, dir }) => `${COL_LABEL[key]} ${dir === 1 ? '오름차순' : '내림차순'}`).join(' → '))
-const rows = computed(() => chipRows.value.filter((r) => FILTER_COLS.every((k) => !colFilter[k] || (r[k] || NONE) === colFilter[k]))
+const rows = computed(() => chipRows.value.filter((r) => FILTER_COLS.every((k) => !colFilter[k] || cellText(k, r) === colFilter[k]))
     .sort(bySorts))
 const filtering = computed(() => FILTER_COLS.some((k) => colFilter[k]))
 const clearFilters = () => { for (const k of FILTER_COLS) colFilter[k] = '' }
@@ -109,6 +118,7 @@ function copy() {
                     <button :class="['erp-btn', { 'erp-sort-on': sorts.length }]" style="margin-left: auto" @click="showSort = !showSort">
                         ⇅ 정렬{{ sorts.length ? ` ${sorts.length}` : '' }}
                     </button>
+                    <button v-if="filtering" class="erp-btn" @click="clearFilters">필터 해제</button>
                     <button class="erp-btn" :disabled="!rows.length" @click="copy">시트용 복사</button>
                 </div>
                 <div v-if="showSort" class="erp-sort-panel">
@@ -145,16 +155,12 @@ function copy() {
                                 <th v-for="[k, label] in COLS" :key="k" scope="col" :class="{ 'erp-sorted': sorts.some((x) => x.key === k) }">{{ label }}</th>
                             </tr>
                             <tr class="erp-filter-row">
-                                <th>
-                                    <button v-if="filtering" class="erp-filter-clear" @click="clearFilters">필터 해제</button>
-                                </th>
-                                <th v-for="k in FILTER_COLS" :key="k">
-                                    <select v-model="colFilter[k]" :class="['erp-filter', { on: colFilter[k] }]" :aria-label="`${k.startsWith('guide') ? '인도' : '교사'} 소속 필터`">
+                                <th v-for="[k, label] in COLS" :key="k">
+                                    <select v-model="colFilter[k]" :class="['erp-filter', { on: colFilter[k] }]" :aria-label="`${label} 필터`">
                                         <option value="">전체 ▾</option>
                                         <option v-for="v in colOptions(k)" :key="v" :value="v">{{ colLabel(k, v) }}</option>
                                     </select>
                                 </th>
-                                <th colspan="11"></th>
                             </tr>
                         </thead>
                         <tbody>
