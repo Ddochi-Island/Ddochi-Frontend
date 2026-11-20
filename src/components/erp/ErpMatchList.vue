@@ -11,7 +11,10 @@ const { loading, error, data, load } = useErpLoad('/api/erp/match-list')
 const region = ref('')
 const group = ref('')
 const loaded = ref(null)
-async function run() { const r = { ...range.value }; if (await load(r)) loaded.value = r }
+// 기간을 어떤 날짜로 거를지 — 합당한자 날짜(재가한 날) 또는 최초만남 날짜(2026-11-20)
+const BASIS = { hap: '합당한자 날짜', first: '최초만남 날짜' }
+const basis = ref('hap')
+async function run() { const r = { ...range.value, basis: basis.value }; if (await load(r)) loaded.value = r }
 watch(region, () => { group.value = '' })
 
 const all = computed(() => data.value?.rows || [])
@@ -87,7 +90,9 @@ function copy() {
 <template>
     <section>
         <div class="erp-bar">
-            <span class="erp-label">합당한자 날짜</span>
+            <select v-model="basis" class="erp-basis" aria-label="기간 기준 날짜">
+                <option v-for="(label, k) in BASIS" :key="k" :value="k">{{ label }}</option>
+            </select>
             <ErpRangePicker v-model="range" />
             <button class="erp-btn" :disabled="loading" @click="run">🔍 조회</button>
         </div>
@@ -130,9 +135,9 @@ function copy() {
                     </button>
                 </div>
                 <h3 class="erp-h3">
-                    {{ md(loaded.from) }}~{{ md(loaded.to) }} 매칭 명단 <span class="erp-sub">{{ rows.length }}명 · {{ sorts.length ? `정렬 ${sortSummary}` : '최초만남 날짜 순서' }} · 날짜는 재가한 날 · 소속은 인도자·교사의 지금 소속 · 2차만남·밀림 날짜 색 <span class="erp-term-short">단기(3일 이내)</span> / <span class="erp-term-long">장기</span></span>
+                    {{ BASIS[loaded.basis] }} {{ md(loaded.from) }}~{{ md(loaded.to) }} 매칭 명단 <span class="erp-sub">{{ rows.length }}명 · {{ sorts.length ? `정렬 ${sortSummary}` : '최초만남 날짜 순서' }} · 날짜는 재가한 날 · 소속은 인도자·교사의 지금 소속 · 2차만남·밀림 날짜 색 <span class="erp-term-short">단기(3일 이내)</span> / <span class="erp-term-long">장기</span></span>
                 </h3>
-                <p v-if="!chipRows.length" class="erp-empty">이 기간에 합당한자 날짜인 사람이 없어요.</p>
+                <p v-if="!chipRows.length" class="erp-empty">이 기간에 {{ BASIS[loaded.basis] }}인 사람이 없어요.</p>
                 <div v-else class="erp-table-wrap">
                     <table class="erp-table erp-table-left erp-match-table">
                         <thead>
@@ -181,7 +186,7 @@ function copy() {
                 </div>
             </div>
         </template>
-        <p v-else class="erp-empty">합당한자 날짜 기간을 고르고 🔍 조회를 누르세요.</p>
+        <p v-else class="erp-empty">기준 날짜(합당한자 날짜·최초만남 날짜)와 기간을 고르고 🔍 조회를 누르세요.</p>
     </section>
 </template>
 
@@ -190,6 +195,7 @@ function copy() {
 .erp-stage-2 { color: var(--e-blue); font-weight: 700; }
 .erp-term-short { color: var(--e-up); font-weight: 700; }
 .erp-sorted { color: var(--e-blue); }
+.erp-basis { border: 1px solid var(--e-line); border-radius: 8px; padding: 6px 8px; font-size: 13px; font-weight: 600; background: #fff; color: var(--e-text); }
 .erp-sort-on { border-color: #C8DEFF; background: var(--e-blue-soft); color: var(--e-blue); font-weight: 600; }
 .erp-sort-panel { margin-top: 10px; padding: 12px; border: 1px solid var(--e-line); border-radius: 10px; background: var(--e-head); max-width: 420px; }
 .erp-sort-rule { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
