@@ -44,6 +44,14 @@ const cellText = (k, r) => {
 }
 const colOptions = (k) => [...new Set(chipRows.value.map((r) => cellText(k, r)))].sort(natCmp)
 const colLabel = (k, v) => (v === NONE ? '(없음)' : v)
+// 섭·인·교(이름)는 고르기 대신 검색 — 들어간 글자를 포함하면 남김(2026-11-20)
+const NAME_COLS = new Set(['name', 'guide_name', 'teacher_name'])
+const colMatch = (k, r) => {
+    const f = colFilter[k]
+    if (!f) return true
+    if (NAME_COLS.has(k)) return !f.trim() || String(r[k] || '').includes(f.trim())
+    return cellText(k, r) === f
+}
 // 최초만남 날짜 순(없는 사람은 맨 뒤, 같으면 합당한자 날짜 순) — 2026-11-20 사용자 요청(전엔 합당한자 날짜 순)
 const byFirstMeet = (a, b) => (!a.first_at - !b.first_at) || String(a.first_at || '').localeCompare(String(b.first_at || '')) || String(a.hap_at || '').localeCompare(String(b.hap_at || ''))
 // 노션 데이터베이스처럼 정렬 규칙을 쌓음 — [열, 오름/내림] 여러 개, 위 규칙부터 적용. 빈 값은 항상 맨 뒤,
@@ -65,7 +73,7 @@ const bySorts = (a, b) => {
     return byFirstMeet(a, b)
 }
 const sortSummary = computed(() => sorts.value.map(({ key, dir }) => `${COL_LABEL[key]} ${dir === 1 ? '오름차순' : '내림차순'}`).join(' → '))
-const rows = computed(() => chipRows.value.filter((r) => FILTER_COLS.every((k) => !colFilter[k] || cellText(k, r) === colFilter[k]))
+const rows = computed(() => chipRows.value.filter((r) => FILTER_COLS.every((k) => colMatch(k, r)))
     .sort(bySorts))
 const filtering = computed(() => FILTER_COLS.some((k) => colFilter[k]))
 const clearFilters = () => { for (const k of FILTER_COLS) colFilter[k] = '' }
@@ -156,7 +164,9 @@ function copy() {
                             </tr>
                             <tr class="erp-filter-row">
                                 <th v-for="[k, label] in COLS" :key="k">
-                                    <select v-model="colFilter[k]" :class="['erp-filter', { on: colFilter[k] }]" :aria-label="`${label} 필터`">
+                                    <input v-if="NAME_COLS.has(k)" v-model="colFilter[k]" type="search" placeholder="검색"
+                                        :class="['erp-filter', { on: colFilter[k] }]" :aria-label="`${label} 이름 검색`">
+                                    <select v-else v-model="colFilter[k]" :class="['erp-filter', { on: colFilter[k] }]" :aria-label="`${label} 필터`">
                                         <option value="">전체 ▾</option>
                                         <option v-for="v in colOptions(k)" :key="v" :value="v">{{ colLabel(k, v) }}</option>
                                     </select>
