@@ -28,27 +28,33 @@ const colOptions = (key) => [...new Set(chipRows.value.map((r) => r[key] || NONE
 const colLabel = (key, v) => (v === NONE ? '(없음)' : key.endsWith('region') ? regionLabel(v) : key.endsWith('district') ? dist(v) : v)
 // 최초만남 날짜 순(없는 사람은 맨 뒤, 같으면 합당한자 날짜 순) — 2026-11-20 사용자 요청(전엔 합당한자 날짜 순)
 const byFirstMeet = (a, b) => (!a.first_at - !b.first_at) || String(a.first_at || '').localeCompare(String(b.first_at || '')) || String(a.hap_at || '').localeCompare(String(b.hap_at || ''))
-// 노션처럼 칸 제목을 누르면 정렬 — 오름차순 → 내림차순 → 해제(기본: 최초만남 날짜 순). 빈 값은 항상 맨 뒤(2026-11-20)
+// 노션 데이터베이스처럼 정렬 규칙을 쌓음 — [열, 오름/내림] 여러 개, 위 규칙부터 적용. 빈 값은 항상 맨 뒤,
+// 규칙이 없거나 다 같으면 최초만남 날짜 순(2026-11-20)
 const COLS = [
     ['hap_at', '합당한자 날짜'], ['guide_region', '인도 지역'], ['guide_group', '인도 반'], ['guide_district', '인도 구역'],
     ['teacher_region', '교사 지역'], ['teacher_group', '교사 반'], ['teacher_district', '교사 구역'],
     ['name', '섭'], ['guide_name', '인'], ['teacher_name', '교'], ['route', '유형'], ['tool', '도구'], ['recruitment_type', '온/오프'],
     ['meet_stage', '현재 단계'], ['first_at', '최초만남'], ['first_result', '최초 결과'], ['later_result', '이후 결과'], ['consult_at', '상담연결'],
 ]
-const sortKey = ref('')
-const sortDir = ref(1)
-function toggleSort(key) {
-    if (sortKey.value !== key) { sortKey.value = key; sortDir.value = 1 }
-    else if (sortDir.value === 1) sortDir.value = -1
-    else sortKey.value = ''
+const COL_LABEL = Object.fromEntries(COLS)
+const sorts = ref([])  // [{ key, dir: 1 | -1 }]
+const showSort = ref(false)
+function addSort() {
+    const used = new Set(sorts.value.map((x) => x.key))
+    const next = COLS.find(([k]) => !used.has(k))
+    if (next) sorts.value.push({ key: next[0], dir: 1 })
 }
-const bySort = (a, b) => {
-    const k = sortKey.value
-    const va = a[k] ?? '', vb = b[k] ?? ''
-    return (!va - !vb) || sortDir.value * natCmp(va, vb) || byFirstMeet(a, b)
+const bySorts = (a, b) => {
+    for (const { key, dir } of sorts.value) {
+        const va = a[key] ?? '', vb = b[key] ?? ''
+        const c = (!va - !vb) || dir * natCmp(va, vb)
+        if (c) return c
+    }
+    return byFirstMeet(a, b)
 }
+const sortSummary = computed(() => sorts.value.map(({ key, dir }) => `${COL_LABEL[key]} ${dir === 1 ? '오름차순' : '내림차순'}`).join(' → '))
 const rows = computed(() => chipRows.value.filter((r) => FILTER_COLS.every((k) => !colFilter[k] || (r[k] || NONE) === colFilter[k]))
-    .sort(sortKey.value ? bySort : byFirstMeet))
+    .sort(bySorts))
 const filtering = computed(() => FILTER_COLS.some((k) => colFilter[k]))
 const clearFilters = () => { for (const k of FILTER_COLS) colFilter[k] = '' }
 const count = (list, key, v) => list.filter((r) => r[key] === v).length
@@ -95,7 +101,27 @@ function copy() {
                     <button v-for="rg in regions" :key="rg" :class="['erp-chip', { on: region === rg }]" :aria-pressed="region === rg" @click="region = rg">
                         {{ regionLabel(rg) }} {{ count(all, 'guide_region', rg) }}
                     </button>
-                    <button class="erp-btn" style="margin-left: auto" :disabled="!rows.length" @click="copy">시트용 복사</button>
+                    <button :class="['erp-btn', { 'erp-sort-on': sorts.length }]" style="margin-left: auto" @click="showSort = !showSort">
+                        ⇅ 정렬{{ sorts.length ? ` ${sorts.length}` : '' }}
+                    </button>
+                    <button class="erp-btn" :disabled="!rows.length" @click="copy">시트용 복사</button>
+                </div>
+                <div v-if="showSort" class="erp-sort-panel">
+                    <div v-for="(x, i) in sorts" :key="i" class="erp-sort-rule">
+                        <select v-model="x.key" class="erp-filter" aria-label="정렬할 열">
+                            <option v-for="[k, label] in COLS" :key="k" :value="k">{{ label }}</option>
+                        </select>
+                        <select v-model="x.dir" class="erp-filter" aria-label="정렬 방향">
+                            <option :value="1">오름차순</option>
+                            <option :value="-1">내림차순</option>
+                        </select>
+                        <button class="erp-sort-x" :aria-label="`${COL_LABEL[x.key]} 정렬 빼기`" @click="sorts.splice(i, 1)">✕</button>
+                    </div>
+                    <p v-if="!sorts.length" class="erp-sub" style="margin: 0 0 6px">정렬 규칙이 없어요 — 지금은 최초만남 날짜 순이에요.</p>
+                    <div class="erp-sort-actions">
+                        <button class="erp-filter-clear" :disabled="sorts.length >= COLS.length" @click="addSort">＋ 정렬 추가</button>
+                        <button v-if="sorts.length" class="erp-filter-clear" style="color: var(--e-down)" @click="sorts = []">정렬 지우기</button>
+                    </div>
                 </div>
                 <div v-if="groups.length" class="erp-find-chips" role="group" aria-label="인도 반">
                     <button :class="['erp-chip', { on: !group }]" :aria-pressed="!group" @click="group = ''">{{ regionLabel(region) }} 전체</button>
@@ -104,18 +130,14 @@ function copy() {
                     </button>
                 </div>
                 <h3 class="erp-h3">
-                    {{ md(loaded.from) }}~{{ md(loaded.to) }} 매칭 명단 <span class="erp-sub">{{ rows.length }}명 · {{ sortKey ? `${COLS.find(([k]) => k === sortKey)[1]} ${sortDir === 1 ? '오름차순' : '내림차순'}` : '최초만남 날짜 순서' }} · 날짜는 재가한 날 · 소속은 인도자·교사의 지금 소속 · 2차만남·밀림 날짜 색 <span class="erp-term-short">단기(3일 이내)</span> / <span class="erp-term-long">장기</span></span>
+                    {{ md(loaded.from) }}~{{ md(loaded.to) }} 매칭 명단 <span class="erp-sub">{{ rows.length }}명 · {{ sorts.length ? `정렬 ${sortSummary}` : '최초만남 날짜 순서' }} · 날짜는 재가한 날 · 소속은 인도자·교사의 지금 소속 · 2차만남·밀림 날짜 색 <span class="erp-term-short">단기(3일 이내)</span> / <span class="erp-term-long">장기</span></span>
                 </h3>
                 <p v-if="!chipRows.length" class="erp-empty">이 기간에 합당한자 날짜인 사람이 없어요.</p>
                 <div v-else class="erp-table-wrap">
                     <table class="erp-table erp-table-left erp-match-table">
                         <thead>
                             <tr>
-                                <th v-for="[k, label] in COLS" :key="k" scope="col" :aria-sort="sortKey === k ? (sortDir === 1 ? 'ascending' : 'descending') : 'none'">
-                                    <button type="button" :class="['erp-sort', { on: sortKey === k }]" @click="toggleSort(k)">
-                                        {{ label }}<span class="erp-sort-mark">{{ sortKey === k ? (sortDir === 1 ? ' ▲' : ' ▼') : ' ↕' }}</span>
-                                    </button>
-                                </th>
+                                <th v-for="[k, label] in COLS" :key="k" scope="col" :class="{ 'erp-sorted': sorts.some((x) => x.key === k) }">{{ label }}</th>
                             </tr>
                             <tr class="erp-filter-row">
                                 <th>
@@ -167,9 +189,13 @@ function copy() {
 .erp-match-table td { white-space: nowrap; }
 .erp-stage-2 { color: var(--e-blue); font-weight: 700; }
 .erp-term-short { color: var(--e-up); font-weight: 700; }
-.erp-sort { border: none; background: none; padding: 0; font: inherit; font-weight: 700; color: inherit; cursor: pointer; white-space: nowrap; }
-.erp-sort-mark { color: var(--e-faint); font-size: 11px; }
-.erp-sort.on, .erp-sort.on .erp-sort-mark { color: var(--e-blue); }
+.erp-sorted { color: var(--e-blue); }
+.erp-sort-on { border-color: #C8DEFF; background: var(--e-blue-soft); color: var(--e-blue); font-weight: 600; }
+.erp-sort-panel { margin-top: 10px; padding: 12px; border: 1px solid var(--e-line); border-radius: 10px; background: var(--e-head); max-width: 420px; }
+.erp-sort-rule { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+.erp-sort-rule .erp-filter { width: auto; min-width: 110px; padding: 5px 6px; font-size: 13px; }
+.erp-sort-x { border: none; background: none; color: var(--e-faint); cursor: pointer; font-size: 14px; }
+.erp-sort-actions { display: flex; gap: 14px; }
 .erp-term-long { color: #E8590C; font-weight: 700; }
 .erp-filter-row th { background: #fff; padding: 4px 6px; font-weight: normal; }
 .erp-filter { width: 100%; min-width: 72px; border: 1px solid var(--e-line); border-radius: 6px; padding: 3px 4px; font-size: 12px; color: var(--e-sub); background: #fff; }
