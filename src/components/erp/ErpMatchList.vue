@@ -46,6 +46,22 @@ const colOptions = (k) => [...new Set(chipRows.value.map((r) => cellText(k, r)))
 const colLabel = (k, v) => (v === NONE ? '(없음)' : v)
 // 섭·인·교(이름)는 고르기 대신 검색 — 들어간 글자를 포함하면 남김(2026-11-20)
 const NAME_COLS = new Set(['name', 'guide_name', 'teacher_name'])
+// 이름 자동완성 — ERP 카드 모양 목록(브라우저 기본 datalist 대신). 입력 글자가 들어간 이름 최대 8개, ↑↓·Enter·Esc
+const suggestKey = ref('')
+const suggestIdx = ref(-1)
+const suggestions = (k) => {
+    const q = String(colFilter[k] || '').trim()
+    return colOptions(k).filter((v) => v !== NONE && (!q || v.includes(q)) && v !== q).slice(0, 8)
+}
+function pickSuggest(k, v) { colFilter[k] = v; suggestKey.value = '' }
+function onSuggestKey(k, e) {
+    const list = suggestions(k)
+    if (e.key === 'ArrowDown') { e.preventDefault(); suggestKey.value = k; suggestIdx.value = Math.min(suggestIdx.value + 1, list.length - 1) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); suggestIdx.value = Math.max(suggestIdx.value - 1, 0) }
+    else if (e.key === 'Enter' && suggestIdx.value >= 0 && list[suggestIdx.value]) { e.preventDefault(); pickSuggest(k, list[suggestIdx.value]) }
+    else if (e.key === 'Escape') suggestKey.value = ''
+}
+const closeSuggestSoon = () => setTimeout(() => { suggestKey.value = '' }, 150)
 const colMatch = (k, r) => {
     const f = colFilter[k]
     if (!f) return true
@@ -164,14 +180,17 @@ function copy() {
                             </tr>
                             <tr class="erp-filter-row">
                                 <th v-for="[k, label] in COLS" :key="k">
-                                    <template v-if="NAME_COLS.has(k)">
-                                        <!-- 자동완성 — 지금 명단에 있는 이름(브라우저 기본 datalist) -->
-                                        <input v-model="colFilter[k]" type="search" placeholder="검색" :list="`erp-names-${k}`"
-                                            :class="['erp-filter', { on: colFilter[k] }]" :aria-label="`${label} 이름 검색`">
-                                        <datalist :id="`erp-names-${k}`">
-                                            <option v-for="v in colOptions(k).filter((x) => x !== NONE)" :key="v" :value="v" />
-                                        </datalist>
-                                    </template>
+                                    <div v-if="NAME_COLS.has(k)" class="erp-suggest-wrap">
+                                        <input v-model="colFilter[k]" type="search" placeholder="검색" autocomplete="off"
+                                            :class="['erp-filter', { on: colFilter[k] }]" :aria-label="`${label} 이름 검색`"
+                                            role="combobox" :aria-expanded="suggestKey === k && suggestions(k).length > 0"
+                                            @focus="suggestKey = k; suggestIdx = -1" @input="suggestKey = k; suggestIdx = -1"
+                                            @keydown="onSuggestKey(k, $event)" @blur="closeSuggestSoon">
+                                        <ul v-if="suggestKey === k && suggestions(k).length" class="erp-suggest" role="listbox">
+                                            <li v-for="(v, i) in suggestions(k)" :key="v" role="option" :aria-selected="i === suggestIdx"
+                                                :class="{ on: i === suggestIdx }" @mousedown.prevent="pickSuggest(k, v)">{{ v }}</li>
+                                        </ul>
+                                    </div>
                                     <select v-if="!NAME_COLS.has(k)" v-model="colFilter[k]" :class="['erp-filter', { on: colFilter[k] }]" :aria-label="`${label} 필터`">
                                         <option value="">전체 ▾</option>
                                         <option v-for="v in colOptions(k)" :key="v" :value="v">{{ colLabel(k, v) }}</option>
@@ -217,6 +236,12 @@ function copy() {
 .erp-stage-2 { color: var(--e-blue); font-weight: 700; }
 .erp-term-short { color: var(--e-up); font-weight: 700; }
 .erp-sorted { color: var(--e-blue); }
+.erp-suggest-wrap { position: relative; }
+.erp-suggest { position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; min-width: 120px; max-height: 260px; overflow-y: auto;
+    margin: 0; padding: 4px; list-style: none; background: var(--e-card); border: 1px solid var(--e-line); border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(25, 31, 40, .12); text-align: left; }
+.erp-suggest li { padding: 7px 10px; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--e-text); cursor: pointer; white-space: nowrap; }
+.erp-suggest li:hover, .erp-suggest li.on { background: var(--e-blue-soft); color: var(--e-blue); }
 .erp-basis { border: 1px solid var(--e-line); border-radius: 8px; padding: 6px 8px; font-size: 13px; font-weight: 600; background: #fff; color: var(--e-text); }
 .erp-sort-on { border-color: #C8DEFF; background: var(--e-blue-soft); color: var(--e-blue); font-weight: 600; }
 .erp-sort-panel { margin-top: 10px; padding: 12px; border: 1px solid var(--e-line); border-radius: 10px; background: var(--e-head); max-width: 420px; }
