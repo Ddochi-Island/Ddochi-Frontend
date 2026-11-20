@@ -164,9 +164,15 @@ function copy() {
                             </tr>
                             <tr class="erp-filter-row">
                                 <th v-for="[k, label] in COLS" :key="k">
-                                    <input v-if="NAME_COLS.has(k)" v-model="colFilter[k]" type="search" placeholder="검색"
-                                        :class="['erp-filter', { on: colFilter[k] }]" :aria-label="`${label} 이름 검색`">
-                                    <select v-else v-model="colFilter[k]" :class="['erp-filter', { on: colFilter[k] }]" :aria-label="`${label} 필터`">
+                                    <template v-if="NAME_COLS.has(k)">
+                                        <!-- 자동완성 — 지금 명단에 있는 이름(브라우저 기본 datalist) -->
+                                        <input v-model="colFilter[k]" type="search" placeholder="검색" :list="`erp-names-${k}`"
+                                            :class="['erp-filter', { on: colFilter[k] }]" :aria-label="`${label} 이름 검색`">
+                                        <datalist :id="`erp-names-${k}`">
+                                            <option v-for="v in colOptions(k).filter((x) => x !== NONE)" :key="v" :value="v" />
+                                        </datalist>
+                                    </template>
+                                    <select v-if="!NAME_COLS.has(k)" v-model="colFilter[k]" :class="['erp-filter', { on: colFilter[k] }]" :aria-label="`${label} 필터`">
                                         <option value="">전체 ▾</option>
                                         <option v-for="v in colOptions(k)" :key="v" :value="v">{{ colLabel(k, v) }}</option>
                                     </select>
