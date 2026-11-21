@@ -35,8 +35,8 @@ const PRACTICE_STEPS = [
   { target: 'welcome', wait: '/api/submit-result', title: '먼저 선문자', text: '전화 전에 "💌 선문자"부터 보내요. 누르면 번호가 복사되고 창이 떠요. 문자를 보낸 뒤 "선문자 발송 완료" → "저장하기"를 눌러 보세요. 그러면 📞 전화걸기 버튼이 생겨요.' },
   { target: 'call', wait: '/api/shed-call-start', title: '전화걸기', text: '"📞 전화걸기"를 눌러 보세요. 번호가 복사되고, 다른 사람에겐 내가 통화중으로 보여요.' },
   { target: 'noanswer', wait: '/api/submit-result', title: '통화 결과 남기기', text: '통화가 끝나면 결과를 남겨요. 이번엔 "안받음"을 눌러 보세요. 부재중 문자 창이 뜨면 문자를 보내고 "저장하기", 문자 없이 기록만 하려면 "취소 (안받음만)". 예약·만남픽스·비합도 같은 줄에 있어요.' },
-  // 결과를 남기면 화면이 통화를 자동으로 끊어서(endCall) 끊기 버튼이 사라짐 — 기다리는 단계로 두면 자동 끊기 호출에 바로 넘어가 버렸음
-  { title: '통화는 저절로 끝나요', text: '결과를 남기면 통화가 자동으로 끝나요. 결과 없이 통화를 그만둘 때만 전화번호 옆 "끊기"를 눌러요.' },
+  // 안받음·예약은 통화를 안 끊음(같은 사람 다시 걸기·메모용). 만남픽스·비합·거절·무효는 자동으로 끊김
+  { title: '다 끝나면 끊기', text: '안받음·예약을 남겨도 통화 화면은 그대로라 바로 다시 걸거나 메모를 남길 수 있어요. 다 끝나면 전화번호 옆 "끊기"를 눌러요. 만남픽스·비합·거절·무효는 저절로 끝나요.' },
   { target: 'tabs', title: '탭으로 나눠 보기', text: '위쪽 탭으로 볼 범위를 골라요. 평소엔 "우리 지역"에서 일해요.' },
   { target: 'public-tab', wait: 'click', title: '🌏 전체 공개', text: '"🌏 전체 공개"를 눌러 보세요. 신청 4일이 지났거나 티엠을 4번 넘게 건 건이 여기 모여서, 다른 지역도 같이 돌려요.' },
   { title: '연습 끝! 🎉', text: '이제 실제 합당한자에서 해 보세요. 연습은 가이드에서 언제든 다시 할 수 있어요.' },
@@ -759,7 +759,7 @@ async function doNoAnswer(p) {
   saving.value = true
   const r = await callApiPromise('/api/submit-result', { data: { rowIndex: p.docId, logType: '안받음' } })
   saving.value = false
-  if (r?.success) { showToast('안받음!'); if (isMyCalling(p)) await endCall(); load(true) }
+  if (r?.success) { showToast('안받음!'); load(true) }  // 통화는 안 끊음 — 바로 다시 걸거나 메모 남길 수 있게(2026-11-21)
   else showAppAlert(r?.message || '오류')
 }
 
@@ -805,7 +805,7 @@ async function doReserve(p) {
   })
   saving.value = false
   closeAction()
-  if (r?.success) { showToast('예약 완료!'); if (isMyCalling(p)) await endCall(); load(true) }
+  if (r?.success) { showToast('예약 완료!'); load(true) }  // 통화는 안 끊음 — 끝나면 "끊기"
   else showAppAlert(r?.message || '오류')
 }
 
