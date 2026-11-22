@@ -130,21 +130,21 @@ function resolveAllMissed() {
 
 const reportName = ref('')
 const activity = ref('활동을 하지 못했어..')
-// 활동자 기준(2026-11-16 공지) — 고른 항목 아래 한 줄 설명. 오프찾은 대면(찾기)에 포함돼 선택지에서 빠짐
+// 활동자 기준(2026-11-22 공지) — 대면 A/대면 B/대체. 고른 항목 아래 한 줄 설명
 const ACTIVITY_DESC = {
-    '대면 활동!': '거주지 및 비대면 활동지를 제외한 현장(지역·팀·구역 등)에 직접 나가 아래 중 하나 이상을 진행한 자',
-    '전단지 활동!': '대면활동자 기준에는 미치지 않으나 현장에서 전단지배부 또는 QR부착 활동을 한 자',
-    '비대면 활동!': '거주지 및 비대면 활동지에서 DM, 콜링, 홍보 등 온라인 활동을 한 자',
-    '대체 활동!': '물질활동 등 대체 활동을 진행한 자',
+    '대면 활동 A단계!': '거주지 및 비대면 활동지를 제외한 현장(지역·팀·구역 등)에 직접 나가 아래 중 하나 이상을 진행한 자',
+    '대면 활동 B단계!': 'A단계는 충족하지 못했지만 하위단계 활동을 한 자',
+    '대체 활동!': '거주지 및 비대면 활동지에서 활동한 자',
 }
 // 상세 활동 — 내 활동이 그 기준에 드는지 확인용 체크(하나 이상 필수). 저장은 안 함(2026-11-16 사용자 결정)
 const ACTIVITY_DETAILS = {
-    '대면 활동!': ['활동 참여 (현장 직접 참여)', '대면 친교 관리 (인, 교, 섬, 잎)', '찾기 (도구노방, 명함, 디엠, 티엠, 홍보, 씨앗작성)',
-        '매칭, 상연, 성소, 복음방 진행', '해외전도 활동', '섭외자와 대화하는 전도의장 봉사'],
-    '전단지 활동!': ['전단지 배부', 'QR 부착'],
-    '비대면 활동!': ['DM', '콜링', '홍보', '그 외 온라인 활동'],
-    '대체 활동!': ['후원잎사귀', '인스타에 올릴 레퍼런스 찾는 활동', '섭외자와 대화하지 않는 전도의장 봉사'],
+    '대면 활동 A단계!': ['활동 참여 (현장 직접 참여)', '대면 친교 관리 (인, 교, 섬, 잎)', '찾기', '상연, 성소, 복음방 진행',
+        '해외전도 활동', '전단지 활동', '온라인활동 (디엠, 콜링 등)'],
+    '대면 활동 B단계!': ['지인카드 작성', '홍보글', '자리 잎사귀', '물질지원 등'],
+    '대체 활동!': ['온라인 활동 등', '지인카드 작성, 홍보글, 자리 잎사귀, 물질지원 등'],
 }
+// 옛 기준 문구(임시저장) → 새 기준 환산
+const LEGACY_ACTIVITY = { '대면 활동!': '대면 활동 A단계!', '전단지 활동!': '대면 활동 A단계!', '오프찾 했어!': '대면 활동 A단계!', '비대면 활동!': '대체 활동!' }
 const activityDetails = ref([])
 watch(activity, () => { activityDetails.value = [] })
 const talkCount = ref('')
@@ -251,12 +251,12 @@ const districtStatus = computed(() => [...reportNameOptions.value]
 const districtReportedCount = computed(() => reportNameOptions.value.filter(o => o.status !== 'none').length)
 // 구역장 "우리 구역 활동" — 이름 → 활동 문구('' = 아직 안 고름). 저장된 활동으로 채워 시작
 const ACT_CATS = [
-    { value: '대면 활동!', label: '👥 대면' }, { value: '전단지 활동!', label: '📄 전단지' },
-    { value: '비대면 활동!', label: '🌐 비대면' }, { value: '대체 활동!', label: '🔄 대체' },
+    { value: '대면 활동 A단계!', label: '👥 대면 A' }, { value: '대면 활동 B단계!', label: '🙋 대면 B' },
+    { value: '대체 활동!', label: '🔄 대체' },
     { value: '활동을 하지 못했어..', label: '🛋 미활동' },
 ]
 const actAssign = reactive({})
-const activeCat = ref('대면 활동!')
+const activeCat = ref('대면 활동 A단계!')
 const actSaving = ref(false)
 // 전도팀장 이상·청년회 사명자는 항상 대면 고정(서버 alwaysFace, 2026-11-16) — 눌러도 안 옮겨짐
 const fixedFace = computed(() => new Set(reportNameOptions.value.filter(o => o.alwaysFace).map(o => o.name)))
@@ -266,13 +266,13 @@ const showAddOthers = ref(false)
 const addableOthers = computed(() => districtOthers.value.map(o => o.name).filter(n => !(n in actAssign)).sort(byDistrict))
 watch(reportNameOptions, (opts) => {
     for (const k of Object.keys(actAssign)) delete actAssign[k]
-    for (const o of opts) actAssign[o.name] = o.alwaysFace ? '대면 활동!' : (o.activity || '')
+    for (const o of opts) actAssign[o.name] = o.alwaysFace ? '대면 활동 A단계!' : (o.activity || '')
     for (const o of districtOthers.value) if (o.activity) actAssign[o.name] = o.activity
 })
 function addOther(name) { actAssign[name] = activeCat.value }
 const namesIn = (cat) => Object.keys(actAssign).filter(n => actAssign[n] === cat).sort(byDistrict)
 function toggleAct(name) {
-    if (fixedFace.value.has(name)) return showToast('전도팀장 이상 사명자는 항상 대면 활동이에요')
+    if (fixedFace.value.has(name)) return showToast('전도팀장 이상 사명자는 항상 대면 A단계예요')
     const next = actAssign[name] === activeCat.value ? '' : activeCat.value
     // 추가한 구역원은 빼면 명단에서 아예 빠짐(아직 안 고름에 남겨 제출을 막지 않게)
     if (!next && districtOthers.value.some(o => o.name === name)) delete actAssign[name]
@@ -448,7 +448,7 @@ function loadDraft() {
         if (draft.date !== targetDate) return
 
         reportName.value = draft.reportName || ''
-        activity.value = draft.activity === '오프찾 했어!' ? '대면 활동!' : (draft.activity || '활동을 하지 못했어..')
+        activity.value = LEGACY_ACTIVITY[draft.activity] || draft.activity || '활동을 하지 못했어..'
         talkCount.value = draft.talkCount || ''
         if (draft.dmRows?.length) dmRows.splice(0, dmRows.length, ...draft.dmRows)
         if (draft.qrRows?.length) qrRows.splice(0, qrRows.length, ...draft.qrRows)
@@ -783,9 +783,8 @@ onMounted(async () => {
         <div class="input-card">
             <select v-model="activity" @change="saveDraft">
                 <option>활동을 하지 못했어..</option>
-                <option>대면 활동!</option>
-                <option>전단지 활동!</option>
-                <option>비대면 활동!</option>
+                <option>대면 활동 A단계!</option>
+                <option>대면 활동 B단계!</option>
                 <option>대체 활동!</option>
             </select>
         </div>
@@ -794,7 +793,7 @@ onMounted(async () => {
             <label v-for="d in ACTIVITY_DETAILS[activity]" :key="d" class="activity-detail">
                 <input type="checkbox" :value="d" v-model="activityDetails"> {{ d }}
             </label>
-            <div v-if="activity === '대체 활동!'" style="color:#d32f2f; margin-top:4px;">※ 기도문 작성, 전도대 참석&amp;보강, 내년 전도계획 작성은 허용되지 않음</div>
+            <div v-if="activity === '대체 활동!'" style="color:#d32f2f; margin-top:4px;">※ 기도문, 전도대 참석 및 보강은 제외</div>
         </div>
         </template>
 

@@ -1,12 +1,12 @@
 <script setup>
-// ERP 활동자 명단 — 기간 안에서 사람마다 가장 상위 활동(대면>전단지>비대면>대체>미활동)과 그 날짜를 표로(매칭 명단처럼). 지역으로 좁히고 시트용 복사
+// ERP 활동자 명단 — 기간 안에서 사람마다 가장 상위 활동(대면 A>대면 B>대체>미활동)과 그 날짜를 표로(매칭 명단처럼). 지역으로 좁히고 시트용 복사
 import { ref, computed, watch } from 'vue'
 import ErpRangePicker from './ErpRangePicker.vue'
 import { useErpLoad, weekOf, natCmp, regionLabel, districtLabel } from './erpUtil'
 import { usePopup } from '@/composables/usePopup'
 
 const STAGES = [
-    { code: 'offline', label: '👥 대면' }, { code: 'flyer', label: '📄 전단지' }, { code: 'online', label: '🌐 비대면' },
+    { code: 'offline', label: '👥 대면 A' }, { code: 'offlineB', label: '🙋 대면 B' },
     { code: 'substitute', label: '🔄 대체' }, { code: 'none', label: '🛋 미활동' },
 ]
 const WEEK = ['일', '월', '화', '수', '목', '금', '토']
@@ -75,7 +75,7 @@ function copy() {
                     </button>
                 </div>
                 <h3 class="erp-h3" style="margin-top: 12px">
-                    활동자 명단 <span class="erp-sub">{{ people.length }}명 · 사람마다 기간 안 가장 상위 활동과 그 날짜(같은 단계면 최근 날) · 옛 오프찾은 대면 · 일일보고를 안 낸 사람은 안 나와요</span>
+                    활동자 명단 <span class="erp-sub">{{ people.length }}명 · 사람마다 기간 안 가장 상위 활동과 그 날짜(같은 단계면 최근 날) · 옛 기준은 환산(대면·전단지 → A, 비대면 → 대체) · 일일보고를 안 낸 사람은 안 나와요</span>
                 </h3>
                 <div class="erp-find-chips">
                     <span v-for="st in STAGES" :key="st.code" class="erp-sub">{{ st.label }} {{ stageCount(st.code) }}</span>
