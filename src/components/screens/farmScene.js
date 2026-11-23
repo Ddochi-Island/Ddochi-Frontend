@@ -46,7 +46,8 @@ class FarmScene extends Phaser.Scene {
         this.walkClock = 0
 
         this.buildWorld()
-        this.cameras.main.startFollow(this.player, true, 0.15, 0.15)
+        // lerp(지연 추적)+픽셀 반올림이 섞이면 캐릭터가 화면에서 앞뒤로 떨림 → 정수 좌표로 딱 붙어서 추적
+        this.cameras.main.startFollow(this.player, true, 1, 1)
         this.input.on('pointerdown', (p) => this.onTap(p.worldX, p.worldY))
         this.scale.on('resize', () => this.fitCamera())
     }
@@ -174,8 +175,10 @@ class FarmScene extends Phaser.Scene {
             this.walkClock += dtMs
             this.updateNear()
         }
-        const bob = this.dest && Math.floor(this.walkClock / 140) % 2 ? 3 : 0
-        this.player.setPosition(this.pos.x, this.pos.y - bob).setDepth(this.pos.y)
+        // 걸음 표현은 발 기준 살짝 눌리기 — y를 들썩이면 이동과 겹쳐 한 프레임 멈췄다 튀는 것처럼 보임
+        const step = this.dest && Math.floor(this.walkClock / 140) % 2
+        this.player.setScale(1, step ? 0.94 : 1)
+        this.player.setPosition(Math.round(this.pos.x), Math.round(this.pos.y)).setDepth(this.pos.y)
     }
 
     face(dx, dy) {
