@@ -25,6 +25,12 @@ function addPixelTexture(scene, key, rows, scale) {
 }
 
 const center = (t) => t * T + T / 2
+const STAGE_ORDER = ['씨앗', '새싹', '떡잎', '꽃']
+const RARITY_TAG = { common: '#f3d9a4', rare: '#cfe3fb', legend: '#ffe27a' }   // 이름표 바탕 = 품종 희귀도
+// 지난번에 본 단계 — 단계가 오른 식물만 성장 연출(기기별 기록이라 localStorage면 충분)
+const SEEN_KEY = 'farmSeenStages'
+function loadSeen() { try { return JSON.parse(localStorage.getItem(SEEN_KEY)) } catch { return null } }
+function saveSeen(m) { try { localStorage.setItem(SEEN_KEY, JSON.stringify(m)) } catch { /* 기록 못 해도 게임은 동작 */ } }
 // 칸 좌표마다 고정된 0~1 값 — 화면 크기가 바뀌어도 바깥 장식이 같은 자리에 같은 모양
 const hash = (x, y) => { const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return n - Math.floor(n) }
 
@@ -36,6 +42,7 @@ class FarmScene extends Phaser.Scene {
         this.worldObjs = []
         this.targets = []
         this.near = null
+        this.seen = loadSeen()   // null이면 첫 방문 — 전부 연출하지 않고 기록만
     }
 
     create() {
@@ -93,6 +100,7 @@ class FarmScene extends Phaser.Scene {
         this.addTarget(add, 2, 2, 'sign', 'sign')
         this.addTarget(add, 6, 2, 'mailbox', 'mailbox')
 
+        const grown = []
         for (let i = 0; i < plotCount; i++) {
             const tx = PLOT_COLS[i % PLOT_COLS.length], ty = PLOT_TOP + Math.floor(i / PLOT_COLS.length) * 2
             add(this.add.image(center(tx), center(ty), 'soil').setDepth(-4))
@@ -101,11 +109,18 @@ class FarmScene extends Phaser.Scene {
                 this.targets.push({ kind: 'empty', tx, ty })
                 continue
             }
-            const plant = add(this.add.image(center(tx), center(ty) + T / 2 - 3, card.stage in SPRITES ? card.stage : '씨앗')
+            const tex = card.stage === '꽃' ? `flower_${card.species}` : card.stage
+            const plant = add(this.add.image(center(tx), center(ty) + T / 2 - 3, this.textures.exists(tex) ? tex : '씨앗')
                 .setOrigin(0.5, 1).setDepth(center(ty) + T / 2))
+            const prev = this.seen?.[card.short_card_id]
+            const grew = this.seen && STAGE_ORDER.indexOf(card.stage) > STAGE_ORDER.indexOf(prev)   // 새로 심은 것도 포함
+            if (grew) {
+                grown.push(card)
+                this.playGrow(plant)
+            }
             if (card.sprout_status === 'rejected') plant.setTint(0xb8a77a)
             else if (card.stage !== '씨앗') {
-                this.tweens.add({ targets: plant, scaleY: 0.94, duration: 700, yoyo: true, repeat: -1, ease: 'Stepped', delay: i * 170 })
+                this.tweens.add({ targets: plant, scaleY: 0.94, duration: 700, yoyo: true, repeat: -1, ease: 'Stepped', delay: grew ? 900 : i * 170 })
             }
             if (card.sprout_status === 'pending' || card.sprout_status === 'rejected') {
                 const b = add(this.add.image(center(tx) - 16, center(ty) - 22, card.sprout_status === 'pending' ? 'bubble' : 'bubbleSad')
@@ -114,7 +129,7 @@ class FarmScene extends Phaser.Scene {
             }
             add(this.add.text(center(tx), center(ty) + T / 2 + 4, card.name, {
                 fontFamily: 'Galmuri11, Jua, sans-serif', fontSize: '12px', color: '#4e342e',
-                backgroundColor: '#f3d9a4', padding: { x: 6, y: 2 },
+                backgroundColor: RARITY_TAG[card.rarity] || RARITY_TAG.common, padding: { x: 6, y: 2 },
             }).setOrigin(0.5, 0).setResolution(Z).setDepth(H - 2))
             this.targets.push({ kind: 'plant', tx, ty, card })
         }
@@ -122,6 +137,24 @@ class FarmScene extends Phaser.Scene {
         // 바뀐 밭 크기 안으로 캐릭터 위치 보정
         this.pos.y = Math.min(this.pos.y, center(this.rows - 2))
         this.updateNear(true)
+
+        this.seen = Object.fromEntries(this.cards.map(c => [c.short_card_id, c.stage]))
+        saveSeen(this.seen)
+        if (grown.length) this.opts.onGrow?.(grown)
+    }
+
+    // 성장 연출 — 쑥 올라오며 통통 + 반짝이 네 개가 퍼짐
+    playGrow(plant) {
+        plant.setScale(0.2)
+        this.tweens.add({ targets: plant, scaleX: 1, scaleY: 1, duration: 650, ease: 'Back.Out', delay: 250 })
+        for (let k = 0; k < 4; k++) {
+            const a = Math.PI / 4 + k * Math.PI / 2
+            const s = this.add.image(plant.x, plant.y - 24, 'star').setDepth(this.rows * T).setAlpha(0)
+            this.tweens.add({
+                targets: s, x: s.x + Math.cos(a) * 30, y: s.y + Math.sin(a) * 30, alpha: { from: 1, to: 0 },
+                duration: 700, delay: 500, ease: 'Quad.Out', onComplete: () => s.destroy(),
+            })
+        }
     }
 
     // 화면이 밭보다 크면(전체 화면·PC) 밭을 가운데에 두고, 작으면 밭 안에서만 스크롤

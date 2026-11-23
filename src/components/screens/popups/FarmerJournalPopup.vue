@@ -2,7 +2,7 @@
 import { reactive, ref, onMounted } from 'vue'
 import { useApi } from '@/composables/useApi'
 import { usePopup } from '@/composables/usePopup'
-import { FAITH_LABEL_MAP, stageLabels, stageNameToIndex } from '@/constants'
+import { FAITH_LABEL_MAP, farmStageLabels } from '@/constants'
 
 const props = defineProps({
     shortCardId: { type: String, required: true },
@@ -21,7 +21,7 @@ const activeStage = ref(1)
 const form = reactive({})
 
 function stageDisplay() {
-    return stageLabels[stageNameToIndex[stage.value]] || stage.value
+    return farmStageLabels[stage.value] || stage.value
 }
 
 // 1단계 필드가 다 채워지면 자동으로 2단계 탭으로 이동.
@@ -55,7 +55,7 @@ function load(onDone) {
 }
 onMounted(() => load())
 
-const STAGE_ORDER = ['씨앗', '새싹', '떡잎']
+const STAGE_ORDER = ['씨앗', '새싹', '떡잎', '꽃']
 // 2단계까지 채워도 떡잎은 반장 이상 재가 후 — '떡잎 재가 대기/완료/반려' 표시용
 const sproutLabel = ref('')
 

@@ -2,10 +2,7 @@
 // 밭 관리하기 게임 모드 — Phaser 2D 밭(탭 이동·상호작용)을 띄우고 액션 버튼은 DOM으로 얹는 호스트
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { PLANT_SPRITES, ICONS } from './farmSprites'
-import galmuri11 from 'galmuri/dist/Galmuri11-Bold.woff2?url'   // 굵은체가 보통체(505KB)보다 훨씬 작음(167KB)
-
-// 도트 글꼴(Galmuri11 Bold, OFL) — 게임 HUD·밭 이름표 전용. 한 굵기만 등록해 필요할 때만 내려받음
-if (![...document.fonts].some(f => f.family === 'Galmuri11')) document.fonts.add(new FontFace('Galmuri11', `url(${galmuri11}) format('woff2')`))
+import { usePopup } from '@/composables/usePopup'
 
 const props = defineProps({
     list: { type: Array, required: true },
@@ -13,11 +10,12 @@ const props = defineProps({
     goals: { type: Array, default: () => [] },       // 반 떡잎 목표 [{name, sprouts, goal}]
     sproutBadge: { type: Number, default: 0 },
     othersLabel: { type: String, default: '' },
+    sunshine: { type: Number, default: null },     // 햇살 잔액(없으면 칩 숨김)
 })
 const emit = defineEmits(['open', 'plant', 'tab'])
 
 // 전체 화면 상단 상태: 단계별 개수 + 반 목표(반이 하나면 그 반, 여러 반이면 달성 반 수)
-const STAGES = ['씨앗', '새싹', '떡잎']
+const STAGES = ['씨앗', '새싹', '떡잎', '꽃']
 const counts = computed(() => Object.fromEntries(STAGES.map(st => [st, props.list.filter(c => c.stage === st).length])))
 const goalText = computed(() => {
     const g = props.goals
@@ -34,6 +32,13 @@ const world = ref({ w: 432, h: 480 })
 const full = ref(false)
 const onKey = (e) => { if (e.key === 'Escape') full.value = false }
 let game = null
+const { showToast } = usePopup()
+// 성장 연출과 함께 알림 — 여러 개면 첫 이름 + 외 N
+function onGrow(cards) {
+    const c = cards[0]
+    const more = cards.length > 1 ? ` 외 ${cards.length - 1}` : ''
+    showToast(c.stage === '씨앗' && !more ? `🌰 ${c.name} 씨앗을 심었어요!` : `🎉 ${c.name}${more} 쑥쑥 자랐어요! (${c.stage})`)
+}
 let alive = true
 
 function act(t) {
@@ -54,6 +59,7 @@ onMounted(async () => {
         onNear: (t) => { near.value = t; say.value = null },
         onAct: act,
         onWorldSize: (w, h) => { world.value = { w, h } },
+        onGrow,
     })
     if (!alive) { game.destroy(); return }
     loading.value = false
@@ -67,6 +73,7 @@ watch(() => props.list, (l) => game?.setCards(l))
         <!-- 프레임 테두리 3px×2 포함(border-box) — 캔버스 크기는 farmScene의 ResizeObserver가 맞춤 -->
         <div class="fg-frame" :style="full ? null : { height: `min(62vh, ${world.h + 6}px)`, maxWidth: `${world.w + 6}px` }">
             <div ref="host" class="fg-canvas"></div>
+            <span v-if="!full && sunshine !== null" class="fg-px fg-stat fg-sun-corner" title="햇살"><img :src="ICONS.sun" alt="" />{{ sunshine }}</span>
             <button v-if="!full" class="fg-px fg-icon-btn fg-corner" aria-label="전체 화면" @click="full = true">
                 <img :src="ICONS.expand" alt="" />
             </button>
@@ -78,6 +85,7 @@ watch(() => props.list, (l) => game?.setCards(l))
                     <img :src="PLANT_SPRITES[st]" alt="" />{{ counts[st] }}
                 </span>
                 <span v-if="goalText" class="fg-px fg-stat"><img :src="PLANT_SPRITES.떡잎" alt="" />{{ goalText }}</span>
+                <span v-if="sunshine !== null" class="fg-px fg-stat fg-sun" title="햇살"><img :src="ICONS.sun" alt="" />{{ sunshine }}</span>
             </div>
             <button class="fg-px fg-icon-btn" aria-label="전체 화면 닫기" @click="full = false"><img :src="ICONS.close" alt="" /></button>
         </div>
@@ -175,6 +183,9 @@ button.fg-px:active { transform: translateY(3px); box-shadow:
 }
 .fg-icon-btn img { width: 16px; height: 16px; }
 .fg-corner { position: absolute; top: 10px; right: 10px; }
+.fg-sun-corner { position: absolute; top: 12px; left: 12px; }
+.fg-sun, .fg-sun-corner { --px-bg: #fff3c4; padding: 0 10px 0 6px; }
+.fg-sun img, .fg-sun-corner img { width: 20px; height: 20px; }
 
 .fg-act, .fg-say, .fg-hint {
     display: flex;

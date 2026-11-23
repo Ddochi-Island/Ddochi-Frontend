@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { usePopup } from '@/composables/usePopup'
 import { useAuthStore } from '@/stores/auth'
-import { stageLabels, stageNameToIndex } from '@/constants'
+import { farmStageLabels } from '@/constants'
 import FarmerJournalPopup from './popups/FarmerJournalPopup.vue'
 import FarmGameView from './FarmGameView.vue'
 import { PLANT_SPRITES } from './farmSprites'
@@ -35,12 +35,12 @@ function onGameTab(t) {
     else activeTab.value = t
 }
 
-const STAGE_EMOJI = { 씨앗: '🌰', 새싹: '🌿', 떡잎: '🍀' }
-// 농부일지 성장 단계 — stageLabels/stageNameToIndex는 기존 인도권(dolyo) 상수 재사용
-// (constants/index.js). '씨앗 🌰' 형태라 라벨/이모지가 한 문자열에 같이 있음.
+const STAGES = ['씨앗', '새싹', '떡잎', '꽃']
+const STAGE_EMOJI = { 씨앗: '🌰', 새싹: '🌿', 떡잎: '🍀', 꽃: '🌸' }
 function journalStageDisplay(stage) {
-    return stageLabels[stageNameToIndex[stage]] || stage
+    return farmStageLabels[stage] || stage
 }
+const sunshine = ref(null)   // 밭 게임 햇살 잔액(테이블 문제면 null → 표시 안 함)
 
 // 짧카는 재가 없이 바로 밭에 올라감. 재가는 2단계까지 채운 뒤 떡잎이 될 때만(반장 이상).
 // 떡잎 재가 탭: 재가 대기 중인 짧카 — 재가할 수 있는 사람에겐 재가/반려 버튼, 작성자에겐 진행 상황.
@@ -64,7 +64,7 @@ const visibleList = computed(() => {
 })
 
 const stageCounts = computed(() => {
-    const c = { 씨앗: 0, 새싹: 0, 떡잎: 0 }
+    const c = { 씨앗: 0, 새싹: 0, 떡잎: 0, 꽃: 0 }
     visibleList.value.forEach(x => { if (c[x.stage] !== undefined) c[x.stage]++ })
     return c
 })
@@ -85,6 +85,8 @@ function load() {
             list.value = r.list || []
             othersLabel.value = r.othersLabel || null
             groupGoals.value = r.groupGoals || []
+            sunshine.value = r.sunshine ?? null
+            if (r.sunshineGained > 0) showToast(`☀️ 햇살 +${r.sunshineGained}`)
         } else {
             // 실패하면 빈 밭처럼 보여서 반·반의 밭이 "없는" 걸로 오해됨 — 실패를 알림
             showAppAlert(`밭을 불러오지 못했어요. 잠시 후 다시 열어 주세요.${r?.message ? '<br>(' + r.message + ')' : ''}`)
@@ -124,7 +126,7 @@ function decideSprout(card, statusKo) {
                 </div>
             </div>
             <div class="sc-stat-row">
-                <div v-for="st in ['씨앗', '새싹', '떡잎']" :key="st" class="sc-stat-chip">
+                <div v-for="st in STAGES" :key="st" class="sc-stat-chip">
                     <img v-if="gameView" :src="PLANT_SPRITES[st]" alt="" class="sc-stat-sprite" />
                     <span v-else class="sc-stat-emoji">{{ STAGE_EMOJI[st] }}</span>
                     <span class="sc-stat-num">{{ stageCounts[st] }}</span>
@@ -143,7 +145,7 @@ function decideSprout(card, statusKo) {
 
             <div v-if="loading" class="sc-empty">불러오는 중...</div>
             <FarmGameView v-else-if="gameView" :list="mineList" :owner-name="auth.currentUserName || ''"
-                          :goals="groupGoals" :sprout-badge="sproutDecidable || sproutList.length" :others-label="othersLabel || ''"
+                          :goals="groupGoals" :sunshine="sunshine" :sprout-badge="sproutDecidable || sproutList.length" :others-label="othersLabel || ''"
                           @open="openJournal" @plant="router.push({ name: 'shortCard' })" @tab="onGameTab" />
             <div v-else-if="!visibleList.length" class="sc-empty">
                 <div class="sc-empty-icon">🌾</div>
@@ -421,6 +423,9 @@ function decideSprout(card, statusKo) {
 }
 .sc-icon-stage-떡잎 {
     background: #DEF2D9;
+}
+.sc-icon-stage-꽃 {
+    background: #FCE4EC;
 }
 .sc-card-heading {
     flex: 1;

@@ -6,6 +6,7 @@ import { usePopup } from '@/composables/usePopup'
 import { useFormatters } from '@/composables/useFormatters'
 import { useAuthStore } from '@/stores/auth'
 import { scFields } from '@/constants'
+import SeedRevealOverlay from './SeedRevealOverlay.vue'
 
 const router = useRouter()
 const { callApiPromise } = useApi()
@@ -110,8 +111,11 @@ async function submitShortCard() {
     clearDraft()
     if (r.duplicateInSarang) showToast('짧카 작성 완료! ⚠️ 이 번호는 이미 섭외 이력이 있어요')
     else showToast('짧카 작성 완료! 📍')
-    router.push({ name: 'home' })
+    // 밭 게임: 심은 씨앗의 품종 뽑기를 보여준 뒤 이동
+    if (r.species) revealSpecies.value = r.species
+    else router.push({ name: 'home' })
 }
+const revealSpecies = ref(null)
 </script>
 
 <template>
@@ -155,6 +159,8 @@ async function submitShortCard() {
         <button class="btn" :disabled="submitting" @click="submitShortCard">
             {{ submitting ? '제출 중...' : '제출하기 📨' }}
         </button>
+        <SeedRevealOverlay v-if="revealSpecies" :species="revealSpecies"
+                           @farm="router.push({ name: 'shortCardList' })" @close="router.push({ name: 'home' })" />
     </div>
 </template>
 

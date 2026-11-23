@@ -98,6 +98,8 @@ export const FAITH_LABEL_MAP = { '무': '무신앙', '휴': '휴면', '신앙': 
 // '씨앗' → 'stage0' 정렬용 키는 별도 stageNameToIndex 참조.
 export const stageLabels = ['씨앗 🌰', '새싹 🌿', '떡잎 🍀', '열매 🍎']
 export const stageNameToIndex = { '씨앗': 0, '새싹': 1, '떡잎': 2, '열매': 3 }
+// 밭 관리하기(짧카) 단계 — 인도권 단계와 달리 떡잎 다음이 꽃(밭 게임 1차)
+export const farmStageLabels = { 씨앗: '씨앗 🌰', 새싹: '새싹 🌿', 떡잎: '떡잎 🍀', 꽃: '꽃 🌸' }
 
 // 일일보고 잎사귀 종류. '-' 은 sentinel (선택 안 함).
 export const leafOptions = ['-', '생노잎', '간증잎', '성구잎', '특강자', '타로잎', '인도잎', '기타잎']
