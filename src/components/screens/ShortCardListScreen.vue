@@ -29,6 +29,11 @@ function toggleGameMode() {
     try { localStorage.setItem(GAME_MODE_KEY, gameMode.value ? '1' : '0') } catch { /* 저장 못 해도 이번 화면에선 동작 */ }
 }
 const gameView = computed(() => gameMode.value && activeTab.value === 'mine')
+// 게임 전체 화면 툴바: 다른 탭으로 가거나(게임 화면은 나의 밭에만 있어 자연히 닫힘) 목록 보기로 전환
+function onGameTab(t) {
+    if (t === 'list') toggleGameMode()
+    else activeTab.value = t
+}
 
 const STAGE_EMOJI = { 씨앗: '🌰', 새싹: '🌿', 떡잎: '🍀' }
 // 농부일지 성장 단계 — stageLabels/stageNameToIndex는 기존 인도권(dolyo) 상수 재사용
@@ -138,7 +143,8 @@ function decideSprout(card, statusKo) {
 
             <div v-if="loading" class="sc-empty">불러오는 중...</div>
             <FarmGameView v-else-if="gameView" :list="mineList" :owner-name="auth.currentUserName || ''"
-                          @open="openJournal" @plant="router.push({ name: 'shortCard' })" />
+                          :goals="groupGoals" :sprout-badge="sproutDecidable || sproutList.length" :others-label="othersLabel || ''"
+                          @open="openJournal" @plant="router.push({ name: 'shortCard' })" @tab="onGameTab" />
             <div v-else-if="!visibleList.length" class="sc-empty">
                 <div class="sc-empty-icon">🌾</div>
                 <div v-if="activeTab === 'sprout'">떡잎 재가를 기다리는 짧카가 없어요</div>

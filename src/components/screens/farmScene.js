@@ -25,6 +25,8 @@ function addPixelTexture(scene, key, rows, scale) {
 }
 
 const center = (t) => t * T + T / 2
+// 칸 좌표마다 고정된 0~1 값 — 화면 크기가 바뀌어도 바깥 장식이 같은 자리에 같은 모양
+const hash = (x, y) => { const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return n - Math.floor(n) }
 
 class FarmScene extends Phaser.Scene {
     constructor(opts) {
@@ -73,7 +75,6 @@ class FarmScene extends Phaser.Scene {
         this.fitCamera()
         this.opts.onWorldSize?.(W, H)
 
-        add(this.add.tileSprite(0, 0, W, H, 'grass').setOrigin(0).setDepth(-10))
         for (let x = 0; x < COLS; x++) {
             add(this.add.image(center(x), center(0), 'fence').setDepth(-5))
             add(this.add.image(center(x), center(this.rows - 1), 'fence').setDepth(H))
@@ -126,7 +127,21 @@ class FarmScene extends Phaser.Scene {
     // 화면이 밭보다 크면(전체 화면·PC) 밭을 가운데에 두고, 작으면 밭 안에서만 스크롤
     fitCamera() {
         const W = COLS * T, H = this.rows * T, vw = this.scale.width / Z, vh = this.scale.height / Z
-        this.cameras.main.setBounds(Math.min(0, (W - vw) / 2), Math.min(0, (H - vh) / 2), Math.max(W, vw), Math.max(H, vh))
+        const bx = Math.min(0, (W - vw) / 2), by = Math.min(0, (H - vh) / 2), bw = Math.max(W, vw), bh = Math.max(H, vh)
+        this.cameras.main.setBounds(bx, by, bw, bh)
+
+        // 보이는 영역 전체를 잔디로(타일 격자에 맞춰 시작) + 울타리 밖 장식
+        this.outsideObjs?.forEach(o => o.destroy())
+        const tx0 = Math.floor(bx / T), ty0 = Math.floor(by / T)
+        this.outsideObjs = [this.add.tileSprite(tx0 * T, ty0 * T, bw + 2 * T, bh + 2 * T, 'grass').setOrigin(0).setDepth(-10)]
+        for (let y = ty0; y * T < by + bh; y++) {
+            for (let x = tx0; x * T < bx + bw; x++) {
+                if (x >= -1 && x <= COLS && y >= -1 && y <= this.rows) continue   // 밭과 울타리 바로 옆 한 칸은 비움
+                const r = hash(x, y)
+                const k = r < 0.07 ? 'tree' : r < 0.12 ? 'bush' : r < 0.2 ? 'flower' : r < 0.23 ? 'rock' : null
+                if (k) this.outsideObjs.push(this.add.image(center(x), center(y), k).setOrigin(0.5, k === 'tree' ? 0.8 : 0.5).setDepth(center(y)))
+            }
+        }
     }
 
     addTarget(add, tx, ty, kind, key) {

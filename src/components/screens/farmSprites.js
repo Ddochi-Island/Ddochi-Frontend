@@ -64,6 +64,12 @@ export const SPRITES = {
         'kGGGPGGGGGGGggk.', 'kGGGGGGGgGGgggk.', '.kGGgGGGggggggk.', '.kgggggggggggk..',
         '..kkkkkkkkkkkk..', '................', '................', '................',
     ],
+    tree: [
+        '......kkkk......', '....kkLLGGkk....', '...kLLLGGGGGk...', '..kLLGGGGGgGGk..', '.kLLGGGGGGGGGgk.',
+        '.kLGGGpGGGGgGgk.', 'kLGGGGGGGGGGGggk', 'kLGGGGGgGGGGGggk', 'kGGGgGGGGGGpGggk', 'kGGGGGGGGGgGgggk',
+        '.kGgGGGGgGGggggk', '.kggGGgggGgggggk', '..kgggggggggggk.', '...kkkkbbkkkkk..', '......kbBk......',
+        '......kbBk......', '......kbBk......', '.....kbbBBk.....', '....kkkkkkkk....', '................',
+    ],
     flower: ['........', '..p.y...', '.pyp.yy.', '..p.yky.', '...g.y..', '..Gg.g..', '...gGg..', '........'],
     rock: ['........', '........', '..kkkk..', '.kxxxXk.', 'kxxxxXXk', 'kXxxXXXk', '.kkkkkk.', '........'],
     grass: ['GGGGGGGG', 'GGGGGLGG', 'GGgGGGGG', 'GGGGGGGG', 'GGGGGGgG', 'GLGGGGGG', 'GGGGGGGG', 'GGGgGGGG'],
