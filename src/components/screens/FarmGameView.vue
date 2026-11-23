@@ -1,133 +1,116 @@
 <script setup>
-// 밭 관리하기 게임 모드 — 짧카 목록을 2D 도트 밭 위 식물로 그리는 화면 (데이터는 부모가 내려줌)
-import { computed } from 'vue'
-import { PLANT_SPRITES, TILES } from './farmSprites'
+// 밭 관리하기 게임 모드 — Phaser 2D 밭(탭 이동·상호작용)을 띄우고 액션 버튼은 DOM으로 얹는 호스트
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 
 const props = defineProps({
     list: { type: Array, required: true },
+    ownerName: { type: String, default: '' },
 })
 const emit = defineEmits(['open', 'plant'])
 
-// 빈 밭이 너무 휑하지 않게 최소 6칸 + 항상 빈 칸 1개(눌러서 씨앗 심기)
-const emptyPlots = computed(() => Math.max(6 - props.list.length, 1))
-const tileVars = {
-    '--fg-grass': `url("${TILES.grass}")`,
-    '--fg-soil': `url("${TILES.soil}")`,
-    '--fg-fence': `url("${TILES.fence}")`,
+const host = ref(null)
+const loading = ref(true)
+const near = ref(null)
+const say = ref('')
+const world = ref({ w: 432, h: 480 })
+let game = null
+let alive = true
+
+function act(t) {
+    if (!t) return
+    if (t.kind === 'plant') emit('open', t.card)
+    else if (t.kind === 'empty') emit('plant')
+    else if (t.kind === 'sign') say.value = `🪧 ${props.ownerName ? props.ownerName + '의' : '나의'} 밭이에요. 무럭무럭 키워봐요!`
+    else if (t.kind === 'mailbox') say.value = '📮 우편함이 비어 있어요. 방명록은 곧 열려요!'
 }
+
+onMounted(async () => {
+    // Phaser는 게임 모드에서만 내려받음 (업무 화면 번들에 안 섞이게)
+    const { createFarmGame } = await import('./farmScene.js')
+    if (!alive) return
+    game = await createFarmGame(host.value, {
+        cards: props.list,
+        onNear: (t) => { near.value = t; say.value = '' },
+        onAct: act,
+        onWorldSize: (w, h) => { world.value = { w, h } },
+    })
+    if (!alive) { game.destroy(); return }
+    loading.value = false
+})
+onBeforeUnmount(() => { alive = false; game?.destroy() })
+watch(() => props.list, (l) => game?.setCards(l))
 </script>
 
 <template>
-    <div class="fg-field" :style="tileVars">
-        <div class="fg-fence"></div>
-        <div class="fg-grid">
-            <button v-for="(c, i) in list" :key="c.short_card_id" class="fg-plot"
-                    :aria-label="`${c.name} ${c.stage}`" @click="emit('open', c)">
-                <span v-if="c.sprout_status === 'pending'" class="fg-bubble" title="떡잎 재가 대기">!</span>
-                <span v-else-if="c.sprout_status === 'rejected'" class="fg-bubble fg-bubble-sad" title="떡잎 반려">…</span>
-                <img :src="PLANT_SPRITES[c.stage] || PLANT_SPRITES.씨앗" alt=""
-                     :class="['fg-plant', c.sprout_status === 'rejected' ? 'fg-wilted' : '']"
-                     :style="{ animationDelay: (i % 4) * 0.35 + 's' }" />
-                <span class="fg-sign">{{ c.name }}</span>
-            </button>
-            <button v-for="n in emptyPlots" :key="'empty-' + n" class="fg-plot fg-plot-empty" @click="emit('plant')">
-                <img :src="PLANT_SPRITES.씨앗" alt="" class="fg-plant fg-ghost" />
-                <span class="fg-sign fg-sign-empty">＋ 씨앗 심기</span>
-            </button>
+    <div class="fg-wrap">
+        <!-- 프레임 테두리 3px×2 포함(border-box) — 캔버스 크기는 farmScene의 ResizeObserver가 맞춤 -->
+        <div class="fg-frame" :style="{ height: `min(62vh, ${world.h + 6}px)`, maxWidth: `${world.w + 6}px` }">
+            <div ref="host" class="fg-canvas"></div>
         </div>
-        <div class="fg-fence"></div>
+        <div v-if="loading" class="fg-loading">밭으로 가는 중… 🌱</div>
+
+        <div class="fg-hud" aria-live="polite">
+            <div v-if="say" class="fg-say">{{ say }}</div>
+            <button v-else-if="near?.kind === 'plant'" class="fg-act" @click="act(near)">🔍 {{ near.card.name }} 살펴보기</button>
+            <button v-else-if="near?.kind === 'empty'" class="fg-act" @click="act(near)">🌱 여기에 씨앗 심기</button>
+            <button v-else-if="near" class="fg-act fg-act-sub" @click="act(near)">
+                {{ near.kind === 'sign' ? '🪧 팻말 읽기' : '📮 우편함 열기' }}
+            </button>
+            <div v-else class="fg-hint">땅을 눌러 걸어가요 · 식물 앞에 서면 살펴볼 수 있어요</div>
+        </div>
     </div>
 </template>
 
 <style scoped>
-.fg-field {
-    max-width: 480px;
+.fg-wrap {
+    position: relative;
+    max-width: 560px;
     margin: 0 auto;
+}
+.fg-canvas { width: 100%; height: 100%; }
+.fg-frame {
+    border: 3px solid #5c3a1e;
     border-radius: 18px;
     overflow: hidden;
-    background: var(--fg-grass) 0 0 / 32px 32px;
-    image-rendering: pixelated;
-    border: 3px solid #5c3a1e;
     box-shadow: 0 5px 0 #5c3a1e, var(--shadow);
+    background: #cfe8c0;
+    touch-action: none;
+    margin: 0 auto;
 }
-.fg-fence {
-    height: 24px;
-    background: var(--fg-fence) 0 center / 24px 24px repeat-x;
-}
-.fg-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    padding: 8px 14px;
-}
-.fg-plot {
-    position: relative;
-    aspect-ratio: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    padding: 4px 4px 8px;
-    border: none;
-    border-radius: 8px;
-    background: var(--fg-soil) 0 0 / 32px 32px;
-    box-shadow: inset 0 0 0 3px #6b4428, inset 0 -6px 0 rgba(0, 0, 0, .12);
-    font-family: 'Jua', sans-serif;
-    cursor: pointer;
-    transition: transform .08s;
-}
-.fg-plot:active { transform: translateY(2px); }
-.fg-plot-empty { filter: saturate(.8); }
-.fg-plant {
-    width: 64px;
-    height: 64px;
-    image-rendering: pixelated;
-    transform-origin: 50% 90%;
-    animation: fg-idle 1.4s steps(1) infinite;
-}
-.fg-ghost { opacity: .35; animation: none; }
-.fg-wilted { filter: saturate(.3) sepia(.5) brightness(.9); animation: none; }
-.fg-sign {
-    margin-top: 2px;
-    max-width: 100%;
-    padding: 2px 8px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 12px;
-    color: #4e342e;
-    background: #f3d9a4;
-    border: 2px solid #8b5a2b;
-    border-radius: 8px;
-    box-shadow: 0 2px 0 #8b5a2b;
-}
-.fg-sign-empty { background: #fff8e7; color: #a1887f; border-color: #c8a27a; box-shadow: 0 2px 0 #c8a27a; }
-.fg-bubble {
+.fg-loading {
     position: absolute;
-    top: 6px;
-    right: 6px;
-    min-width: 22px;
-    height: 22px;
+    inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    color: #4e342e;
+}
+.fg-hud {
+    min-height: 52px;
+    margin-top: 14px;
+    display: flex;
+    justify-content: center;
+}
+.fg-act, .fg-say, .fg-hint {
+    font-family: 'Jua', sans-serif;
     font-size: 15px;
-    color: #f57f17;
-    background: #fffdf5;
-    border: 2px solid #5c3a1e;
-    border-radius: 10px;
-    animation: fg-hop 1s steps(1) infinite;
+    border-radius: 14px;
+    padding: 11px 18px;
 }
-.fg-bubble-sad { color: #8d6e63; animation: none; }
-@keyframes fg-idle {
-    0% { transform: scaleY(1); }
-    50% { transform: scaleY(.94); }
+.fg-act {
+    border: 2px solid #4f8a35;
+    background: #7cc255;
+    color: #fff;
+    box-shadow: 0 3px 0 #4f8a35;
+    cursor: pointer;
 }
-@keyframes fg-hop {
-    0% { transform: translateY(0); }
-    50% { transform: translateY(-3px); }
+.fg-act:active { transform: translateY(2px); box-shadow: 0 1px 0 #4f8a35; }
+.fg-act-sub { background: #f3d9a4; color: #4e342e; border-color: #8b5a2b; box-shadow: 0 3px 0 #8b5a2b; }
+.fg-say {
+    background: #fff8e7;
+    color: #4e342e;
+    border: 2px solid #8b5a2b;
+    box-shadow: 0 3px 0 #8b5a2b;
 }
-@media (prefers-reduced-motion: reduce) {
-    .fg-plant, .fg-bubble { animation: none; }
-}
+.fg-hint { font-size: 13px; color: #8d6e63; padding: 8px 0; }
 </style>

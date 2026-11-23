@@ -137,7 +137,7 @@ function decideSprout(card, statusKo) {
             </div>
 
             <div v-if="loading" class="sc-empty">불러오는 중...</div>
-            <FarmGameView v-else-if="gameView" :list="mineList"
+            <FarmGameView v-else-if="gameView" :list="mineList" :owner-name="auth.currentUserName || ''"
                           @open="openJournal" @plant="router.push({ name: 'shortCard' })" />
             <div v-else-if="!visibleList.length" class="sc-empty">
                 <div class="sc-empty-icon">🌾</div>
