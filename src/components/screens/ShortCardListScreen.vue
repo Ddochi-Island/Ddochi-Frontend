@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/auth'
 import { stageLabels, stageNameToIndex } from '@/constants'
 import FarmerJournalPopup from './popups/FarmerJournalPopup.vue'
 import FarmGameView from './FarmGameView.vue'
+import { PLANT_SPRITES } from './farmSprites'
 
 const router = useRouter()
 const { callApi } = useApi()
@@ -27,6 +28,7 @@ function toggleGameMode() {
     gameMode.value = !gameMode.value
     try { localStorage.setItem(GAME_MODE_KEY, gameMode.value ? '1' : '0') } catch { /* 저장 못 해도 이번 화면에선 동작 */ }
 }
+const gameView = computed(() => gameMode.value && activeTab.value === 'mine')
 
 const STAGE_EMOJI = { 씨앗: '🌰', 새싹: '🌿', 떡잎: '🍀' }
 // 농부일지 성장 단계 — stageLabels/stageNameToIndex는 기존 인도권(dolyo) 상수 재사용
@@ -102,7 +104,7 @@ function decideSprout(card, statusKo) {
 </script>
 
 <template>
-    <div class="screen sc-toss">
+    <div :class="['screen', 'sc-toss', gameView ? 'sc-game' : '']">
         <div class="sc-top">
             <button class="sc-plant-btn" @click="router.push({ name: 'shortCard' })">🌱 씨앗 심기</button>
             <h1 class="sc-title">밭 관리하기</h1>
@@ -117,20 +119,11 @@ function decideSprout(card, statusKo) {
                 </div>
             </div>
             <div class="sc-stat-row">
-                <div class="sc-stat-chip">
-                    <span class="sc-stat-emoji">🌰</span>
-                    <span class="sc-stat-num">{{ stageCounts.씨앗 }}</span>
-                    <span class="sc-stat-label">씨앗</span>
-                </div>
-                <div class="sc-stat-chip">
-                    <span class="sc-stat-emoji">🌿</span>
-                    <span class="sc-stat-num">{{ stageCounts.새싹 }}</span>
-                    <span class="sc-stat-label">새싹</span>
-                </div>
-                <div class="sc-stat-chip">
-                    <span class="sc-stat-emoji">🍀</span>
-                    <span class="sc-stat-num">{{ stageCounts.떡잎 }}</span>
-                    <span class="sc-stat-label">떡잎</span>
+                <div v-for="st in ['씨앗', '새싹', '떡잎']" :key="st" class="sc-stat-chip">
+                    <img v-if="gameView" :src="PLANT_SPRITES[st]" alt="" class="sc-stat-sprite" />
+                    <span v-else class="sc-stat-emoji">{{ STAGE_EMOJI[st] }}</span>
+                    <span class="sc-stat-num">{{ stageCounts[st] }}</span>
+                    <span class="sc-stat-label">{{ st }}</span>
                 </div>
             </div>
         </div>
@@ -144,7 +137,7 @@ function decideSprout(card, statusKo) {
             </div>
 
             <div v-if="loading" class="sc-empty">불러오는 중...</div>
-            <FarmGameView v-else-if="activeTab === 'mine' && gameMode" :list="mineList" :stage-emoji="STAGE_EMOJI"
+            <FarmGameView v-else-if="gameView" :list="mineList"
                           @open="openJournal" @plant="router.push({ name: 'shortCard' })" />
             <div v-else-if="!visibleList.length" class="sc-empty">
                 <div class="sc-empty-icon">🌾</div>
@@ -350,6 +343,26 @@ function decideSprout(card, statusKo) {
 }
 .sc-switch-on { background: var(--btn-color); }
 .sc-switch-on::after { transform: translateX(16px); }
+/* 게임 모드 스킨 — 하늘·잔디 배경, 나무 테두리의 통통한 패널 */
+.sc-game {
+    background: linear-gradient(#bfe3f5 0, #e3f3d6 260px, #f4ecd8 560px);
+}
+.sc-game .sc-top { background: transparent; }
+.sc-game .sc-title { color: #4e342e; text-shadow: 0 2px 0 #fff8e7; }
+.sc-game .sc-subtitle { color: #6d8b4e; }
+.sc-game .sc-plant-btn {
+    background: #7cc255;
+    color: #fff;
+    border: 2px solid #4f8a35;
+    box-shadow: 0 3px 0 #4f8a35;
+}
+.sc-game .sc-stat-chip,
+.sc-game .sc-goal-chip {
+    background: #fff8e7;
+    border: 2px solid #8b5a2b;
+    box-shadow: 0 3px 0 #8b5a2b;
+}
+.sc-stat-sprite { width: 32px; height: 32px; image-rendering: pixelated; }
 .sc-empty {
     text-align: center;
     padding: 60px 10px;
