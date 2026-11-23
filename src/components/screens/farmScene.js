@@ -7,6 +7,9 @@ const COLS = 9          // 0·8열은 울타리, 1~7열이 마당
 const PLOT_COLS = [2, 4, 6]
 const PLOT_TOP = 5      // 첫 밭 줄 (1~3줄은 마당: 팻말·우편함)
 const SPEED = 160       // px/s
+// 기기 해상도 배율로 그림 — 1x로 그리면 폰(3x)에서 이동이 CSS 1px(=기기 3px) 단위로 끊겨 버벅여 보임
+// ponytail: Canvas 렌더러 부담 때문에 최대 2배. 3x 폰에서도 도트 1칸(월드 3px)=기기 9px로 고르게 떨어짐
+const Z = Math.min(2, Math.max(1, Math.round(window.devicePixelRatio || 1)))
 
 // 문자 격자 → 캔버스 텍스처 (scale배로 키워서 그림 → 카메라 줌 없이 선명)
 function addPixelTexture(scene, key, rows, scale) {
@@ -46,8 +49,8 @@ class FarmScene extends Phaser.Scene {
         this.walkClock = 0
 
         this.buildWorld()
-        // lerp(지연 추적)+픽셀 반올림이 섞이면 캐릭터가 화면에서 앞뒤로 떨림 → 정수 좌표로 딱 붙어서 추적
-        this.cameras.main.startFollow(this.player, true, 1, 1)
+        // lerp(지연 추적)이면 캐릭터가 화면에서 앞뒤로 떨림 → 딱 붙어서 추적. 반올림은 렌더러(pixelArt)가 기기 픽셀 단위로 함
+        this.cameras.main.setZoom(Z).startFollow(this.player, false, 1, 1)
         this.input.on('pointerdown', (p) => this.onTap(p.worldX, p.worldY))
         this.scale.on('resize', () => this.fitCamera())
     }
@@ -111,7 +114,7 @@ class FarmScene extends Phaser.Scene {
             add(this.add.text(center(tx), center(ty) + T / 2 + 4, card.name, {
                 fontFamily: 'Jua, sans-serif', fontSize: '13px', color: '#4e342e',
                 backgroundColor: '#f3d9a4', padding: { x: 6, y: 2 },
-            }).setOrigin(0.5, 0).setResolution(window.devicePixelRatio || 1).setDepth(H - 2))
+            }).setOrigin(0.5, 0).setResolution(Z).setDepth(H - 2))
             this.targets.push({ kind: 'plant', tx, ty, card })
         }
 
@@ -122,7 +125,7 @@ class FarmScene extends Phaser.Scene {
 
     // 화면이 밭보다 크면(전체 화면·PC) 밭을 가운데에 두고, 작으면 밭 안에서만 스크롤
     fitCamera() {
-        const W = COLS * T, H = this.rows * T, vw = this.scale.width, vh = this.scale.height
+        const W = COLS * T, H = this.rows * T, vw = this.scale.width / Z, vh = this.scale.height / Z
         this.cameras.main.setBounds(Math.min(0, (W - vw) / 2), Math.min(0, (H - vh) / 2), Math.max(W, vw), Math.max(H, vh))
     }
 
@@ -178,7 +181,7 @@ class FarmScene extends Phaser.Scene {
         // 걸음 표현은 발 기준 살짝 눌리기 — y를 들썩이면 이동과 겹쳐 한 프레임 멈췄다 튀는 것처럼 보임
         const step = this.dest && Math.floor(this.walkClock / 140) % 2
         this.player.setScale(1, step ? 0.94 : 1)
-        this.player.setPosition(Math.round(this.pos.x), Math.round(this.pos.y)).setDepth(this.pos.y)
+        this.player.setPosition(this.pos.x, this.pos.y).setDepth(this.pos.y)
     }
 
     face(dx, dy) {
@@ -201,18 +204,19 @@ export async function createFarmGame(parent, opts) {
     try { await document.fonts.load('13px Jua') } catch { /* 폰트 없으면 기본 글꼴 */ }
     const scene = new FarmScene(opts)
     const game = new Phaser.Game({
-        type: Phaser.CANVAS,   // WebGL은 캔버스 리사이즈 후 위쪽이 비는 문제 → 작은 도트 씬이라 Canvas로 충분
+        type: Phaser.CANVAS,   // Phaser 4 WebGL은 리사이즈 후 캔버스 일부가 하얗게 비는 문제 → Canvas
         parent,
         backgroundColor: '#5fb24e',   // 울타리 밖도 잔디처럼
         pixelArt: true,
         // RESIZE 모드는 부모 크기 캐시 때문에 밭 높이 변화를 못 따라감 → 크기는 ResizeObserver로 직접 맞춤
-        scale: { mode: Phaser.Scale.NONE, width: parent.clientWidth, height: parent.clientHeight },
+        // 내부 크기는 CSS×Z, 화면 표시는 zoom 1/Z로 CSS 크기에 맞춤
+        scale: { mode: Phaser.Scale.NONE, width: parent.clientWidth * Z, height: parent.clientHeight * Z, zoom: 1 / Z },
         scene,
         banner: false,
         audio: { noAudio: true },
     })
     const ro = new ResizeObserver(() => {
-        if (parent.clientWidth && parent.clientHeight) game.scale.resize(parent.clientWidth, parent.clientHeight)
+        if (parent.clientWidth && parent.clientHeight) game.scale.resize(parent.clientWidth * Z, parent.clientHeight * Z)
     })
     ro.observe(parent)
     return {
