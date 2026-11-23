@@ -48,6 +48,7 @@ class FarmScene extends Phaser.Scene {
         this.buildWorld()
         this.cameras.main.startFollow(this.player, true, 0.15, 0.15)
         this.input.on('pointerdown', (p) => this.onTap(p.worldX, p.worldY))
+        this.scale.on('resize', () => this.fitCamera())
     }
 
     setCards(cards) {
@@ -65,7 +66,7 @@ class FarmScene extends Phaser.Scene {
         const plotRows = Math.ceil(plotCount / PLOT_COLS.length)
         this.rows = PLOT_TOP + plotRows * 2 + 1
         const W = COLS * T, H = this.rows * T
-        this.cameras.main.setBounds(0, 0, W, H)
+        this.fitCamera()
         this.opts.onWorldSize?.(W, H)
 
         add(this.add.tileSprite(0, 0, W, H, 'grass').setOrigin(0).setDepth(-10))
@@ -116,6 +117,12 @@ class FarmScene extends Phaser.Scene {
         // 바뀐 밭 크기 안으로 캐릭터 위치 보정
         this.pos.y = Math.min(this.pos.y, center(this.rows - 2))
         this.updateNear(true)
+    }
+
+    // 화면이 밭보다 크면(전체 화면·PC) 밭을 가운데에 두고, 작으면 밭 안에서만 스크롤
+    fitCamera() {
+        const W = COLS * T, H = this.rows * T, vw = this.scale.width, vh = this.scale.height
+        this.cameras.main.setBounds(Math.min(0, (W - vw) / 2), Math.min(0, (H - vh) / 2), Math.max(W, vw), Math.max(H, vh))
     }
 
     addTarget(add, tx, ty, kind, key) {
@@ -193,7 +200,7 @@ export async function createFarmGame(parent, opts) {
     const game = new Phaser.Game({
         type: Phaser.CANVAS,   // WebGL은 캔버스 리사이즈 후 위쪽이 비는 문제 → 작은 도트 씬이라 Canvas로 충분
         parent,
-        backgroundColor: '#cfe8c0',
+        backgroundColor: '#5fb24e',   // 울타리 밖도 잔디처럼
         pixelArt: true,
         // RESIZE 모드는 부모 크기 캐시 때문에 밭 높이 변화를 못 따라감 → 크기는 ResizeObserver로 직접 맞춤
         scale: { mode: Phaser.Scale.NONE, width: parent.clientWidth, height: parent.clientHeight },
