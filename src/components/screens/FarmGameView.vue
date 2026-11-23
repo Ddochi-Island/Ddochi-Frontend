@@ -1,7 +1,11 @@
 <script setup>
 // 밭 관리하기 게임 모드 — Phaser 2D 밭(탭 이동·상호작용)을 띄우고 액션 버튼은 DOM으로 얹는 호스트
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import { PLANT_SPRITES } from './farmSprites'
+import { PLANT_SPRITES, ICONS } from './farmSprites'
+import galmuri11 from 'galmuri/dist/Galmuri11-Bold.woff2?url'   // 굵은체가 보통체(505KB)보다 훨씬 작음(167KB)
+
+// 도트 글꼴(Galmuri11 Bold, OFL) — 게임 HUD·밭 이름표 전용. 한 굵기만 등록해 필요할 때만 내려받음
+if (![...document.fonts].some(f => f.family === 'Galmuri11')) document.fonts.add(new FontFace('Galmuri11', `url(${galmuri11}) format('woff2')`))
 
 const props = defineProps({
     list: { type: Array, required: true },
@@ -24,7 +28,7 @@ const goalText = computed(() => {
 const host = ref(null)
 const loading = ref(true)
 const near = ref(null)
-const say = ref('')
+const say = ref(null)   // { icon, text }
 const world = ref({ w: 432, h: 480 })
 // 전체 화면 — CSS 고정 오버레이 (iPhone Safari는 요소 Fullscreen API 미지원). z-index는 상단바(900) 위, 팝업(1000) 아래.
 const full = ref(false)
@@ -36,8 +40,8 @@ function act(t) {
     if (!t) return
     if (t.kind === 'plant') emit('open', t.card)
     else if (t.kind === 'empty') emit('plant')
-    else if (t.kind === 'sign') say.value = `🪧 ${props.ownerName ? props.ownerName + '의' : '나의'} 밭이에요. 무럭무럭 키워봐요!`
-    else if (t.kind === 'mailbox') say.value = '📮 우편함이 비어 있어요. 방명록은 곧 열려요!'
+    else if (t.kind === 'sign') say.value = { icon: ICONS.sign, text: `${props.ownerName ? props.ownerName + '의' : '나의'} 밭이에요. 무럭무럭 키워봐요!` }
+    else if (t.kind === 'mailbox') say.value = { icon: ICONS.mailbox, text: '우편함이 비어 있어요. 방명록은 곧 열려요!' }
 }
 
 onMounted(async () => {
@@ -47,7 +51,7 @@ onMounted(async () => {
     if (!alive) return
     game = await createFarmGame(host.value, {
         cards: props.list,
-        onNear: (t) => { near.value = t; say.value = '' },
+        onNear: (t) => { near.value = t; say.value = null },
         onAct: act,
         onWorldSize: (w, h) => { world.value = { w, h } },
     })
@@ -63,37 +67,43 @@ watch(() => props.list, (l) => game?.setCards(l))
         <!-- 프레임 테두리 3px×2 포함(border-box) — 캔버스 크기는 farmScene의 ResizeObserver가 맞춤 -->
         <div class="fg-frame" :style="full ? null : { height: `min(62vh, ${world.h + 6}px)`, maxWidth: `${world.w + 6}px` }">
             <div ref="host" class="fg-canvas"></div>
-            <button v-if="!full" class="fg-full-btn" aria-label="전체 화면" @click="full = true">⛶</button>
+            <button v-if="!full" class="fg-px fg-icon-btn fg-corner" aria-label="전체 화면" @click="full = true">
+                <img :src="ICONS.expand" alt="" />
+            </button>
         </div>
 
         <div v-if="full" class="fg-top">
             <div class="fg-stats">
-                <span v-for="st in STAGES" :key="st" class="fg-stat" :title="st">
+                <span v-for="st in STAGES" :key="st" class="fg-px fg-stat" :title="st">
                     <img :src="PLANT_SPRITES[st]" alt="" />{{ counts[st] }}
                 </span>
-                <span v-if="goalText" class="fg-stat">🍀 {{ goalText }}</span>
+                <span v-if="goalText" class="fg-px fg-stat"><img :src="PLANT_SPRITES.떡잎" alt="" />{{ goalText }}</span>
             </div>
-            <button class="fg-full-btn" aria-label="전체 화면 닫기" @click="full = false">✕</button>
+            <button class="fg-px fg-icon-btn" aria-label="전체 화면 닫기" @click="full = false"><img :src="ICONS.close" alt="" /></button>
         </div>
-        <div v-if="loading" class="fg-loading">밭으로 가는 중… 🌱</div>
+        <div v-if="loading" class="fg-loading">밭으로 가는 중…</div>
 
         <div class="fg-hud" aria-live="polite">
-            <div v-if="say" class="fg-say">{{ say }}</div>
-            <button v-else-if="near?.kind === 'plant'" class="fg-act" @click="act(near)">🔍 {{ near.card.name }} 살펴보기</button>
-            <button v-else-if="near?.kind === 'empty'" class="fg-act" @click="act(near)">🌱 여기에 씨앗 심기</button>
-            <button v-else-if="near" class="fg-act fg-act-sub" @click="act(near)">
-                {{ near.kind === 'sign' ? '🪧 팻말 읽기' : '📮 우편함 열기' }}
+            <div v-if="say" class="fg-px fg-say"><img :src="say.icon" alt="" />{{ say.text }}</div>
+            <button v-else-if="near?.kind === 'plant'" class="fg-px fg-act" @click="act(near)">
+                <img :src="PLANT_SPRITES[near.card.stage] || PLANT_SPRITES.씨앗" alt="" />{{ near.card.name }} 살펴보기
             </button>
-            <div v-else class="fg-hint">땅을 눌러 걸어가요 · 식물 앞에 서면 살펴볼 수 있어요</div>
+            <button v-else-if="near?.kind === 'empty'" class="fg-px fg-act" @click="act(near)">
+                <img :src="PLANT_SPRITES.새싹" alt="" />여기에 씨앗 심기
+            </button>
+            <button v-else-if="near" class="fg-px fg-act fg-act-sub" @click="act(near)">
+                <img :src="ICONS[near.kind]" alt="" />{{ near.kind === 'sign' ? '팻말 읽기' : '우편함 열기' }}
+            </button>
+            <div v-else class="fg-px fg-hint">땅을 눌러 걸어가요 · 식물 앞에 서면 살펴볼 수 있어요</div>
         </div>
 
-        <nav v-if="full" class="fg-bar">
-            <button class="fg-slot" @click="emit('plant')"><span class="fg-ico">🌱</span>씨앗 심기</button>
-            <button class="fg-slot" @click="emit('tab', 'sprout')">
-                <span class="fg-ico">🍀<b v-if="sproutBadge" class="fg-badge">{{ sproutBadge }}</b></span>떡잎 재가
+        <nav v-if="full" class="fg-px fg-bar">
+            <button class="fg-px fg-slot" @click="emit('plant')"><img :src="PLANT_SPRITES.새싹" alt="" />씨앗 심기</button>
+            <button class="fg-px fg-slot" @click="emit('tab', 'sprout')">
+                <span class="fg-ico"><img :src="PLANT_SPRITES.떡잎" alt="" /><b v-if="sproutBadge" class="fg-badge">{{ sproutBadge }}</b></span>떡잎 재가
             </button>
-            <button v-if="othersLabel" class="fg-slot" @click="emit('tab', 'others')"><span class="fg-ico">🌍</span>{{ othersLabel }}</button>
-            <button class="fg-slot" @click="emit('tab', 'list')"><span class="fg-ico">📋</span>목록 보기</button>
+            <button v-if="othersLabel" class="fg-px fg-slot" @click="emit('tab', 'others')"><img :src="ICONS.sign" alt="" />{{ othersLabel }}</button>
+            <button class="fg-px fg-slot" @click="emit('tab', 'list')"><img :src="ICONS.list" alt="" />목록 보기</button>
         </nav>
     </div>
 </template>
@@ -125,47 +135,60 @@ watch(() => props.list, (l) => game?.setCards(l))
 }
 .fg-hud {
     min-height: 52px;
-    margin-top: 14px;
+    margin-top: 16px;
     display: flex;
     justify-content: center;
+    align-items: center;
 }
+
+/* ── 도트 UI 공통: 둥근 모서리 대신 계단식(깎인) 테두리 + 아래 그림자 ── */
+.fg-px {
+    --px-bg: #fff8e7;
+    --px-line: #5c3a1e;
+    --px-shade: #ead6ae;
+    font-family: 'Galmuri11', 'Jua', sans-serif;
+    font-size: 12px;
+    color: #4e342e;
+    background: var(--px-bg);
+    border: none;
+    border-radius: 0;
+    box-shadow:
+        0 -3px 0 0 var(--px-line), 0 3px 0 0 var(--px-line),
+        -3px 0 0 0 var(--px-line), 3px 0 0 0 var(--px-line),
+        inset 0 -3px 0 0 var(--px-shade),
+        0 6px 0 0 rgba(60, 40, 20, .3);
+    image-rendering: pixelated;
+}
+.fg-px img { image-rendering: pixelated; }
+button.fg-px { cursor: pointer; }
+button.fg-px:active { transform: translateY(3px); box-shadow:
+    0 -3px 0 0 var(--px-line), 0 3px 0 0 var(--px-line),
+    -3px 0 0 0 var(--px-line), 3px 0 0 0 var(--px-line); }
+
+.fg-icon-btn {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.fg-icon-btn img { width: 16px; height: 16px; }
+.fg-corner { position: absolute; top: 10px; right: 10px; }
+
 .fg-act, .fg-say, .fg-hint {
-    font-family: 'Jua', sans-serif;
-    font-size: 15px;
-    border-radius: 14px;
-    padding: 11px 18px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    font-size: 13px;
 }
-.fg-act {
-    border: 2px solid #4f8a35;
-    background: #7cc255;
-    color: #fff;
-    box-shadow: 0 3px 0 #4f8a35;
-    cursor: pointer;
-}
-.fg-act:active { transform: translateY(2px); box-shadow: 0 1px 0 #4f8a35; }
-.fg-act-sub { background: #f3d9a4; color: #4e342e; border-color: #8b5a2b; box-shadow: 0 3px 0 #8b5a2b; }
-.fg-say {
-    background: #fff8e7;
-    color: #4e342e;
-    border: 2px solid #8b5a2b;
-    box-shadow: 0 3px 0 #8b5a2b;
-}
-.fg-hint { font-size: 13px; color: #8d6e63; padding: 8px 0; }
-.fg-full-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 36px;
-    height: 36px;
-    border: 2px solid #8b5a2b;
-    border-radius: 10px;
-    background: #fff8e7;
-    color: #4e342e;
-    font-size: 18px;
-    line-height: 1;
-    box-shadow: 0 2px 0 #8b5a2b;
-    cursor: pointer;
-}
+.fg-act img, .fg-say img { width: 24px; height: 24px; }
+.fg-act { --px-bg: #7cc255; --px-line: #2f5e1f; --px-shade: #5a9e3c; color: #fff; text-shadow: 0 2px 0 #3f7a2a; }
+.fg-act-sub { --px-bg: #f3d9a4; --px-line: #5c3a1e; --px-shade: #d9b77a; color: #4e342e; text-shadow: none; }
+.fg-hint { padding: 6px 12px; font-size: 12px; color: #8d6e63; }
+
+/* ── 전체 화면 ── */
 .fg-full {
     position: fixed;
     inset: 0;
@@ -181,56 +204,51 @@ watch(() => props.list, (l) => game?.setCards(l))
 }
 .fg-full .fg-hud {
     position: absolute;
-    align-items: flex-end;
     left: 0;
     right: 0;
-    bottom: calc(96px + env(safe-area-inset-bottom));
+    bottom: calc(100px + env(safe-area-inset-bottom));
     margin: 0;
     pointer-events: none;
 }
-/* 전체 화면 상단 상태바 */
+.fg-full .fg-hud > * { pointer-events: auto; }
+
+/* 상단 상태바 */
 .fg-top {
     position: absolute;
-    top: calc(10px + env(safe-area-inset-top));
-    left: 12px;
-    right: 12px;
+    top: calc(14px + env(safe-area-inset-top));
+    left: 14px;
+    right: 14px;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 8px;
+    gap: 10px;
     pointer-events: none;
 }
 .fg-top > * { pointer-events: auto; }
-.fg-top .fg-full-btn { position: static; flex-shrink: 0; }
-.fg-stats { display: flex; flex-wrap: wrap; gap: 6px; }
+.fg-stats { display: flex; flex-wrap: wrap; gap: 12px; }
 .fg-stat {
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 4px 10px 4px 6px;
-    font-family: 'Jua', sans-serif;
-    font-size: 14px;
-    color: #4e342e;
-    background: #fff8e7;
-    border: 2px solid #8b5a2b;
-    border-radius: 12px;
-    box-shadow: 0 2px 0 #8b5a2b;
+    height: 30px;
+    padding: 0 10px 0 4px;
+    font-size: 13px;
 }
-.fg-stat img { width: 24px; height: 24px; image-rendering: pixelated; }
-/* 전체 화면 하단 나무 툴바 */
+.fg-stat img { width: 24px; height: 24px; }
+
+/* 하단 나무 툴바 */
 .fg-bar {
+    --px-bg: #c98c4e;
+    --px-line: #5c3a1e;
+    --px-shade: #a86f37;
     position: absolute;
     left: 50%;
-    bottom: calc(14px + env(safe-area-inset-bottom));
+    bottom: calc(18px + env(safe-area-inset-bottom));
     transform: translateX(-50%);
-    width: min(calc(100% - 24px), 460px);
+    width: min(calc(100% - 30px), 460px);
     display: flex;
-    gap: 6px;
-    padding: 6px;
-    background: #c98c4e;
-    border: 3px solid #5c3a1e;
-    border-radius: 16px;
-    box-shadow: inset 0 2px 0 #e2b073, 0 4px 0 #5c3a1e;
+    gap: 10px;
+    padding: 8px 8px 11px;
 }
 .fg-slot {
     flex: 1;
@@ -238,33 +256,23 @@ watch(() => props.list, (l) => game?.setCards(l))
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    padding: 6px 2px;
-    border: 2px solid #8b5a2b;
-    border-radius: 10px;
-    background: #fff8e7;
-    font-family: 'Jua', sans-serif;
-    font-size: 12px;
-    color: #4e342e;
+    gap: 3px;
+    padding: 5px 2px 7px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    cursor: pointer;
 }
-.fg-slot:active { transform: translateY(2px); }
-.fg-ico { position: relative; font-size: 20px; line-height: 1; }
+.fg-slot img { width: 24px; height: 24px; }
+.fg-ico { position: relative; display: inline-flex; }
 .fg-badge {
     position: absolute;
-    top: -6px;
-    right: -12px;
+    top: -4px;
+    right: -14px;
     min-width: 16px;
-    padding: 2px 4px;
-    font-size: 10px;
-    line-height: 1;
+    padding: 2px 3px 1px;
+    font: 10px/1 'Galmuri11', sans-serif;
     color: #fff;
-    background: #ff5252;
-    border-radius: 10px;
+    background: #e0453a;
+    box-shadow: 0 -2px 0 #5c3a1e, 0 2px 0 #5c3a1e, -2px 0 #5c3a1e, 2px 0 #5c3a1e;
 }
-.fg-full .fg-hud > * { pointer-events: auto; }
-.fg-full .fg-hint { background: rgba(255, 248, 231, .9); border-radius: 14px; padding: 8px 14px; }
 </style>

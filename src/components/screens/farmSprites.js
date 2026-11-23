@@ -76,6 +76,9 @@ export const SPRITES = {
     soil: ['ssssssss', 'slssssls', 'dddddddd', 'ssssssss', 'sssslsss', 'ssssssss', 'dddddddd', 'ssssssss'],
     fence: ['..kkkk..', '.kWWwk..', 'kkkkkkkk', 'WWWWWWWW', 'wwwwwwww', 'kkkkkkkk', '.kWwwk..', '.kkkkk..'],
     fenceV: ['..kkkk..', '.kWWwk..', '.kWwwk..', '.kWwwk..', '.kWwwk..', '.kWwwk..', '.kWwwk..', '.kWwwk..'],
+    list: ['.kkkkkk.', 'kooooook', 'kokkkook', 'kooooook', 'kokkkkok', 'kooooook', 'kokkkook', '.kkkkkk.'],
+    close: ['kk....kk', 'kkk..kkk', '.kkkkkk.', '..kkkk..', '..kkkk..', '.kkkkkk.', 'kkk..kkk', 'kk....kk'],
+    expand: ['kkk..kkk', 'k......k', 'k......k', '........', '........', 'k......k', 'k......k', 'kkk..kkk'],
     bubble: ['.kkkkkk.', 'koorrook', 'koorrook', 'koorrook', 'kooooook', 'koorrook', '.kkkkkk.', '...kk...'],
     bubbleSad: ['.kkkkkk.', 'kooooook', 'kooooook', 'kXoXoXok', 'kooooook', 'kooooook', '.kkkkkk.', '...kk...'],
 }
@@ -90,3 +93,5 @@ function px(rows) {
     return `data:image/svg+xml,${encodeURIComponent(svg)}`
 }
 export const PLANT_SPRITES = { 씨앗: px(SPRITES.씨앗), 새싹: px(SPRITES.새싹), 떡잎: px(SPRITES.떡잎) }
+// 게임 HUD용 도트 아이콘
+export const ICONS = Object.fromEntries(['sign', 'mailbox', 'list', 'close', 'expand'].map(k => [k, px(SPRITES[k])]))

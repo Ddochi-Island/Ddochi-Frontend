@@ -113,7 +113,7 @@ class FarmScene extends Phaser.Scene {
                 if (card.sprout_status === 'pending') this.tweens.add({ targets: b, y: b.y - 4, duration: 450, yoyo: true, repeat: -1, ease: 'Stepped' })
             }
             add(this.add.text(center(tx), center(ty) + T / 2 + 4, card.name, {
-                fontFamily: 'Jua, sans-serif', fontSize: '13px', color: '#4e342e',
+                fontFamily: 'Galmuri11, Jua, sans-serif', fontSize: '12px', color: '#4e342e',
                 backgroundColor: '#f3d9a4', padding: { x: 6, y: 2 },
             }).setOrigin(0.5, 0).setResolution(Z).setDepth(H - 2))
             this.targets.push({ kind: 'plant', tx, ty, card })
@@ -216,7 +216,7 @@ class FarmScene extends Phaser.Scene {
 }
 
 export async function createFarmGame(parent, opts) {
-    try { await document.fonts.load('13px Jua') } catch { /* 폰트 없으면 기본 글꼴 */ }
+    try { await document.fonts.load('12px Galmuri11') } catch { /* 폰트 없으면 기본 글꼴 */ }
     const scene = new FarmScene(opts)
     const game = new Phaser.Game({
         type: Phaser.CANVAS,   // Phaser 4 WebGL은 리사이즈 후 캔버스 일부가 하얗게 비는 문제 → Canvas
