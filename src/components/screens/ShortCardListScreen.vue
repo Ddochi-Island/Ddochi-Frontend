@@ -6,6 +6,7 @@ import { usePopup } from '@/composables/usePopup'
 import { useAuthStore } from '@/stores/auth'
 import { stageLabels, stageNameToIndex } from '@/constants'
 import FarmerJournalPopup from './popups/FarmerJournalPopup.vue'
+import FarmGameView from './FarmGameView.vue'
 
 const router = useRouter()
 const { callApi } = useApi()
@@ -17,6 +18,15 @@ const othersLabel = ref(null)
 const groupGoals = ref([]) // 반장 이상: [{name, sprouts, goal, leaderName}]
 const activeTab = ref('mine') // 'sprout' | 'mine' | 'others'
 const journalCardId = ref(null)
+
+// 게임 모드(밭 격자 화면) ON/OFF — 기기별 localStorage. 나의 밭 탭에만 적용, 재가 탭은 항상 목록.
+// ponytail: 기기별 저장, 기기 간 유지가 필요해지면 서버(FARM_PROFILES)로 이동
+const GAME_MODE_KEY = 'farmGameMode'
+const gameMode = ref((() => { try { return localStorage.getItem(GAME_MODE_KEY) === '1' } catch { return false } })())
+function toggleGameMode() {
+    gameMode.value = !gameMode.value
+    try { localStorage.setItem(GAME_MODE_KEY, gameMode.value ? '1' : '0') } catch { /* 저장 못 해도 이번 화면에선 동작 */ }
+}
 
 const STAGE_EMOJI = { 씨앗: '🌰', 새싹: '🌿', 떡잎: '🍀' }
 // 농부일지 성장 단계 — stageLabels/stageNameToIndex는 기존 인도권(dolyo) 상수 재사용
@@ -126,7 +136,16 @@ function decideSprout(card, statusKo) {
         </div>
 
         <div class="sc-list-area">
+            <div v-if="activeTab === 'mine' && !loading" class="sc-mode-row">
+                <button class="sc-mode-toggle" role="switch" :aria-checked="gameMode" @click="toggleGameMode">
+                    <span>🎮 게임 모드</span>
+                    <span :class="['sc-switch', gameMode ? 'sc-switch-on' : '']"></span>
+                </button>
+            </div>
+
             <div v-if="loading" class="sc-empty">불러오는 중...</div>
+            <FarmGameView v-else-if="activeTab === 'mine' && gameMode" :list="mineList" :stage-emoji="STAGE_EMOJI"
+                          @open="openJournal" @plant="router.push({ name: 'shortCard' })" />
             <div v-else-if="!visibleList.length" class="sc-empty">
                 <div class="sc-empty-icon">🌾</div>
                 <div v-if="activeTab === 'sprout'">떡잎 재가를 기다리는 짧카가 없어요</div>
@@ -294,6 +313,43 @@ function decideSprout(card, statusKo) {
     flex: 1;
     padding: 16px 16px 0;
 }
+.sc-mode-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+}
+.sc-mode-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    background: transparent;
+    font-family: 'Jua', sans-serif;
+    font-size: 13px;
+    color: var(--text-color);
+    cursor: pointer;
+}
+.sc-switch {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    border-radius: 20px;
+    background: #D7CCC8;
+    transition: background .15s;
+}
+.sc-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform .15s;
+}
+.sc-switch-on { background: var(--btn-color); }
+.sc-switch-on::after { transform: translateX(16px); }
 .sc-empty {
     text-align: center;
     padding: 60px 10px;
