@@ -12,8 +12,9 @@ const region = ref('')
 const group = ref('')
 const loaded = ref(null)
 // 기간을 어떤 날짜로 거를지 — 합당한자 날짜(재가한 날) 또는 최초만남 날짜(2026-11-20)
-const BASIS = { hap: '합당한자 날짜', first: '최초만남 날짜' }
-const basis = ref('hap')
+// 기본은 최종 만남일 — 그 매칭의 지금 시점 다음 만남 날(2026-11-24 사용자 결정)
+const BASIS = { last: '최종 만남일', hap: '합당한자 날짜', first: '최초만남 날짜' }
+const basis = ref('last')
 async function run() { const r = { ...range.value, basis: basis.value }; if (await load(r)) loaded.value = r }
 watch(region, () => { group.value = '' })
 
@@ -27,14 +28,14 @@ const COLS = [
     ['hap_at', '합당한자 날짜'], ['guide_region', '인도 지역'], ['guide_group', '인도 반'], ['guide_district', '인도 구역'],
     ['teacher_region', '교사 지역'], ['teacher_group', '교사 반'], ['teacher_district', '교사 구역'],
     ['name', '섭'], ['guide_name', '인'], ['teacher_name', '교'], ['route', '유형'], ['tool', '도구'], ['recruitment_type', '온/오프'],
-    ['meet_stage', '현재 단계'], ['first_at', '최초만남'], ['first_result', '최초 결과'], ['later_result', '이후 결과'], ['consult_at', '상담연결'],
+    ['meet_stage', '현재 단계'], ['last_at', '최종 만남일'], ['first_at', '최초만남'], ['first_result', '최초 결과'], ['later_result', '이후 결과'], ['consult_at', '상담연결'],
 ]
 // 표 제목 아래 칸별 선택 필터(엑셀 필터처럼) — 모든 열, 화면에 보이는 글자 기준. '' = 전체, NONE = 값 없음(2026-11-20)
 const NONE = '__none__'
 const FILTER_COLS = COLS.map(([k]) => k)
 const colFilter = reactive(Object.fromEntries(FILTER_COLS.map((k) => [k, ''])))
 watch([region, group], () => { for (const k of FILTER_COLS) colFilter[k] = '' })
-const DATE_COLS = { hap_at: 'hap_date', first_at: 'first_at', consult_at: 'consult_at' }
+const DATE_COLS = { hap_at: 'hap_date', last_at: 'last_at', first_at: 'first_at', consult_at: 'consult_at' }
 const cellText = (k, r) => {
     if (DATE_COLS[k]) return day(r[DATE_COLS[k]]) || NONE
     if (k.endsWith('region')) return r[k] ? regionLabel(r[k]) : NONE
@@ -108,12 +109,12 @@ const TERM_CLASS = { 단기: 'erp-term-short', 장기: 'erp-term-long' }
 const cell = (v) => String(v ?? '').replace(/[\t\r\n]+/g, ' ').trim()
 function copy() {
     const head = ['합당한자 날짜', '인도 지역', '인도 반', '인도 구역', '교사 지역', '교사 반', '교사 구역', '섭', '인', '교',
-        '유형', '도구이름', '온/오프라인', '현재 단계', '최초만남 예정날짜', '최초만남 진행결과', '이후만남 진행결과', '상담연결 날짜']
+        '유형', '도구이름', '온/오프라인', '현재 단계', '최종 만남일', '최초만남 예정날짜', '최초만남 진행결과', '이후만남 진행결과', '상담연결 날짜']
     const lines = rows.value.map((r) => [
         day(r.hap_date), r.guide_region ? regionLabel(r.guide_region) : '', r.guide_group, dist(r.guide_district),
         r.teacher_region ? regionLabel(r.teacher_region) : '', r.teacher_group, dist(r.teacher_district),
         r.name, r.guide_name, r.teacher_name, r.route, r.tool, onOff(r.recruitment_type), r.meet_stage,
-        day(r.first_at), r.first_result, r.later_result, day(r.consult_at),
+        day(r.last_at), day(r.first_at), r.first_result, r.later_result, day(r.consult_at),
     ].map(cell).join('\t'))
     navigator.clipboard.writeText([head.join('\t'), ...lines].join('\n')).catch(() => {})
     showToast(`📋 ${rows.value.length}명 복사됨 — 시트에 붙여넣으세요`)
@@ -169,7 +170,7 @@ function copy() {
                     </button>
                 </div>
                 <h3 class="erp-h3">
-                    {{ BASIS[loaded.basis] }} {{ md(loaded.from) }}~{{ md(loaded.to) }} 매칭 명단 <span class="erp-sub">{{ rows.length }}명 · {{ sorts.length ? `정렬 ${sortSummary}` : '최초만남 날짜 순서' }} · 날짜는 재가한 날 · 소속은 인도자·교사의 지금 소속 · 2차만남·밀림 날짜 색 <span class="erp-term-short">단기(3일 이내)</span> / <span class="erp-term-long">장기</span></span>
+                    {{ BASIS[loaded.basis] }} {{ md(loaded.from) }}~{{ md(loaded.to) }} 매칭 명단 <span class="erp-sub">{{ rows.length }}명 · {{ sorts.length ? `정렬 ${sortSummary}` : '최초만남 날짜 순서' }} · 합당한자 날짜는 재가한 날 · 최종 만남일은 지금 잡힌 다음 만남 날 · 소속은 인도자·교사의 지금 소속 · 2차만남·밀림 날짜 색 <span class="erp-term-short">단기(3일 이내)</span> / <span class="erp-term-long">장기</span></span>
                 </h3>
                 <p v-if="!chipRows.length" class="erp-empty">이 기간에 {{ BASIS[loaded.basis] }}인 사람이 없어요.</p>
                 <div v-else class="erp-table-wrap">
@@ -199,7 +200,7 @@ function copy() {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-if="!rows.length"><td colspan="18" class="erp-zero">필터에 맞는 사람이 없어요.</td></tr>
+                            <tr v-if="!rows.length"><td colspan="19" class="erp-zero">필터에 맞는 사람이 없어요.</td></tr>
                             <tr v-for="r in rows" :key="r.sarang_id">
                                 <td>{{ day(r.hap_date) }}</td>
                                 <td>{{ r.guide_region ? regionLabel(r.guide_region) : '—' }}</td>
@@ -215,6 +216,7 @@ function copy() {
                                 <td>{{ r.tool || '—' }}</td>
                                 <td>{{ onOff(r.recruitment_type) }}</td>
                                 <td :class="{ 'erp-stage-2': r.meet_stage !== '1차' }">{{ r.meet_stage || '—' }}</td>
+                                <td><b>{{ day(r.last_at) || '—' }}</b></td>
                                 <td>{{ day(r.first_at) || '—' }}</td>
                                 <td v-for="([res, term], ci) in [[r.first_result, r.first_term], [r.later_result, r.later_term]]" :key="ci">
                                     <template v-if="res && term">{{ splitDate(res)[0] }}<span :class="TERM_CLASS[term]" :title="term">{{ splitDate(res)[1] }}</span>{{ splitDate(res)[2] }}</template>
