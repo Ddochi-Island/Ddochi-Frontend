@@ -1,19 +1,25 @@
 <script setup>
-// MatchingScreen 의 결과 입력 6 옵션 grid popup.
-// legacy: inputMatchResult / handleMatchRes 정합. window.__selectMatchResult 제거.
+// MatchingScreen 결과 입력 — 13개 목록(2026-11-25 사용자 요청: 취소/탈락 구분 없이 사유가 곧 결과). 텔레그램 /r_ 버튼과 같은 순서.
+// 색은 legacy 클래스 재사용(.res-btn-cancel/delay/bi/2nd/consult)
 
 defineProps({})
 
 const emit = defineEmits(['close', 'pick'])
 
-// legacy 정합 — class 명까지 동일 (.res-btn-cancel/delay/bi/drop/2nd/consult)
 const OPTIONS = [
-    { label: '취소처리', cls: 'res-btn-cancel' },
-    { label: '밀림처리', cls: 'res-btn-delay' },
-    { label: '비합처리', cls: 'res-btn-bi' },
-    { label: '탈락처리', cls: 'res-btn-drop' },
-    { label: '2차만남', cls: 'res-btn-2nd' },
     { label: '상담연결', cls: 'res-btn-consult' },
+    { label: '2차만남(단기)', cls: 'res-btn-2nd' },
+    { label: '2차만남(장기)', cls: 'res-btn-2nd' },
+    { label: '연락두절', cls: 'res-btn-cancel' },
+    { label: '갈급부족', cls: 'res-btn-cancel' },
+    { label: '환경비합', cls: 'res-btn-bi' },
+    { label: '밀림(섭외자미룸)', cls: 'res-btn-delay' },
+    { label: '밀림(교사못구함)', cls: 'res-btn-delay' },
+    { label: '경계심', cls: 'res-btn-cancel' },
+    { label: '중복섭외', cls: 'res-btn-cancel' },
+    { label: '정신질환', cls: 'res-btn-bi' },
+    { label: '인성비합', cls: 'res-btn-bi' },
+    { label: '병가', cls: 'res-btn-cancel' },
 ]
 </script>
 

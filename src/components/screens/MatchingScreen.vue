@@ -578,7 +578,9 @@ function inputMatchResult(idx) {
 }
 
 // MatchResultPopup \uC758 'pick' emit \uD578\uB4E4\uB7EC. legacy handleMatchRes \uC758 \uBD84\uAE30 \uC815\uD569.
-function handleMatchResultPick(resultType) {
+// 결과 입력 13개 목록(2026-11-25) — 취소/탈락 구분 없이 사유가 곧 결과. 2차만남(단기/장기)·밀림(사유)은 날짜를 받고,
+// 상담연결과 나머지(연락두절·경계심·환경비합…)는 확인 뒤 바로 저장
+function handleMatchResultPick(picked) {
     const idx = matchResultIdx.value
     if (idx === null) return
     matchResultIdx.value = null
@@ -586,109 +588,49 @@ function handleMatchResultPick(resultType) {
     const item = tm.tmDataList[idx]
     if (!item) return
 
-    // \uAD50\uC0AC \uBBF8\uC9C0\uC815 \uAC00\uB4DC \u2014 \uC0C1\uB2F4\uC5F0\uACB0/2\uCC28\uB9CC\uB0A8 \uC740 \uAD50\uC0AC \uD544\uC694 (legacy \uC815\uD569)
-    const isTeacherAssigned = item.teacher && String(item.teacher).trim() !== '' && item.teacher !== '-'
-    if (!isTeacherAssigned && (resultType === '\uC0C1\uB2F4\uC5F0\uACB0' || resultType === '2\uCC28\uB9CC\uB0A8')) {
-        showAppAlert('\uAD50\uC0AC\uAC00 \uC9C0\uC815\uB418\uC9C0 \uC54A\uC558\uC5B4! \uD83E\uDD7A\n\uAD50\uC0AC\uB2D8\uC744 \uBA3C\uC800 \uC9C0\uC815\uD574\uC918!')
+    // 교사 미지정 가드 — 상담연결/2차만남은 교사 필요 (legacy 정합)
+    const hasTeacher = item.teacher && String(item.teacher).trim() !== '' && item.teacher !== '-'
+    if (!hasTeacher && (picked === '상담연결' || picked.startsWith('2차만남'))) {
+        showAppAlert('교사가 지정되지 않았어! 🥺\n교사님을 먼저 지정해줘!')
         return
     }
 
-    if (resultType === '\uCDE8\uC18C\uCC98\uB9AC' || resultType === '\uBE44\uD569\uCC98\uB9AC' || resultType === '\uD0C8\uB77D\uCC98\uB9AC') {
-        // 1. \uCDE8\uC18C/\uBE44\uD569/\uD0C8\uB77D \u2192 reason popup (subcategory grid + \uC790\uC720 \uC0AC\uC720)
-        let opts = []
-        if (resultType === '\uCDE8\uC18C\uCC98\uB9AC') opts = ['\uACBD\uACC4\uCDE8\uC18C', '\uAC08\uBD80\uCDE8\uC18C', '\uD658\uACBD\uCDE8\uC18C', '\uC5F0\uB450\uCDE8\uC18C']
-        else if (resultType === '\uBE44\uD569\uCC98\uB9AC') opts = ['\uD658\uACBD\uBE44\uD569', '\uC778\uC131\uBE44\uD569', '\uC815\uC2E0\uC9C8\uD658', '\uAC74\uAC15\uBE44\uD569']
-        else opts = ['\uACBD\uACC4\uD0C8\uB77D', '\uAC08\uBD80\uD0C8\uB77D']
-
-        showPopup('reason', resultType, '', (res) => {
-            if (!res || !res.reasonType) return
-            const icon = resultType === '\uCDE8\uC18C\uCC98\uB9AC' ? '\u274C' : '\u2B55\uFE0F'
-            const uColText = `${icon}${res.reasonType}`
-            const reasonText = res.reason || '-'
-            const logText = `${icon}${res.reasonType}(${reasonText})`
-            updateMatchStatus(idx, item.approvalStatus, {
-                matchResult: uColText,
-                logType: '\uACB0\uACFC\uCC98\uB9AC',
-                logContent: logText,
-                tmFail: true,
+    const postpone = picked.match(/^(2차만남|밀림)\((.+)\)$/)
+    if (postpone) {
+        // 밀림/2차 → date popup → /api/postpone-meeting (subReason: 밀림 사유 또는 단기/장기)
+        const logType = postpone[1] === '밀림' ? '밀림처리' : '2차만남'
+        const promptTitle = logType === '밀림처리' ? '언제로 밀렸어?ㅠ' : '수고했어! 2차는 언제야?'
+        showPopup('date', promptTitle, '', (res) => {
+            if (!res || !res.date) return
+            const hj = item.habjaeyang || {}
+            callApi('/api/postpone-meeting', {
+                sabun: auth.currentSabun,
+                rowIndex: item.docId,
+                newDate: res.date,
+                logType,
+                logContent: res.reason || '-',
+                subReason: postpone[2],
+                oldDateInfo: `${hj.mtDate || '-'} ${hj.mtTime || '00:00'}`,
+            }, r => {
+                showAppAlert(r.message, () => loadMatchingData())
             })
-        }, { options: opts })
+        })
         return
     }
 
-    if (resultType === '\uBC00\uB9BC\uCC98\uB9AC' || resultType === '2\uCC28\uB9CC\uB0A8') {
-        // 2. \uBC00\uB9BC/2\uCC28 \u2192 date popup \u2192 /api/postpone-meeting (V3.19: \uBBF8\uD305 \uB9C8\uD0B9 + \uC0C8 \uBBF8\uD305\uD589)
-        // \uBC00\uB9BC\uC740 \uC0AC\uC720(\uC12D\uC678\uC790\uBBF8\uB8F8/\uAD50\uC0AC\uBABB\uAD6C\uD568)\uB97C \uBA3C\uC800 \uACE0\uB984(2026-11-20)
-        const askDate = (delayReason, reasonText) => {
-            const promptTitle = resultType === '\uBC00\uB9BC\uCC98\uB9AC' ? '\uC5B8\uC81C\uB85C \uBC00\uB838\uC5B4?\u3160' : '\uC218\uACE0\uD588\uC5B4! 2\uCC28\uB294 \uC5B8\uC81C\uC57C?'
-            showPopup('date', promptTitle, '', (res) => {
-                if (!res || !res.date) return
-                const hj = item.habjaeyang || {}
-                const oldDateInfo = `${hj.mtDate || '-'} ${hj.mtTime || '00:00'}`
-                const safeReason = reasonText || res.reason || '-'
-                callApi('/api/postpone-meeting', {
-                    sabun: auth.currentSabun,
-                    rowIndex: item.docId,
-                    newDate: res.date,
-                    logType: resultType,
-                    logContent: safeReason,
-                    delayReason,
-                    oldDateInfo,
-                }, r => {
-                    showAppAlert(r.message, () => loadMatchingData())
-                })
-            })
-        }
-        if (resultType === '2\uCC28\uB9CC\uB0A8') return askDate(null, '')
-        showPopup('reason', '\uBC00\uB9BC\uCC98\uB9AC', '', (res) => {
-            if (!res || !res.reasonType) return
-            askDate(res.reasonType, res.reason || '')
-        }, { options: ['\uC12D\uC678\uC790\uBBF8\uB8F8', '\uAD50\uC0AC\uBABB\uAD6C\uD568'] })
-        return
-    }
-
-    if (resultType === '\uC0C1\uB2F4\uC5F0\uACB0') {
-        // 3. \uC0C1\uB2F4\uC5F0\uACB0 \u2192 /api/update-match type='status', matchResult='\u2B55\uFE0F\uC0C1\uB2F4\uC5F0\uACB0'
-        const resultStr = '\u2B55\uFE0F\uC0C1\uB2F4\uC5F0\uACB0'
+    showAppConfirm(`${getNameDisplay(item)} 결과를 '${picked}'(으)로 입력할까?`, (ok) => {
+        if (!ok) return
         callApi('/api/update-match', {
             sabun: auth.currentSabun,
             rowIndex: item.docId,
             type: 'status',
-            data: {
-                rowIndex: item.docId,
-                matchResult: resultStr,
-                logType: '\uB9E4\uCE6D\uACB0\uACFC',
-                logContent: resultStr,
-            },
+            data: { rowIndex: item.docId, matchResult: picked, logType: '결과처리', logContent: picked },
         }, () => {
-            showAppAlert('\uC0C1\uB2F4\uC5F0\uACB0\uB85C \uACB0\uACFC\uAC00 \uC785\uB825\uB418\uC5C8\uC5B4! \uD83C\uDF89', () => {
-                item.matchResultDetail = resultStr
+            showAppAlert(picked === '상담연결' ? '상담연결로 결과가 입력되었어! 🎉' : `${picked}(으)로 결과가 입력됐어!`, () => {
+                item.matchResultDetail = picked
                 loadMatchingData()
             })
         })
-    }
-}
-
-// updateMatchStatus \uD5EC\uD37C \u2014 legacy \uC640 \uB3D9\uC77C shape \uC758 /api/update-match type='status' \uD638\uCD9C.
-// payload: { rowIndex, approvalStatus, ...extra }  \u2014 extra \uC5D0 matchResult/logType/logContent/tmFail \uB4F1.
-function updateMatchStatus(idx, status, extra = {}, skipAlert = false) {
-    const item = tm.tmDataList[idx]
-    if (!item) return
-    if (!extra.logContent) {
-        extra.logContent = `${status} \uC0C1\uD0DC\uB85C \uBCC0\uACBD`
-        extra.matchResult = ''
-    }
-    const payload = { rowIndex: item.docId, approvalStatus: status, ...extra }
-    callApi('/api/update-match', {
-        sabun: auth.currentSabun, rowIndex: item.docId, type: 'status', data: payload,
-    }, r => {
-        const apply = () => {
-            item.approvalStatus = status
-            if (extra.matchResult !== undefined) item.matchResultDetail = extra.matchResult
-            loadMatchingData()
-        }
-        if (skipAlert) apply()
-        else showAppAlert(r.message, apply)
     })
 }
 
@@ -983,7 +925,7 @@ onUnmounted(() => {
             @fieldSaved="loadMatchingData"
         />
 
-        <!-- 결과 입력 6 옵션 (취소/밀림/비합/탈락/2차/상담연결) -->
+        <!-- 결과 입력 13개 목록 (2026-11-25) -->
         <MatchResultPopup
             v-if="matchResultIdx !== null"
             @pick="handleMatchResultPick"
