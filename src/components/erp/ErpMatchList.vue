@@ -35,15 +35,30 @@ const NONE = '__none__'
 const FILTER_COLS = COLS.map(([k]) => k)
 const colFilter = reactive(Object.fromEntries(FILTER_COLS.map((k) => [k, ''])))
 watch([region, group], () => { for (const k of FILTER_COLS) colFilter[k] = '' })
+// 결과 칸 필터는 13개 결과 이름으로(2026-11-25) — 괄호 속 날짜를 떼고 2차만남은 단기/장기, 밀림은 사유만.
+// 13개 목록 밖(옛 기록: 경계취소·갈부탈락…, 진행 예정)은 그 뒤에
+const RESULT_KINDS = ['상담연결', '2차만남(단기)', '2차만남(장기)', '연락두절', '갈급부족', '환경비합', '밀림(섭외자미룸)', '밀림(교사못구함)',
+    '경계심', '중복섭외', '정신질환', '인성비합', '병가']
+const RESULT_COLS = { first_result: 'first_term', later_result: 'later_term' }
+const resultKind = (res, term) => {
+    if (!res) return ''
+    if (res.startsWith('2차만남(')) return term ? `2차만남(${term})` : '2차만남'
+    const delay = res.match(/^밀림\((.+?) - /)
+    if (delay) return `밀림(${delay[1]})`
+    return res.startsWith('밀림(') ? '밀림' : res
+}
 const DATE_COLS = { hap_at: 'hap_date', last_at: 'last_at', first_at: 'first_at', consult_at: 'consult_at' }
 const cellText = (k, r) => {
     if (DATE_COLS[k]) return day(r[DATE_COLS[k]]) || NONE
+    if (RESULT_COLS[k]) return resultKind(r[k], r[RESULT_COLS[k]]) || NONE
     if (k.endsWith('region')) return r[k] ? regionLabel(r[k]) : NONE
     if (k.endsWith('district')) return dist(r[k]) || NONE
     if (k === 'recruitment_type') return onOff(r[k]) || NONE
     return r[k] || NONE
 }
-const colOptions = (k) => [...new Set(chipRows.value.map((r) => cellText(k, r)))].sort(natCmp)
+const kindRank = (v) => { const i = RESULT_KINDS.indexOf(v); return i < 0 ? RESULT_KINDS.length : i }
+const colOptions = (k) => [...new Set(chipRows.value.map((r) => cellText(k, r)))]
+    .sort(RESULT_COLS[k] ? (a, b) => kindRank(a) - kindRank(b) || natCmp(a, b) : natCmp)
 const colLabel = (k, v) => (v === NONE ? '(없음)' : v)
 // 섭·인·교(이름)는 고르기 대신 검색 — 들어간 글자를 포함하면 남김(2026-11-20)
 const NAME_COLS = new Set(['name', 'guide_name', 'teacher_name'])
