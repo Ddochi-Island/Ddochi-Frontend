@@ -618,15 +618,28 @@ function handleMatchResultPick(picked) {
         return
     }
 
-    showAppConfirm(`${getNameDisplay(item)} 결과를 '${picked}'(으)로 입력할까?`, (ok) => {
+    // 경계심·중복섭외·정신질환·인성비합은 만났는지 먼저 — 만났으면 ⭕️, 안 만났으면 ❌로 저장(2026-11-25)
+    if (MET_ASK.includes(picked)) {
+        showAppConfirm(`${getNameDisplay(item)} — ${picked}<br>섭외자를 만났어?`, (met) => confirmMatchResult(item, picked, met),
+            { yesLabel: '만났어 ⭕️', noLabel: '안 만났어 ❌' })
+        return
+    }
+    confirmMatchResult(item, picked, null)
+}
+
+const MET_ASK = ['경계심', '중복섭외', '정신질환', '인성비합']
+
+function confirmMatchResult(item, picked, met) {
+    const shown = met === null ? picked : `${picked}(${met ? '만남' : '안 만남'})`
+    showAppConfirm(`${getNameDisplay(item)} 결과를 '${shown}'(으)로 입력할까?`, (ok) => {
         if (!ok) return
         callApi('/api/update-match', {
             sabun: auth.currentSabun,
             rowIndex: item.docId,
             type: 'status',
-            data: { rowIndex: item.docId, matchResult: picked, logType: '결과처리', logContent: picked },
+            data: { rowIndex: item.docId, matchResult: picked, met, logType: '결과처리', logContent: shown },
         }, () => {
-            showAppAlert(picked === '상담연결' ? '상담연결로 결과가 입력되었어! 🎉' : `${picked}(으)로 결과가 입력됐어!`, () => {
+            showAppAlert(picked === '상담연결' ? '상담연결로 결과가 입력되었어! 🎉' : `${shown}(으)로 결과가 입력됐어!`, () => {
                 item.matchResultDetail = picked
                 loadMatchingData()
             })
