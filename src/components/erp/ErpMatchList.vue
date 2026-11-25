@@ -1,5 +1,5 @@
 <script setup>
-// ERP 매칭 명단 — 구 매칭 시트처럼 합당한자 날짜(재가한 날) 기준 기간 안 재가된 사람 한 줄씩. 인도 지역·반 버튼과 칸별 소속 필터로 좁히고 시트용(탭 구분) 복사
+// ERP 매칭 명단 — 최초만남 날짜 기준 기간 안 재가된 사람의 만남마다 한 줄(1차·2차·밀림 다음 시도, 2026-11-26). 인도 지역·반 버튼과 칸별 소속 필터로 좁히고 시트용(탭 구분) 복사
 import { ref, reactive, computed, watch } from 'vue'
 import ErpRangePicker from './ErpRangePicker.vue'
 import { useErpLoad, monthOf, natCmp, regionLabel } from './erpUtil'
@@ -11,14 +11,14 @@ const { loading, error, data, load } = useErpLoad('/api/erp/match-list')
 const region = ref('')
 const group = ref('')
 const loaded = ref(null)
-// 기간을 어떤 날짜로 거를지 — 합당한자 날짜(재가한 날) 또는 최초만남 날짜(2026-11-20)
-// 기본은 최종 만남일 — 그 매칭의 지금 시점 다음 만남 날(2026-11-24 사용자 결정)
-const BASIS = { last: '최종 만남일', hap: '합당한자 날짜', first: '최초만남 날짜' }
-const basis = ref('last')
-async function run() { const r = { ...range.value, basis: basis.value }; if (await load(r)) loaded.value = r }
+// 기간은 최초만남 날짜로만 거름(2026-11-26 사용자 결정 — 전엔 최종 만남일·합당한자 날짜도 고를 수 있었음)
+async function run() { const r = { ...range.value, basis: 'first' }; if (await load(r)) loaded.value = r }
 watch(region, () => { group.value = '' })
 
-const all = computed(() => data.value?.rows || [])
+// 사람 한 명을 만남(meets)마다 한 줄로 펼침 — 차수·만남일·결과만 줄마다 다름
+const all = computed(() => (data.value?.rows || []).flatMap((p) => (p.meets || []).map((m, i) => ({
+    ...p, meet_stage: m.stage, meet_at: m.at, meet_result: m.result, meet_term: m.term, _i: i, _key: `${p.sarang_id}:${i}`,
+}))))
 const regions = computed(() => [...new Set(all.value.map((r) => r.guide_region).filter(Boolean))].sort(natCmp))
 const inRegion = computed(() => all.value.filter((r) => !region.value || r.guide_region === region.value))
 const groups = computed(() => (region.value ? [...new Set(inRegion.value.map((r) => r.guide_group).filter(Boolean))].sort(natCmp) : []))
@@ -28,7 +28,7 @@ const COLS = [
     ['hap_at', '합당한자 날짜'], ['guide_region', '인도 지역'], ['guide_group', '인도 반'], ['guide_district', '인도 구역'],
     ['teacher_region', '교사 지역'], ['teacher_group', '교사 반'], ['teacher_district', '교사 구역'],
     ['name', '섭'], ['guide_name', '인'], ['teacher_name', '교'], ['route', '유형'], ['tool', '도구'], ['recruitment_type', '온/오프'],
-    ['meet_stage', '현재 단계'], ['last_at', '최종 만남일'], ['first_at', '최초만남'], ['first_result', '최초 결과'], ['later_result', '이후 결과'], ['consult_at', '상담연결'],
+    ['meet_stage', '차수'], ['meet_at', '만남일'], ['meet_result', '결과'], ['first_at', '최초만남'], ['consult_at', '상담연결'],
 ]
 // 표 제목 아래 칸별 선택 필터(엑셀 필터처럼) — 모든 열, 화면에 보이는 글자 기준. '' = 전체, NONE = 값 없음(2026-11-20)
 const NONE = '__none__'
@@ -39,7 +39,7 @@ watch([region, group], () => { for (const k of FILTER_COLS) colFilter[k] = '' })
 // 13개 목록 밖(옛 기록: 경계취소·갈부탈락…, 진행 예정)은 그 뒤에
 const RESULT_KINDS = ['상담연결', '2차만남(단기)', '2차만남(장기)', '연락두절', '갈급부족', '환경비합', '밀림(섭외자미룸)', '밀림(교사못구함)',
     '경계심', '중복섭외', '정신질환', '인성비합', '병가']
-const RESULT_COLS = { first_result: 'first_term', later_result: 'later_term' }
+const RESULT_COLS = { meet_result: 'meet_term' }
 const resultKind = (res, term) => {
     if (!res) return ''
     if (res.startsWith('2차만남(')) return term ? `2차만남(${term})` : '2차만남'
@@ -47,7 +47,7 @@ const resultKind = (res, term) => {
     if (delay) return `밀림(${delay[1]})`
     return res.startsWith('밀림(') ? '밀림' : res
 }
-const DATE_COLS = { hap_at: 'hap_date', last_at: 'last_at', first_at: 'first_at', consult_at: 'consult_at' }
+const DATE_COLS = { hap_at: 'hap_date', meet_at: 'meet_at', first_at: 'first_at', consult_at: 'consult_at' }
 const cellText = (k, r) => {
     if (DATE_COLS[k]) return day(r[DATE_COLS[k]]) || NONE
     if (RESULT_COLS[k]) return resultKind(r[k], r[RESULT_COLS[k]]) || NONE
@@ -85,7 +85,7 @@ const colMatch = (k, r) => {
     return cellText(k, r) === f
 }
 // 최초만남 날짜 순(없는 사람은 맨 뒤, 같으면 합당한자 날짜 순) — 2026-11-20 사용자 요청(전엔 합당한자 날짜 순)
-const byFirstMeet = (a, b) => (!a.first_at - !b.first_at) || String(a.first_at || '').localeCompare(String(b.first_at || '')) || String(a.hap_at || '').localeCompare(String(b.hap_at || ''))
+const byFirstMeet = (a, b) => (!a.first_at - !b.first_at) || String(a.first_at || '').localeCompare(String(b.first_at || '')) || String(a.hap_at || '').localeCompare(String(b.hap_at || '')) || a.sarang_id.localeCompare(b.sarang_id) || a._i - b._i
 // 노션 데이터베이스처럼 정렬 규칙을 쌓음 — [열, 오름/내림] 여러 개, 위 규칙부터 적용. 빈 값은 항상 맨 뒤,
 // 규칙이 없거나 다 같으면 최초만남 날짜 순(2026-11-20)
 const COL_LABEL = Object.fromEntries(COLS)
@@ -109,7 +109,8 @@ const rows = computed(() => chipRows.value.filter((r) => FILTER_COLS.every((k) =
     .sort(bySorts))
 const filtering = computed(() => FILTER_COLS.some((k) => colFilter[k]))
 const clearFilters = () => { for (const k of FILTER_COLS) colFilter[k] = '' }
-const count = (list, key, v) => list.filter((r) => r[key] === v).length
+const people = (list) => new Set(list.map((r) => r.sarang_id)).size
+const count = (list, key, v) => people(list.filter((r) => r[key] === v))
 
 const md = (ymd) => `${Number(ymd.slice(5, 7))}/${Number(ymd.slice(8, 10))}`
 // 시트처럼 M/D. 합당한자 날짜(hap_date)는 서버가 KST 날짜로 줌. 만남 날짜(MATCHED_AT·만남 예정일)는
@@ -124,24 +125,21 @@ const TERM_CLASS = { 단기: 'erp-term-short', 장기: 'erp-term-long' }
 const cell = (v) => String(v ?? '').replace(/[\t\r\n]+/g, ' ').trim()
 function copy() {
     const head = ['합당한자 날짜', '인도 지역', '인도 반', '인도 구역', '교사 지역', '교사 반', '교사 구역', '섭', '인', '교',
-        '유형', '도구이름', '온/오프라인', '현재 단계', '최종 만남일', '최초만남 예정날짜', '최초만남 진행결과', '이후만남 진행결과', '상담연결 날짜']
+        '유형', '도구이름', '온/오프라인', '차수', '만남일', '결과', '최초만남', '상담연결 날짜']
     const lines = rows.value.map((r) => [
         day(r.hap_date), r.guide_region ? regionLabel(r.guide_region) : '', r.guide_group, dist(r.guide_district),
         r.teacher_region ? regionLabel(r.teacher_region) : '', r.teacher_group, dist(r.teacher_district),
         r.name, r.guide_name, r.teacher_name, r.route, r.tool, onOff(r.recruitment_type), r.meet_stage,
-        day(r.last_at), day(r.first_at), r.first_result, r.later_result, day(r.consult_at),
+        day(r.meet_at), r.meet_result, day(r.first_at), day(r.consult_at),
     ].map(cell).join('\t'))
     navigator.clipboard.writeText([head.join('\t'), ...lines].join('\n')).catch(() => {})
-    showToast(`📋 ${rows.value.length}명 복사됨 — 시트에 붙여넣으세요`)
+    showToast(`📋 ${rows.value.length}줄 복사됨 — 시트에 붙여넣으세요`)
 }
 </script>
 
 <template>
     <section>
         <div class="erp-bar">
-            <select v-model="basis" class="erp-basis" aria-label="기간 기준 날짜">
-                <option v-for="(label, k) in BASIS" :key="k" :value="k">{{ label }}</option>
-            </select>
             <ErpRangePicker v-model="range" />
             <button class="erp-btn" :disabled="loading" @click="run">🔍 조회</button>
         </div>
@@ -151,7 +149,7 @@ function copy() {
         <template v-else-if="data && loaded">
             <div class="erp-section">
                 <div class="erp-find-chips" role="group" aria-label="인도 지역">
-                    <button :class="['erp-chip', { on: !region }]" :aria-pressed="!region" @click="region = ''">전체 {{ all.length }}</button>
+                    <button :class="['erp-chip', { on: !region }]" :aria-pressed="!region" @click="region = ''">전체 {{ people(all) }}</button>
                     <button v-for="rg in regions" :key="rg" :class="['erp-chip', { on: region === rg }]" :aria-pressed="region === rg" @click="region = rg">
                         {{ regionLabel(rg) }} {{ count(all, 'guide_region', rg) }}
                     </button>
@@ -185,9 +183,9 @@ function copy() {
                     </button>
                 </div>
                 <h3 class="erp-h3">
-                    {{ BASIS[loaded.basis] }} {{ md(loaded.from) }}~{{ md(loaded.to) }} 매칭 명단 <span class="erp-sub">{{ rows.length }}명 · {{ sorts.length ? `정렬 ${sortSummary}` : '최초만남 날짜 순서' }} · 합당한자 날짜는 재가한 날 · 최종 만남일은 지금 잡힌 다음 만남 날 · 소속은 인도자·교사의 지금 소속 · 2차만남·밀림 날짜 색 <span class="erp-term-short">단기(3일 이내)</span> / <span class="erp-term-long">장기</span></span>
+                    최초만남 {{ md(loaded.from) }}~{{ md(loaded.to) }} 매칭 명단 <span class="erp-sub">{{ people(rows) }}명 · {{ rows.length }}줄(만남마다 한 줄) · {{ sorts.length ? `정렬 ${sortSummary}` : '최초만남 날짜 순서' }} · 합당한자 날짜는 재가한 날 · 소속은 인도자·교사의 지금 소속 · 2차만남·밀림 날짜 색 <span class="erp-term-short">단기(3일 이내)</span> / <span class="erp-term-long">장기</span></span>
                 </h3>
-                <p v-if="!chipRows.length" class="erp-empty">이 기간에 {{ BASIS[loaded.basis] }}인 사람이 없어요.</p>
+                <p v-if="!chipRows.length" class="erp-empty">이 기간에 최초만남인 사람이 없어요.</p>
                 <div v-else class="erp-table-wrap">
                     <table class="erp-table erp-table-left erp-match-table">
                         <thead>
@@ -215,8 +213,8 @@ function copy() {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-if="!rows.length"><td colspan="19" class="erp-zero">필터에 맞는 사람이 없어요.</td></tr>
-                            <tr v-for="r in rows" :key="r.sarang_id">
+                            <tr v-if="!rows.length"><td :colspan="COLS.length" class="erp-zero">필터에 맞는 사람이 없어요.</td></tr>
+                            <tr v-for="r in rows" :key="r._key">
                                 <td>{{ day(r.hap_date) }}</td>
                                 <td>{{ r.guide_region ? regionLabel(r.guide_region) : '—' }}</td>
                                 <td>{{ r.guide_group || '—' }}</td>
@@ -231,12 +229,12 @@ function copy() {
                                 <td>{{ r.tool || '—' }}</td>
                                 <td>{{ onOff(r.recruitment_type) }}</td>
                                 <td :class="{ 'erp-stage-2': r.meet_stage !== '1차' }">{{ r.meet_stage || '—' }}</td>
-                                <td><b>{{ day(r.last_at) || '—' }}</b></td>
-                                <td>{{ day(r.first_at) || '—' }}</td>
-                                <td v-for="([res, term], ci) in [[r.first_result, r.first_term], [r.later_result, r.later_term]]" :key="ci">
-                                    <template v-if="res && term">{{ splitDate(res)[0] }}<span :class="TERM_CLASS[term]" :title="term">{{ splitDate(res)[1] }}</span>{{ splitDate(res)[2] }}</template>
-                                    <template v-else>{{ res || '—' }}</template>
+                                <td><b>{{ day(r.meet_at) || '미정' }}</b></td>
+                                <td>
+                                    <template v-if="r.meet_result && r.meet_term">{{ splitDate(r.meet_result)[0] }}<span :class="TERM_CLASS[r.meet_term]" :title="r.meet_term">{{ splitDate(r.meet_result)[1] }}</span>{{ splitDate(r.meet_result)[2] }}</template>
+                                    <template v-else>{{ r.meet_result || '—' }}</template>
                                 </td>
+                                <td>{{ day(r.first_at) || '—' }}</td>
                                 <td>{{ day(r.consult_at) || '—' }}</td>
                             </tr>
                         </tbody>
@@ -244,7 +242,7 @@ function copy() {
                 </div>
             </div>
         </template>
-        <p v-else class="erp-empty">기준 날짜(합당한자 날짜·최초만남 날짜)와 기간을 고르고 🔍 조회를 누르세요.</p>
+        <p v-else class="erp-empty">최초만남 기간을 고르고 🔍 조회를 누르세요.</p>
     </section>
 </template>
 
@@ -259,7 +257,6 @@ function copy() {
     box-shadow: 0 6px 18px rgba(25, 31, 40, .12); text-align: left; }
 .erp-suggest li { padding: 7px 10px; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--e-text); cursor: pointer; white-space: nowrap; }
 .erp-suggest li:hover, .erp-suggest li.on { background: var(--e-blue-soft); color: var(--e-blue); }
-.erp-basis { border: 1px solid var(--e-line); border-radius: 8px; padding: 6px 8px; font-size: 13px; font-weight: 600; background: #fff; color: var(--e-text); }
 .erp-sort-on { border-color: #C8DEFF; background: var(--e-blue-soft); color: var(--e-blue); font-weight: 600; }
 .erp-sort-panel { margin-top: 10px; padding: 12px; border: 1px solid var(--e-line); border-radius: 10px; background: var(--e-head); max-width: 420px; }
 .erp-sort-rule { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
