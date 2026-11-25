@@ -35,6 +35,7 @@ const SHED_CHANNEL_DEFS = [
 // 없이 전체를 가져오도록 분기함). 다른 채널 타입은 이 가상 팀엔 의미 없어서 안 보여줌.
 const ALL_REGIONS_CHANNEL_DEFS = [
     { key: 'matching', field: 'matchingChatId', label: '전체 매칭현황판', color: '#00838F' },
+    { key: 'teacherUrgent', field: 'teacherUrgentChatId', label: '교사 급구', color: '#C62828' },
 ]
 
 const teams = ref([])
