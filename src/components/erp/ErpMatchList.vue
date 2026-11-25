@@ -1,5 +1,5 @@
 <script setup>
-// ERP 매칭 명단 — 최초만남 날짜 기준 기간 안 재가된 사람의 만남마다 한 줄(1차·2차·밀림 다음 시도, 2026-11-26). 인도 지역·반 버튼과 칸별 소속 필터로 좁히고 시트용(탭 구분) 복사
+// ERP 매칭 명단 — 재가된 사람의 만남마다 한 줄(1차·2차·밀림 다음 시도), 만남일이 기간 안인 줄만(2026-11-26). 인도 지역·반 버튼과 칸별 소속 필터로 좁히고 시트용(탭 구분) 복사
 import { ref, reactive, computed, watch } from 'vue'
 import ErpRangePicker from './ErpRangePicker.vue'
 import { useErpLoad, monthOf, natCmp, regionLabel } from './erpUtil'
@@ -11,8 +11,8 @@ const { loading, error, data, load } = useErpLoad('/api/erp/match-list')
 const region = ref('')
 const group = ref('')
 const loaded = ref(null)
-// 기간은 최초만남 날짜로만 거름(2026-11-26 사용자 결정 — 전엔 최종 만남일·합당한자 날짜도 고를 수 있었음)
-async function run() { const r = { ...range.value, basis: 'first' }; if (await load(r)) loaded.value = r }
+// 기간은 줄마다 그 만남일로 거름 — 날짜 미정 줄은 같은 사람의 다른 만남이 기간 안이면 같이(2026-11-26 사용자 결정)
+async function run() { const r = { ...range.value, basis: 'meet' }; if (await load(r)) loaded.value = r }
 watch(region, () => { group.value = '' })
 
 // 사람 한 명을 만남(meets)마다 한 줄로 펼침 — 차수·만남일·결과만 줄마다 다름
@@ -183,9 +183,9 @@ function copy() {
                     </button>
                 </div>
                 <h3 class="erp-h3">
-                    최초만남 {{ md(loaded.from) }}~{{ md(loaded.to) }} 매칭 명단 <span class="erp-sub">{{ people(rows) }}명 · {{ rows.length }}줄(만남마다 한 줄) · {{ sorts.length ? `정렬 ${sortSummary}` : '최초만남 날짜 순서' }} · 합당한자 날짜는 재가한 날 · 소속은 인도자·교사의 지금 소속 · 2차만남·밀림 날짜 색 <span class="erp-term-short">단기(3일 이내)</span> / <span class="erp-term-long">장기</span></span>
+                    만남일 {{ md(loaded.from) }}~{{ md(loaded.to) }} 매칭 명단 <span class="erp-sub">{{ people(rows) }}명 · {{ rows.length }}줄(만남마다 한 줄) · {{ sorts.length ? `정렬 ${sortSummary}` : '최초만남 날짜 순서' }} · 합당한자 날짜는 재가한 날 · 소속은 인도자·교사의 지금 소속 · 2차만남·밀림 날짜 색 <span class="erp-term-short">단기(3일 이내)</span> / <span class="erp-term-long">장기</span></span>
                 </h3>
-                <p v-if="!chipRows.length" class="erp-empty">이 기간에 최초만남인 사람이 없어요.</p>
+                <p v-if="!chipRows.length" class="erp-empty">이 기간에 만남이 없어요.</p>
                 <div v-else class="erp-table-wrap">
                     <table class="erp-table erp-table-left erp-match-table">
                         <thead>
@@ -242,7 +242,7 @@ function copy() {
                 </div>
             </div>
         </template>
-        <p v-else class="erp-empty">최초만남 기간을 고르고 🔍 조회를 누르세요.</p>
+        <p v-else class="erp-empty">만남일 기간을 고르고 🔍 조회를 누르세요.</p>
     </section>
 </template>
 
