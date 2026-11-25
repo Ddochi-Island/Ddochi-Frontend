@@ -11,7 +11,7 @@ const OPTIONS = [
     { label: '2차만남(단기)', cls: 'res-btn-2nd' },
     { label: '2차만남(장기)', cls: 'res-btn-2nd' },
     { label: '연락두절', cls: 'res-btn-cancel' },
-    { label: '갈급부족', cls: 'res-btn-cancel' },
+    { label: '갈급부족', cls: 'res-btn-bi' },
     { label: '환경비합', cls: 'res-btn-bi' },
     { label: '밀림(섭외자미룸)', cls: 'res-btn-delay' },
     { label: '밀림(교사못구함)', cls: 'res-btn-delay' },
